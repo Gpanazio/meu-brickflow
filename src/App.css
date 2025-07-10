@@ -1656,17 +1656,4 @@ body {
     transform: scale(1.02);
   }
 }
-/* Estilo para o input de edição do título da lista */
-.list-title-input {
-  background-color: rgba(255, 255, 255, 0.2);
-  border: 1px solid var(--brick-blue);
-  border-radius: 6px;
-  color: var(--brick-white);
-  font-family: inherit; /* Usa a mesma fonte do resto do site */
-  font-size: 1.1rem;    /* Mesmo tamanho do título h3 */
-  font-weight: 600;     /* Mesmo "negrito" do título h3 */
-  padding: 0.25rem 0.5rem;
-  width: 100%;
-  box-shadow: 0 0 8px rgba(30, 64, 175, 0.5); /* Adiciona um brilho azul ao redor */
-  outline: none; /* Remove a borda padrão do navegador */
-}
+
