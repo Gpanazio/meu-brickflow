@@ -113,11 +113,11 @@ const getInitialProjects = () => [
               { id: 'todo-3', title: 'Concluído', tasks: [] }
             ]
           },
-          kanban: {
+          Players: {
             lists: [
-              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-              { id: 'kanban-2', title: 'Enviados', tasks: [] },
-              { id: 'kanban-3', title: 'Negados', tasks: [] }
+              { id: 'Players-1', title: 'Potenciais', tasks: [] },
+              { id: 'Players-2', title: 'Enviados', tasks: [] },
+              { id: 'Players-3', title: 'Negados', tasks: [] }
             ]
           },
           timeline: {
