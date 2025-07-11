@@ -115,9 +115,9 @@ const getInitialProjects = () => [
           },
           kanban: {
             lists: [
-              { id: 'kanban-1', title: 'Backlog', tasks: [] },
-              { id: 'kanban-2', title: 'Em Desenvolvimento', tasks: [] },
-              { id: 'kanban-3', title: 'Finalizado', tasks: [] }
+              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
+              { id: 'kanban-2', title: 'Enviados', tasks: [] },
+              { id: 'kanban-3', title: 'Negados', tasks: [] }
             ]
           },
           timeline: {
@@ -227,7 +227,7 @@ const getInitialProjects = () => [
             lists: [
               { id: 'kanban-1', title: 'Ideias', tasks: [] },
               { id: 'kanban-2', title: 'Prototipagem', tasks: [] },
-              { id: 'kanban-3', title: 'Finalizado', tasks: [] }
+              { id: 'kanban-3', title: 'Negados', tasks: [] }
             ]
           },
           timeline: {
@@ -261,7 +261,7 @@ const getInitialProjects = () => [
           },
           kanban: {
             lists: [
-              { id: 'kanban-1', title: 'Backlog', tasks: [] },
+              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
               { id: 'kanban-2', title: 'Desenvolvimento', tasks: [] },
               { id: 'kanban-3', title: 'Deploy', tasks: [] }
             ]
