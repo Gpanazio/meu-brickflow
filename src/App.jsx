@@ -115,9 +115,9 @@ const getInitialProjects = () => [
           },
           kanban: {
             lists: [
-              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-              { id: 'kanban-2', title: 'Enviados', tasks: [] },
-              { id: 'kanban-3', title: 'Negados', tasks: [] }
+              { id: 'kanban-1', title: 'Backlog', tasks: [] },
+              { id: 'kanban-2', title: 'Em Desenvolvimento', tasks: [] },
+              { id: 'kanban-3', title: 'Finalizado', tasks: [] }
             ]
           },
           timeline: {
@@ -227,7 +227,7 @@ const getInitialProjects = () => [
             lists: [
               { id: 'kanban-1', title: 'Ideias', tasks: [] },
               { id: 'kanban-2', title: 'Prototipagem', tasks: [] },
-              { id: 'kanban-3', title: 'Negados', tasks: [] }
+              { id: 'kanban-3', title: 'Finalizado', tasks: [] }
             ]
           },
           timeline: {
@@ -261,7 +261,7 @@ const getInitialProjects = () => [
           },
           kanban: {
             lists: [
-              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
+              { id: 'kanban-1', title: 'Backlog', tasks: [] },
               { id: 'kanban-2', title: 'Desenvolvimento', tasks: [] },
               { id: 'kanban-3', title: 'Deploy', tasks: [] }
             ]
@@ -1149,15 +1149,47 @@ function App() {
     );
   };
 
-  // Função para formatar tamanho do arquivo
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  // Função para formatar tamanho do arquivo (VERSÃO CORRIGIDA E MAIS ROBUSTA)
+const formatFileSize = (bytes) => {
+  // Se 'bytes' não for um número válido ou for 0, retorna '0 Bytes'
+  if (!bytes || typeof bytes !== 'number' || isNaN(bytes) || bytes === 0) {
+    return '0 Bytes';
+  }
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  // Garante que o índice 'i' não seja negativo ou inválido
+  const i = Math.max(0, Math.floor(Math.log(bytes) / Math.log(k)));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+};
+// NOVA FUNÇÃO PARA ESCOLHER O ÍCONE CORRETO
+const getFileIcon = (file) => {
+  if (!file || !file.name) return '📎'; // Retorna padrão se não houver nome
 
+  const extension = file.name.split('.').pop().toLowerCase();
+
+  if (file.type?.startsWith('image/')) return '🖼️';
+  if (file.type?.startsWith('video/')) return '🎥';
+  if (file.type?.startsWith('audio/')) return '🎵';
+
+  switch (extension) {
+    case 'pdf':
+      return '📄'; // Ícone de PDF
+    case 'doc':
+    case 'docx':
+      return '📃'; // Ícone de Documento
+    case 'xls':
+    case 'xlsx':
+      return '📊'; // Ícone de Planilha
+    case 'ppt':
+    case 'pptx':
+      return '🖥️'; // Ícone de Apresentação
+    case 'zip':
+    case 'rar':
+      return '🗜️'; // Ícone de Arquivo Comprimido
+    default:
+      return '📎'; // Ícone Padrão
+  }
+};
   // Função para upload de arquivos
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files);
@@ -2669,10 +2701,7 @@ function App() {
                       {getCurrentFiles().map(file => (
                         <div key={file.id} className="file-card">
                           <div className="file-icon">
-                            {file.type?.startsWith('image/') ? '🖼️' : 
-                             file.type?.startsWith('video/') ? '🎥' : 
-                             file.type?.startsWith('audio/') ? '🎵' : 
-                             file.type?.includes('pdf') ? '📄' : '📎'}
+                             {getFileIcon(file)} 
                           </div>
                           <div className="file-info">
                             <h4>{file.name}</h4>
