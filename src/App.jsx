@@ -39,9 +39,7 @@ const absurdPhrases = [
   "Cada reunião desnecessária cancela uma encarnação futura sua.",
   "Hoje você vai digitar algo genial... e o Word vai travar.",
   "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações."
-
 ];
-
 // Função para gerar números da Mega Sena
 const generateMegaSenaNumbers = () => {
   const numbers = [];
