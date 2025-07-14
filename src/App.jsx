@@ -15,16 +15,7 @@ const absurdPhrases = [
   "Sua criatividade hoje fluirá como ketchup numa garrafa nova - devagar, mas com força total.",
   "Hoje é o dia perfeito para reorganizar sua mesa como se fosse um altar sagrado da produtividade.",
   "Lembre-se: você é como um café expresso - pequeno, mas com energia suficiente para mover montanhas.",
-  "Sua sorte hoje depende de quantas vezes você conseguir dizer 'sinergias' numa reunião sem rir.",
-  "O universo hoje sussurrará segredos de produtividade através do barulho da impressora.",
-  "Hoje você descobrirá que a procrastinação é apenas sua mente fazendo aquecimento para a genialidade.",
-  "Sua aura profissional hoje brilhará mais que uma tela de computador às 3h da manhã.",
-  "Lembre-se: cada e-mail não lido é uma oportunidade de praticar a arte da ignorância seletiva.",
-  "Hoje é um excelente dia para tratar suas tarefas como pokémons - você precisa capturar todas.",
-  "Sua intuição hoje será mais precisa que o GPS recalculando rota pela quinta vez.",
-  "O sucesso hoje virá disfarçado de uma reunião que poderia ter sido um e-mail.",
-  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado."
-  "Hoje é um ótimo dia para responder e-mails com enigmas em vez de respostas diretas.",
+    "Hoje é um ótimo dia para responder e-mails com enigmas em vez de respostas diretas.",
   "Use o elevador hoje como se fosse um portal interdimensional — apenas entre confiante.",
   "A produtividade bate diferente quando você finge que está num reality show de escritórios.",
   "Lembre-se: todo post-it é um grito de socorro com cola.",
@@ -38,8 +29,17 @@ const absurdPhrases = [
   "A impressora está em greve e exige um aumento em toner.",
   "Cada reunião desnecessária cancela uma encarnação futura sua.",
   "Hoje você vai digitar algo genial... e o Word vai travar.",
-  "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações."
-
+  "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações.",
+  "Sua sorte hoje depende de quantas vezes você conseguir dizer 'sinergias' numa reunião sem rir.",
+  "O universo hoje sussurrará segredos de produtividade através do barulho da impressora.",
+  "Hoje você descobrirá que a procrastinação é apenas sua mente fazendo aquecimento para a genialidade.",
+  "Sua aura profissional hoje brilhará mais que uma tela de computador às 3h da manhã.",
+  "Lembre-se: cada e-mail não lido é uma oportunidade de praticar a arte da ignorância seletiva.",
+  "Hoje é um excelente dia para tratar suas tarefas como pokémons - você precisa capturar todas.",
+  "Sua intuição hoje será mais precisa que o GPS recalculando rota pela quinta vez.",
+  "O sucesso hoje virá disfarçado de uma reunião que poderia ter sido um e-mail.",
+  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado."
+  
 ];
 
 // Função para gerar números da Mega Sena
