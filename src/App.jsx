@@ -41,37 +41,37 @@ const generateMegaSenaNumbers = () => {
 // Avatares disponíveis (expandido com opções absurdas)
 const avatarOptions = [
   // Profissionais clássicos
-  '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨', 
+  '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨',
   '👨‍🔧', '👩‍🔧', '👨‍⚕️', '👩‍⚕️', '👨‍🏫', '👩‍🏫',
   '🧑‍💼', '🧑‍💻', '🧑‍🎨', '🧑‍🔧', '🧑‍⚕️', '🧑‍🏫',
-  
+
   // Clássicos com atitude
   '😎', '🤓', '😊', '🤔', '😴', '🤯', '🥳', '🤠',
-  
+
   // Animais profissionais
   '🐱', '🐶', '🐼', '🦊', '🐸', '🐧', '🦉', '🐨',
   '🦁', '🐯', '🐵', '🐺', '🦄', '🐙', '🦖', '🐢',
-  
+
   // Comida executiva
   '🍕', '🍔', '🌮', '🍩', '🧀', '🥑', '🍎', '🍌',
   '☕', '🍺', '🍷', '🥤', '🍪', '🥨', '🥯', '🧁',
-  
+
   // Objetos de escritório absurdos
   '💻', '📱', '⌚', '🖥️', '⌨️', '🖱️', '💾', '📀',
   '📎', '📌', '✂️', '📏', '📐', '🔍', '💡', '🔋',
-  
+
   // Símbolos motivacionais
   '🚀', '⭐', '🎯', '💎', '🏆', '🎪', '🎭', '🎨',
   '🎸', '🎺', '🎲', '🎮', '🎳', '⚽', '🏀', '🎾',
-  
+
   // Natureza zen
   '🌱', '🌸', '🌺', '🌻', '🌙', '☀️', '⚡', '🌈',
   '🔥', '💧', '🌪️', '❄️', '🌊', '🏔️', '🌋', '🌍',
-  
+
   // Transportes executivos
   '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
   '✈️', '🚁', '🚂', '🚇', '🛸', '🚲', '🛴', '⛵',
-  
+
   // Místicos corporativos
   '🔮', '🎩', '🧙‍♂️', '🧙‍♀️', '🦸‍♂️', '🦸‍♀️', '🧚‍♂️', '🧚‍♀️',
   '👑', '💍', '🗿', '🎪', '🎭', '🎨', '🎯', '🎲'
@@ -1149,47 +1149,15 @@ function App() {
     );
   };
 
-  // Função para formatar tamanho do arquivo (VERSÃO CORRIGIDA E MAIS ROBUSTA)
-const formatFileSize = (bytes) => {
-  // Se 'bytes' não for um número válido ou for 0, retorna '0 Bytes'
-  if (!bytes || typeof bytes !== 'number' || isNaN(bytes) || bytes === 0) {
-    return '0 Bytes';
-  }
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  // Garante que o índice 'i' não seja negativo ou inválido
-  const i = Math.max(0, Math.floor(Math.log(bytes) / Math.log(k)));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-};
-// NOVA FUNÇÃO PARA ESCOLHER O ÍCONE CORRETO
-const getFileIcon = (file) => {
-  if (!file || !file.name) return '📎'; // Retorna padrão se não houver nome
+  // Função para formatar tamanho do arquivo
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
-  const extension = file.name.split('.').pop().toLowerCase();
-
-  if (file.type?.startsWith('image/')) return '🖼️';
-  if (file.type?.startsWith('video/')) return '🎥';
-  if (file.type?.startsWith('audio/')) return '🎵';
-
-  switch (extension) {
-    case 'pdf':
-      return '📄'; // Ícone de PDF
-    case 'doc':
-    case 'docx':
-      return '📃'; // Ícone de Documento
-    case 'xls':
-    case 'xlsx':
-      return '📊'; // Ícone de Planilha
-    case 'ppt':
-    case 'pptx':
-      return '🖥️'; // Ícone de Apresentação
-    case 'zip':
-    case 'rar':
-      return '🗜️'; // Ícone de Arquivo Comprimido
-    default:
-      return '📎'; // Ícone Padrão
-  }
-};
   // Função para upload de arquivos
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files);
@@ -2697,40 +2665,41 @@ const getFileIcon = (file) => {
                       </div>
                     )}
                     
-                 <div className="files-grid">
-  {getCurrentFiles().map(file => {
-    console.log("DADOS DO ARQUIVO QUE CHEGARAM:", file); // Nosso "espião"
-    return (
-      <div key={file.id} className="file-card">
-        <div className="file-icon">
-          {getFileIcon(file)}
-        </div>
-        <div className="file-info">
-          <h4>{file.name}</h4>
-          <p>{formatFileSize(file.size)}</p>
-          <small>Por: {file.uploadedBy}</small>
-          <small>{new Date(file.uploadDate).toLocaleDateString()}</small>
-        </div>
-        <div className="file-actions">
-          <button
-            className="file-action-btn"
-            onClick={() => handlePreviewFile(file)}
-            title="Visualizar"
-          >
-            👁️
-          </button>
-          <button
-            className="file-action-btn"
-            onClick={() => handleDownloadFile(file)}
-            title="Download"
-          >
-            💾
-          </button>
-          <button
-            className="file-action-btn delete"
-            onClick={() => handleDeleteFile(file.id)}
-            title="Excluir"
-          >
+                    <div className="files-grid">
+                      {getCurrentFiles().map(file => (
+                        <div key={file.id} className="file-card">
+                          <div className="file-icon">
+                            {file.type?.startsWith('image/') ? '🖼️' : 
+                             file.type?.startsWith('video/') ? '🎥' : 
+                             file.type?.startsWith('audio/') ? '🎵' : 
+                             file.type?.includes('pdf') ? '📄' : '📎'}
+                          </div>
+                          <div className="file-info">
+                            <h4>{file.name}</h4>
+                            <p>{formatFileSize(file.size)}</p>
+                            <small>Por: {file.uploadedBy}</small>
+                            <small>{new Date(file.uploadDate).toLocaleDateString()}</small>
+                          </div>
+                          <div className="file-actions">
+                            <button 
+                              className="file-action-btn"
+                              onClick={() => handlePreviewFile(file)}
+                              title="Visualizar"
+                            >
+                              👁️
+                            </button>
+                            <button 
+                              className="file-action-btn"
+                              onClick={() => handleDownloadFile(file)}
+                              title="Download"
+                            >
+                              💾
+                            </button>
+                            <button 
+                              className="file-action-btn delete"
+                              onClick={() => handleDeleteFile(file.id)}
+                              title="Excluir"
+                            >
                               🗑️
                             </button>
                           </div>
