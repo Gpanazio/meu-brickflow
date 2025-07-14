@@ -473,7 +473,29 @@ function App() {
     
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
+      
+const goToTaskBoard = (task) => {
+  if (!task) return;
+
+  const selectedProject = projects.find(p => p.id === task.projectId);
+  if (selectedProject) {
+    setCurrentProject(selectedProject);
+  }
+
+  if (task.subProjectId) {
+    const sub = selectedProject?.subProjects?.find(sp => sp.id === task.subProjectId);
+    if (sub) {
+      setCurrentSubProject(sub);
+    }
+  } else {
+    setCurrentSubProject(null);
+  }
+
+  setCurrentTab(task.boardType);
+};
+
+
+  return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showDropdown]);
 
@@ -766,7 +788,29 @@ function App() {
       // Forçar re-renderização
       setRefreshKey(prev => prev + 1);
       
-      return () => clearTimeout(timeoutId);
+      
+const goToTaskBoard = (task) => {
+  if (!task) return;
+
+  const selectedProject = projects.find(p => p.id === task.projectId);
+  if (selectedProject) {
+    setCurrentProject(selectedProject);
+  }
+
+  if (task.subProjectId) {
+    const sub = selectedProject?.subProjects?.find(sp => sp.id === task.subProjectId);
+    if (sub) {
+      setCurrentSubProject(sub);
+    }
+  } else {
+    setCurrentSubProject(null);
+  }
+
+  setCurrentTab(task.boardType);
+};
+
+
+  return () => clearTimeout(timeoutId);
     }
   }, [projects, currentUser, isLoggedIn]);
 
@@ -812,7 +856,29 @@ function App() {
       if (urlRegex.test(part)) {
         // Encurtar URL para exibição se for muito longa
         const displayUrl = part.length > 30 ? part.substring(0, 30) + '...' : part;
-        return (
+        
+const goToTaskBoard = (task) => {
+  if (!task) return;
+
+  const selectedProject = projects.find(p => p.id === task.projectId);
+  if (selectedProject) {
+    setCurrentProject(selectedProject);
+  }
+
+  if (task.subProjectId) {
+    const sub = selectedProject?.subProjects?.find(sp => sp.id === task.subProjectId);
+    if (sub) {
+      setCurrentSubProject(sub);
+    }
+  } else {
+    setCurrentSubProject(null);
+  }
+
+  setCurrentTab(task.boardType);
+};
+
+
+  return (
           <a 
             key={index} 
             href={part} 
@@ -2093,7 +2159,29 @@ function App() {
   const activeSubProjects = currentProject?.subProjects?.filter(sub => !sub.isArchived) || [];
 
   if (!isLoggedIn) {
-    return (
+    
+const goToTaskBoard = (task) => {
+  if (!task) return;
+
+  const selectedProject = projects.find(p => p.id === task.projectId);
+  if (selectedProject) {
+    setCurrentProject(selectedProject);
+  }
+
+  if (task.subProjectId) {
+    const sub = selectedProject?.subProjects?.find(sp => sp.id === task.subProjectId);
+    if (sub) {
+      setCurrentSubProject(sub);
+    }
+  } else {
+    setCurrentSubProject(null);
+  }
+
+  setCurrentTab(task.boardType);
+};
+
+
+  return (
       <div className="app">
         {/* Modal de Login */}
         {showLoginModal && (
@@ -2271,6 +2359,28 @@ function App() {
     );
   }
 
+  
+const goToTaskBoard = (task) => {
+  if (!task) return;
+
+  const selectedProject = projects.find(p => p.id === task.projectId);
+  if (selectedProject) {
+    setCurrentProject(selectedProject);
+  }
+
+  if (task.subProjectId) {
+    const sub = selectedProject?.subProjects?.find(sp => sp.id === task.subProjectId);
+    if (sub) {
+      setCurrentSubProject(sub);
+    }
+  } else {
+    setCurrentSubProject(null);
+  }
+
+  setCurrentTab(task.boardType);
+};
+
+
   return (
     <div className="app" key={refreshKey}>
       {/* Header Principal */}
@@ -2404,7 +2514,29 @@ function App() {
               const isDragging = draggedProject?.id === project.id;
               const isDragOver = dragOverProject === project.id;
               
-              return (
+              
+const goToTaskBoard = (task) => {
+  if (!task) return;
+
+  const selectedProject = projects.find(p => p.id === task.projectId);
+  if (selectedProject) {
+    setCurrentProject(selectedProject);
+  }
+
+  if (task.subProjectId) {
+    const sub = selectedProject?.subProjects?.find(sp => sp.id === task.subProjectId);
+    if (sub) {
+      setCurrentSubProject(sub);
+    }
+  } else {
+    setCurrentSubProject(null);
+  }
+
+  setCurrentTab(task.boardType);
+};
+
+
+  return (
                 <div 
                   key={project.id} 
                   className={`project-card color-${project.color} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
@@ -2459,7 +2591,29 @@ function App() {
                   const isDragging = draggedSubProject?.id === subProject.id;
                   const isDragOver = dragOverSubProject === subProject.id;
                   
-                  return (
+                  
+const goToTaskBoard = (task) => {
+  if (!task) return;
+
+  const selectedProject = projects.find(p => p.id === task.projectId);
+  if (selectedProject) {
+    setCurrentProject(selectedProject);
+  }
+
+  if (task.subProjectId) {
+    const sub = selectedProject?.subProjects?.find(sp => sp.id === task.subProjectId);
+    if (sub) {
+      setCurrentSubProject(sub);
+    }
+  } else {
+    setCurrentSubProject(null);
+  }
+
+  setCurrentTab(task.boardType);
+};
+
+
+  return (
                     <div 
                       key={subProject.id} 
                       className={`project-card color-${subProject.color} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
