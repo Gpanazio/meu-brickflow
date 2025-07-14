@@ -24,6 +24,22 @@ const absurdPhrases = [
   "Sua intuição hoje será mais precisa que o GPS recalculando rota pela quinta vez.",
   "O sucesso hoje virá disfarçado de uma reunião que poderia ter sido um e-mail.",
   "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado."
+  "Hoje é um ótimo dia para responder e-mails com enigmas em vez de respostas diretas.",
+  "Use o elevador hoje como se fosse um portal interdimensional — apenas entre confiante.",
+  "A produtividade bate diferente quando você finge que está num reality show de escritórios.",
+  "Lembre-se: todo post-it é um grito de socorro com cola.",
+  "Hoje, tente resolver um problema usando apenas frases motivacionais e uma garrafinha d’água.",
+  "Seu café está te observando — e julgando suas decisões.",
+  "Confie na sua intuição, especialmente se ela vier com gráficos e uma apresentação em PowerPoint.",
+  "Cada clique hoje será interpretado como uma declaração de guerra pelo seu mouse.",
+  "Hoje é um bom dia para se declarar gerente do caos e seguir em frente.",
+  "Se algo der errado hoje, acuse Mercúrio retrógrado e siga com classe.",
+  "Sua senha de Wi-Fi pode estar influenciando seu destino.",
+  "A impressora está em greve e exige um aumento em toner.",
+  "Cada reunião desnecessária cancela uma encarnação futura sua.",
+  "Hoje você vai digitar algo genial... e o Word vai travar.",
+  "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações."
+
 ];
 
 // Função para gerar números da Mega Sena
@@ -41,37 +57,37 @@ const generateMegaSenaNumbers = () => {
 // Avatares disponíveis (expandido com opções absurdas)
 const avatarOptions = [
   // Profissionais clássicos
-  '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨',
+  '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨', 
   '👨‍🔧', '👩‍🔧', '👨‍⚕️', '👩‍⚕️', '👨‍🏫', '👩‍🏫',
   '🧑‍💼', '🧑‍💻', '🧑‍🎨', '🧑‍🔧', '🧑‍⚕️', '🧑‍🏫',
-
+  
   // Clássicos com atitude
   '😎', '🤓', '😊', '🤔', '😴', '🤯', '🥳', '🤠',
-
+  
   // Animais profissionais
   '🐱', '🐶', '🐼', '🦊', '🐸', '🐧', '🦉', '🐨',
   '🦁', '🐯', '🐵', '🐺', '🦄', '🐙', '🦖', '🐢',
-
+  
   // Comida executiva
   '🍕', '🍔', '🌮', '🍩', '🧀', '🥑', '🍎', '🍌',
   '☕', '🍺', '🍷', '🥤', '🍪', '🥨', '🥯', '🧁',
-
+  
   // Objetos de escritório absurdos
   '💻', '📱', '⌚', '🖥️', '⌨️', '🖱️', '💾', '📀',
   '📎', '📌', '✂️', '📏', '📐', '🔍', '💡', '🔋',
-
+  
   // Símbolos motivacionais
   '🚀', '⭐', '🎯', '💎', '🏆', '🎪', '🎭', '🎨',
   '🎸', '🎺', '🎲', '🎮', '🎳', '⚽', '🏀', '🎾',
-
+  
   // Natureza zen
   '🌱', '🌸', '🌺', '🌻', '🌙', '☀️', '⚡', '🌈',
   '🔥', '💧', '🌪️', '❄️', '🌊', '🏔️', '🌋', '🌍',
-
+  
   // Transportes executivos
   '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
   '✈️', '🚁', '🚂', '🚇', '🛸', '🚲', '🛴', '⛵',
-
+  
   // Místicos corporativos
   '🔮', '🎩', '🧙‍♂️', '🧙‍♀️', '🦸‍♂️', '🦸‍♀️', '🧚‍♂️', '🧚‍♀️',
   '👑', '💍', '🗿', '🎪', '🎭', '🎨', '🎯', '🎲'
@@ -1150,33 +1166,14 @@ function App() {
   };
 
   // Função para formatar tamanho do arquivo
- const formatFileSize = (bytes) => {
-  if (!bytes || typeof bytes !== 'number' || isNaN(bytes) || bytes === 0) {
-    return '0 Bytes';
-  }
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.max(0, Math.floor(Math.log(bytes) / Math.log(k)));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-};
-// NOVA FUNÇÃO PARA ESCOLHER O ÍCONE CORRETO
-const getFileIcon = (file) => {
-  if (!file || !file.name) return '📎';
-  const extension = file.name.split('.').pop().toLowerCase();
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
-  if (file.type?.startsWith('image/')) return '🖼️';
-  if (file.type?.startsWith('video/')) return '🎥';
-  if (file.type?.startsWith('audio/')) return '🎵';
-
-  switch (extension) {
-    case 'pdf': return '📄';
-    case 'doc': case 'docx': return '📃';
-    case 'xls': case 'xlsx': return '📊';
-    case 'ppt': case 'pptx': return '🖥️';
-    case 'zip': case 'rar': return '🗜️';
-    default: return '📎';
-  }
-};
   // Função para upload de arquivos
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files);
@@ -2684,62 +2681,45 @@ const getFileIcon = (file) => {
                       </div>
                     )}
                     
-                  <div className="files-grid">
-  {getCurrentFiles().map(file => {
-    // ESPIÃO PARA VER OS DADOS DO ARQUIVO
-    console.log("DEBUG: DADOS DO ARQUIVO SENDO EXIBIDO:", file); 
-    return (
-      <div key={file.id} className="file-card">
-        <div className="file-icon">
-          {getFileIcon(file)}
-        </div>
-        <div className="file-info">
-          <h4>{file.name}</h4>
-          <p>{formatFileSize(file.size)}</p>
-          <small>Por: {file.uploadedBy}</small>
-          <small>{new Date(file.uploadDate).toLocaleDateString()}</small>
-        </div>
-        <div className="file-actions">
-          <button 
-            className="file-action-btn"
-            onClick={() => handlePreviewFile(file)}
-            title="Visualizar"
-          >
-            👁️
-          </button>
-          <button 
-            className="file-action-btn"
-            onClick={() => handleDownloadFile(file)}
-            title="Download"
-          >
-            💾
-          </button>
-          <button 
-            className="file-action-btn delete"
-            onClick={() => handleDeleteFile(file.id)}
-            title="Excluir"
-          >
-            🗑️
-          </button>
-        </div>
-      </div>
-    );
-  })}
-  {getCurrentFiles().length === 0 && (
-    <div className="empty-files">
-      <p>📁 Nenhum arquivo ainda</p>
-      <p>Clique em "Upload de Arquivo" ou arraste arquivos aqui</p>
-    </div>
-  )}
-</div>
-  ))}
-  {getCurrentFiles().length === 0 && (
-    <div className="empty-files">
-      <p>📁 Nenhum arquivo ainda</p>
-      <p>Clique em "Upload de Arquivo" ou arraste arquivos aqui</p>
-    </div>
-  )}
-</div>
+                    <div className="files-grid">
+                      {getCurrentFiles().map(file => (
+                        <div key={file.id} className="file-card">
+                          <div className="file-icon">
+                            {file.type?.startsWith('image/') ? '🖼️' : 
+                             file.type?.startsWith('video/') ? '🎥' : 
+                             file.type?.startsWith('audio/') ? '🎵' : 
+                             file.type?.includes('pdf') ? '📄' : '📎'}
+                          </div>
+                          <div className="file-info">
+                            <h4>{file.name}</h4>
+                            <p>{formatFileSize(file.size)}</p>
+                            <small>Por: {file.uploadedBy}</small>
+                            <small>{new Date(file.uploadDate).toLocaleDateString()}</small>
+                          </div>
+                          <div className="file-actions">
+                            <button 
+                              className="file-action-btn"
+                              onClick={() => handlePreviewFile(file)}
+                              title="Visualizar"
+                            >
+                              👁️
+                            </button>
+                            <button 
+                              className="file-action-btn"
+                              onClick={() => handleDownloadFile(file)}
+                              title="Download"
+                            >
+                              💾
+                            </button>
+                            <button 
+                              className="file-action-btn delete"
+                              onClick={() => handleDeleteFile(file.id)}
+                              title="Excluir"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
                       ))}
                       {getCurrentFiles().length === 0 && (
                         <div className="empty-files">
