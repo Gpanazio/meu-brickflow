@@ -2684,45 +2684,54 @@ const getFileIcon = (file) => {
                       </div>
                     )}
                     
-                    <div className="files-grid">
-  {getCurrentFiles().map(file => (
-    <div key={file.id} className="file-card">
-      <div className="file-icon">
-        {file.type?.startsWith('image/') ? '🖼️' : 
-         file.type?.startsWith('video/') ? '🎥' : 
-         file.type?.startsWith('audio/') ? '🎵' : 
-         file.type?.includes('pdf') ? '📄' : '📎'}
+                  <div className="files-grid">
+  {getCurrentFiles().map(file => {
+    // ESPIÃO PARA VER OS DADOS DO ARQUIVO
+    console.log("DEBUG: DADOS DO ARQUIVO SENDO EXIBIDO:", file); 
+    return (
+      <div key={file.id} className="file-card">
+        <div className="file-icon">
+          {getFileIcon(file)}
+        </div>
+        <div className="file-info">
+          <h4>{file.name}</h4>
+          <p>{formatFileSize(file.size)}</p>
+          <small>Por: {file.uploadedBy}</small>
+          <small>{new Date(file.uploadDate).toLocaleDateString()}</small>
+        </div>
+        <div className="file-actions">
+          <button 
+            className="file-action-btn"
+            onClick={() => handlePreviewFile(file)}
+            title="Visualizar"
+          >
+            👁️
+          </button>
+          <button 
+            className="file-action-btn"
+            onClick={() => handleDownloadFile(file)}
+            title="Download"
+          >
+            💾
+          </button>
+          <button 
+            className="file-action-btn delete"
+            onClick={() => handleDeleteFile(file.id)}
+            title="Excluir"
+          >
+            🗑️
+          </button>
+        </div>
       </div>
-      <div className="file-info">
-        <h4>{file.name}</h4>
-        <p>{formatFileSize(file.size)}</p>
-        <small>Por: {file.uploadedBy}</small>
-        <small>{new Date(file.uploadDate).toLocaleDateString()}</small>
-      </div>
-      <div className="file-actions">
-        <button 
-          className="file-action-btn"
-          onClick={() => handlePreviewFile(file)}
-          title="Visualizar"
-        >
-          👁️
-        </button>
-        <button 
-          className="file-action-btn"
-          onClick={() => handleDownloadFile(file)}
-          title="Download"
-        >
-          💾
-        </button>
-        <button 
-          className="file-action-btn delete"
-          onClick={() => handleDeleteFile(file.id)}
-          title="Excluir"
-        >
-          🗑️
-        </button>
-      </div>
+    );
+  })}
+  {getCurrentFiles().length === 0 && (
+    <div className="empty-files">
+      <p>📁 Nenhum arquivo ainda</p>
+      <p>Clique em "Upload de Arquivo" ou arraste arquivos aqui</p>
     </div>
+  )}
+</div>
   ))}
   {getCurrentFiles().length === 0 && (
     <div className="empty-files">
