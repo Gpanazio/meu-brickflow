@@ -23,7 +23,7 @@ const absurdPhrases = [
   "Hoje é um excelente dia para tratar suas tarefas como pokémons - você precisa capturar todas.",
   "Sua intuição hoje será mais precisa que o GPS recalculando rota pela quinta vez.",
   "O sucesso hoje virá disfarçado de uma reunião que poderia ter sido um e-mail.",
-  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado."
+  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado.",
   "Hoje é um ótimo dia para responder e-mails com enigmas em vez de respostas diretas.",
   "Use o elevador hoje como se fosse um portal interdimensional — apenas entre confiante.",
   "A produtividade bate diferente quando você finge que está num reality show de escritórios.",
@@ -39,9 +39,7 @@ const absurdPhrases = [
   "Cada reunião desnecessária cancela uma encarnação futura sua.",
   "Hoje você vai digitar algo genial... e o Word vai travar.",
   "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações."
-
 ];
-
 // Função para gerar números da Mega Sena
 const generateMegaSenaNumbers = () => {
   const numbers = [];
