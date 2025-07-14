@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
-
-// Frases absurdas para "Sorte do dia"
 const absurdPhrases = [
   "Hoje é um ótimo dia para conversar com suas plantas sobre seus planos de carreira.",
   "Lembre-se: o sucesso é como uma pizza de abacaxi - controverso, mas alguns adoram.",
@@ -23,7 +21,7 @@ const absurdPhrases = [
   "Hoje é um excelente dia para tratar suas tarefas como pokémons - você precisa capturar todas.",
   "Sua intuição hoje será mais precisa que o GPS recalculando rota pela quinta vez.",
   "O sucesso hoje virá disfarçado de uma reunião que poderia ter sido um e-mail.",
-  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado.",
+  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado."
   "Hoje é um ótimo dia para responder e-mails com enigmas em vez de respostas diretas.",
   "Use o elevador hoje como se fosse um portal interdimensional — apenas entre confiante.",
   "A produtividade bate diferente quando você finge que está num reality show de escritórios.",
@@ -39,10 +37,7 @@ const absurdPhrases = [
   "Cada reunião desnecessária cancela uma encarnação futura sua.",
   "Hoje você vai digitar algo genial... e o Word vai travar.",
   "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações."
-
 ];
-
-// Função para gerar números da Mega Sena
 const generateMegaSenaNumbers = () => {
   const numbers = [];
   while (numbers.length < 6) {
@@ -53,52 +48,29 @@ const generateMegaSenaNumbers = () => {
   }
   return numbers.sort((a, b) => a - b);
 };
-
-// Avatares disponíveis (expandido com opções absurdas)
 const avatarOptions = [
-  // Profissionais clássicos
   '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨', 
   '👨‍🔧', '👩‍🔧', '👨‍⚕️', '👩‍⚕️', '👨‍🏫', '👩‍🏫',
   '🧑‍💼', '🧑‍💻', '🧑‍🎨', '🧑‍🔧', '🧑‍⚕️', '🧑‍🏫',
-  
-  // Clássicos com atitude
   '😎', '🤓', '😊', '🤔', '😴', '🤯', '🥳', '🤠',
-  
-  // Animais profissionais
   '🐱', '🐶', '🐼', '🦊', '🐸', '🐧', '🦉', '🐨',
   '🦁', '🐯', '🐵', '🐺', '🦄', '🐙', '🦖', '🐢',
-  
-  // Comida executiva
   '🍕', '🍔', '🌮', '🍩', '🧀', '🥑', '🍎', '🍌',
   '☕', '🍺', '🍷', '🥤', '🍪', '🥨', '🥯', '🧁',
-  
-  // Objetos de escritório absurdos
   '💻', '📱', '⌚', '🖥️', '⌨️', '🖱️', '💾', '📀',
   '📎', '📌', '✂️', '📏', '📐', '🔍', '💡', '🔋',
-  
-  // Símbolos motivacionais
   '🚀', '⭐', '🎯', '💎', '🏆', '🎪', '🎭', '🎨',
   '🎸', '🎺', '🎲', '🎮', '🎳', '⚽', '🏀', '🎾',
-  
-  // Natureza zen
   '🌱', '🌸', '🌺', '🌻', '🌙', '☀️', '⚡', '🌈',
   '🔥', '💧', '🌪️', '❄️', '🌊', '🏔️', '🌋', '🌍',
-  
-  // Transportes executivos
   '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
   '✈️', '🚁', '🚂', '🚇', '🛸', '🚲', '🛴', '⛵',
-  
-  // Místicos corporativos
   '🔮', '🎩', '🧙‍♂️', '🧙‍♀️', '🦸‍♂️', '🦸‍♀️', '🧚‍♂️', '🧚‍♀️',
   '👑', '💍', '🗿', '🎪', '🎭', '🎨', '🎯', '🎲'
 ];
-
-// Cores disponíveis para usuários
 const userColors = [
   'blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'
 ];
-
-// Dados iniciais dos projetos com estruturas separadas por tipo
 const getInitialProjects = () => [
   {
     id: 'brick-adm',
@@ -109,7 +81,7 @@ const getInitialProjects = () => [
     password: 'Brick$2025-FGL',
     archived: { tasks: [], goals: [] },
     isArchived: false,
-    createdBy: null, // Será definido quando criado
+    createdBy: null, 
     subProjects: [
       {
         id: 'rh-brick',
@@ -120,7 +92,6 @@ const getInitialProjects = () => [
         archived: { tasks: [], goals: [] },
         isArchived: false,
         createdBy: null,
-        // Estruturas separadas por tipo de quadro
         boardData: {
           todo: {
             lists: [
@@ -397,15 +368,11 @@ const getInitialProjects = () => [
     }
   }
 ];
-
 function App() {
-  // Estados do usuário
   const [currentUser, setCurrentUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Estados existentes
   const [projects, setProjects] = useState([]);
   const [currentView, setCurrentView] = useState('home');
   const [currentProject, setCurrentProject] = useState(null);
@@ -427,26 +394,14 @@ function App() {
   const [draggedTask, setDraggedTask] = useState(null);
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
-  
-  // Estados para dropdown de ações
   const [showDropdown, setShowDropdown] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
-
-  // Estado para forçar re-renderização
   const [refreshKey, setRefreshKey] = useState(0);
-  
-  // Estados para drag and drop de projetos
   const [draggedProject, setDraggedProject] = useState(null);
   const [dragOverProject, setDragOverProject] = useState(null);
-  
-  // Estados para drag and drop de subprojetos
   const [draggedSubProject, setDraggedSubProject] = useState(null);
   const [dragOverSubProject, setDragOverSubProject] = useState(null);
-  
-  // Estado para drag and drop de tarefas com posição precisa
   const [dragOverIndex, setDragOverIndex] = useState(null);
-
-  // Verificar se há usuário logado ao carregar
   useEffect(() => {
     const savedUser = localStorage.getItem('brickflow-current-user');
     if (savedUser) {
@@ -458,57 +413,40 @@ function App() {
       setShowLoginModal(true);
     }
   }, []);
-
-  // Gerar frase do dia e números da Mega Sena
   useEffect(() => {
     const randomPhrase = absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)];
     const luckyNumbers = generateMegaSenaNumbers();
     setDailyPhrase(randomPhrase);
     setMegaSenaNumbers(luckyNumbers);
   }, []);
-
-  // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = () => {
       setShowDropdown(null);
     };
-    
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showDropdown]);
-
-  // Configuração do Supabase
-  const SUPABASE_URL = 'https://ujpvyslrosmismgbcczl.supabase.co';
+  const SUPABASE_URL = 'https:
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHZ5c2xyb3NtaXNtZ2JjY3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NzU5MDgsImV4cCI6MjA2NjM1MTkwOH0.XkgwQ4VF7_7plt8-cw9VsatX4WwLolZEO6a6YtovUFs';
-
-  // Estados para arquivos
   const [files, setFiles] = useState([]);
   const [showFileModal, setShowFileModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  // Estados para usuários
   const [allUsers, setAllUsers] = useState([]);
-
-  // Funções para gerenciar usuários no Supabase
   const saveUserToSupabase = async (userData) => {
     try {
       console.log('💾 Salvando usuário no Supabase:', userData);
-      
-      // Verificar se usuário já existe
       const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (checkResponse.ok) {
         const existingUsers = await checkResponse.json();
         if (existingUsers.length > 0) {
-          // Usuário já existe, atualizar
           const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
             method: 'PATCH',
             headers: {
@@ -523,12 +461,10 @@ function App() {
               pin: userData.pin
             })
           });
-          
           if (updateResponse.ok) {
             console.log('✅ Usuário atualizado no Supabase');
           }
         } else {
-          // Criar novo usuário - enviar apenas campos que existem na tabela
           const userDataForSupabase = {
             username: userData.username,
             displayName: userData.displayName,
@@ -536,9 +472,7 @@ function App() {
             color: userData.color,
             pin: userData.pin
           };
-          
           console.log('📤 Dados enviados para Supabase:', userDataForSupabase);
-          
           const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
             method: 'POST',
             headers: {
@@ -548,7 +482,6 @@ function App() {
             },
             body: JSON.stringify(userDataForSupabase)
           });
-          
           if (createResponse.ok) {
             console.log('✅ Usuário criado no Supabase');
           } else {
@@ -561,7 +494,6 @@ function App() {
       console.log('⚠️ Erro ao salvar usuário no Supabase:', error.message);
     }
   };
-
   const loadUsersFromSupabase = async () => {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
@@ -570,7 +502,6 @@ function App() {
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (response.ok) {
         const users = await response.json();
         console.log('✅ Usuários carregados do Supabase:', users);
@@ -581,12 +512,9 @@ function App() {
     }
     return [];
   };
-
-  // Funções para gerenciar arquivos no Supabase
   const saveFileToSupabase = async (fileData) => {
     try {
       console.log('📁 Salvando arquivo no Supabase:', fileData.name);
-      
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files`, {
         method: 'POST',
         headers: {
@@ -596,7 +524,6 @@ function App() {
         },
         body: JSON.stringify(fileData)
       });
-      
       if (response.ok) {
         console.log('✅ Arquivo salvo no Supabase');
         loadFilesFromSupabase();
@@ -605,7 +532,6 @@ function App() {
       console.log('⚠️ Erro ao salvar arquivo no Supabase:', error.message);
     }
   };
-
   const loadFilesFromSupabase = async () => {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?order=created_at.desc`, {
@@ -614,7 +540,6 @@ function App() {
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (response.ok) {
         const filesData = await response.json();
         setFiles(filesData);
@@ -624,7 +549,6 @@ function App() {
       console.log('⚠️ Erro ao carregar arquivos do Supabase:', error.message);
     }
   };
-
   const deleteFileFromSupabase = async (fileId) => {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?id=eq.${fileId}`, {
@@ -634,7 +558,6 @@ function App() {
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (response.ok) {
         console.log('✅ Arquivo deletado do Supabase');
         loadFilesFromSupabase();
@@ -643,25 +566,19 @@ function App() {
       console.log('⚠️ Erro ao deletar arquivo do Supabase:', error.message);
     }
   };
-
-  // Carregar arquivos ao entrar em um sub-projeto
   useEffect(() => {
     if (currentSubProject) {
       loadFilesFromSupabase();
     }
   }, [currentSubProject]);
-
-  // Carregar projetos compartilhados (Supabase + fallback localStorage)
   const loadUserProjects = useCallback(async (userKey) => {
     try {
-      // Tentar carregar do Supabase
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (response.ok) {
         const data = await response.json();
         if (data.length > 0 && data[0].data) {
@@ -673,15 +590,12 @@ function App() {
     } catch (error) {
       console.log('⚠️ Erro ao carregar do Supabase:', error.message);
     }
-
-    // Fallback: localStorage
     const savedProjects = localStorage.getItem(`brickflow-projects-${userKey}`);
     if (savedProjects) {
       const parsedProjects = JSON.parse(savedProjects);
       setProjects(parsedProjects);
       console.log('📁 Projetos carregados do localStorage:', parsedProjects);
     } else {
-      // Primeira vez do usuário - criar projetos iniciais
       const initialProjects = getInitialProjects().map(project => ({
         ...project,
         createdBy: userKey,
@@ -695,18 +609,13 @@ function App() {
       console.log('Projetos iniciais criados:', initialProjects);
     }
   }, []);
-
-  // Salvar projetos automaticamente (localStorage + Supabase)
   useEffect(() => {
     if (projects.length > 0 && currentUser && isLoggedIn) {
       console.log('💾 Salvando projetos para usuário:', currentUser.userKey, projects);
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
-      
-      // Sincronizar com Supabase (com debounce)
       const timeoutId = setTimeout(async () => {
         try {
           console.log('🔄 Iniciando sincronização com Supabase...');
-          
           const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
             method: 'GET',
             headers: {
@@ -715,19 +624,14 @@ function App() {
               'Content-Type': 'application/json'
             }
           });
-          
           console.log('📡 Resposta do GET:', response.status, response.statusText);
-          
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
-          
           const existingData = await response.json();
           console.log('📊 Dados existentes:', existingData);
-          
           let saveResponse;
           if (existingData.length > 0) {
-            // Atualizar registro existente
             console.log('🔄 Atualizando registro existente...');
             saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?id=eq.${existingData[0].id}`, {
               method: 'PATCH',
@@ -739,7 +643,6 @@ function App() {
               body: JSON.stringify({ data: projects })
             });
           } else {
-            // Criar novo registro
             console.log('➕ Criando novo registro...');
             saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
               method: 'POST',
@@ -751,9 +654,7 @@ function App() {
               body: JSON.stringify({ data: projects })
             });
           }
-          
           console.log('💾 Resposta do salvamento:', saveResponse.status, saveResponse.statusText);
-          
           if (saveResponse.ok) {
             console.log('✅ Projetos sincronizados com Supabase com sucesso!');
           } else {
@@ -763,33 +664,24 @@ function App() {
           console.error('❌ Erro na sincronização com Supabase:', error);
           console.log('📁 Dados salvos apenas no localStorage como fallback');
         }
-      }, 500); // Debounce de 500ms (meio segundo)
-      
-      // Forçar re-renderização
+      }, 500); 
       setRefreshKey(prev => prev + 1);
-      
       return () => clearTimeout(timeoutId);
     }
   }, [projects, currentUser, isLoggedIn]);
-
-  // Função auxiliar para atualizar projetos de forma imutável
   const updateProjects = useCallback((updateFunction) => {
     setProjects(prevProjects => {
-      const newProjects = updateFunction(JSON.parse(JSON.stringify(prevProjects))); // Deep clone
+      const newProjects = updateFunction(JSON.parse(JSON.stringify(prevProjects))); 
       console.log('Atualizando projetos:', newProjects);
       return newProjects;
     });
   }, []);
-
-  // Salvar usuário atual
   useEffect(() => {
     if (currentUser && isLoggedIn) {
       console.log('Salvando usuário atual:', currentUser.userKey);
       localStorage.setItem('brickflow-current-user', JSON.stringify(currentUser));
     }
   }, [currentUser, isLoggedIn]);
-
-  // Carregar lista de usuários
   useEffect(() => {
     const loadAllUsers = async () => {
       try {
@@ -799,20 +691,14 @@ function App() {
         console.log('⚠️ Erro ao carregar usuários:', error.message);
       }
     };
-    
     loadAllUsers();
   }, []);
-
-  // Função para converter URLs em hyperlinks clicáveis
   const convertUrlsToLinks = (text) => {
     if (!text) return text;
-    
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const parts = text.split(urlRegex);
-    
     return parts.map((part, index) => {
       if (urlRegex.test(part)) {
-        // Encurtar URL para exibição se for muito longa
         const displayUrl = part.length > 30 ? part.substring(0, 30) + '...' : part;
         return (
           <a 
@@ -830,24 +716,15 @@ function App() {
       return part;
     });
   };
-
-  // Função para obter informações do usuário responsável
   const getResponsibleUserInfo = (username) => {
     if (!username) return null;
     return allUsers.find(user => user.username === username);
   };
-
-  // Função para buscar todas as tarefas do usuário atual
   const getUserTasks = () => {
     if (!currentUser) return [];
-    
     const userTasks = [];
-    
-    // Percorrer todos os projetos
     projects.forEach(project => {
-      // Verificar tarefas nos boards do projeto principal
       if (project.boardData) {
-        // TO-DO e Kanban
         ['todo', 'kanban'].forEach(boardType => {
           if (project.boardData[boardType]?.lists) {
             project.boardData[boardType].lists.forEach(list => {
@@ -870,8 +747,6 @@ function App() {
             });
           }
         });
-        
-        // Timeline
         if (project.boardData.timeline?.periods) {
           project.boardData.timeline.periods.forEach(period => {
             if (period.tasks) {
@@ -892,8 +767,6 @@ function App() {
             }
           });
         }
-        
-        // Metas
         if (project.boardData.goals?.objectives) {
           project.boardData.goals.objectives.forEach(goal => {
             if (goal.responsibleUser === currentUser.username) {
@@ -911,12 +784,9 @@ function App() {
           });
         }
       }
-      
-      // Verificar tarefas nos subprojetos
       if (project.subProjects) {
         project.subProjects.forEach(subProject => {
           if (subProject.boardData) {
-            // TO-DO e Kanban dos subprojetos
             ['todo', 'kanban'].forEach(boardType => {
               if (subProject.boardData[boardType]?.lists) {
                 subProject.boardData[boardType].lists.forEach(list => {
@@ -939,8 +809,6 @@ function App() {
                 });
               }
             });
-            
-            // Timeline dos subprojetos
             if (subProject.boardData.timeline?.periods) {
               subProject.boardData.timeline.periods.forEach(period => {
                 if (period.tasks) {
@@ -961,8 +829,6 @@ function App() {
                 }
               });
             }
-            
-            // Metas dos subprojetos
             if (subProject.boardData.goals?.objectives) {
               subProject.boardData.goals.objectives.forEach(goal => {
                 if (goal.responsibleUser === currentUser.username) {
@@ -983,17 +849,11 @@ function App() {
         });
       }
     });
-    
     return userTasks;
   };
-
-  // Função para navegar para uma tarefa específica
   const navigateToTask = (task) => {
-    // Encontrar o projeto
     const project = projects.find(p => p.id === task.projectId);
     if (!project) return;
-    
-    // Se for um subprojeto, navegar para ele
     if (task.subProjectId) {
       const subProject = project.subProjects?.find(sp => sp.id === task.subProjectId);
       if (subProject) {
@@ -1002,24 +862,17 @@ function App() {
         setCurrentBoardType(task.boardType);
       }
     } else {
-      // Se for projeto principal
       setCurrentProject(project);
       setCurrentSubProject(null);
       setCurrentBoardType(task.boardType);
     }
   };
-
-  // Função de login
   const handleLogin = async (username, pin) => {
     const userKey = `${username.toLowerCase()}-${pin}`;
-    
     try {
-      // Tentar carregar do Supabase primeiro
       const users = await loadUsersFromSupabase();
       const supabaseUser = users.find(user => user.username === username && user.pin === pin);
-      
       if (supabaseUser) {
-        // Usuário encontrado no Supabase
         const userData = {
           userKey,
           username: supabaseUser.username,
@@ -1028,14 +881,10 @@ function App() {
           color: supabaseUser.color,
           createdAt: supabaseUser.created_at
         };
-        
         setCurrentUser(userData);
         setIsLoggedIn(true);
         setShowLoginModal(false);
-        
-        // Salvar no localStorage como cache
         localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(userData));
-        
         loadUserProjects(userKey);
         console.log('✅ Login realizado com dados do Supabase');
         return;
@@ -1043,11 +892,8 @@ function App() {
     } catch (error) {
       console.log('⚠️ Erro ao verificar usuário no Supabase:', error.message);
     }
-    
-    // Fallback: verificar localStorage
     const savedUserData = localStorage.getItem(`brickflow-user-${userKey}`);
     if (savedUserData) {
-      // Usuário existente no localStorage
       const userData = JSON.parse(savedUserData);
       setCurrentUser(userData);
       setIsLoggedIn(true);
@@ -1055,23 +901,17 @@ function App() {
       loadUserProjects(userKey);
       console.log('📁 Login realizado com dados do localStorage');
     } else {
-      // Usuário não existe
       alert('Usuário não encontrado! Clique em "Criar Usuário" para se cadastrar.');
     }
   };
-
-  // Função para criar usuário
   const handleCreateUser = async (userData) => {
     console.log('🔄 handleCreateUser chamado com:', userData);
     const userKey = `${userData.username.toLowerCase()}-${userData.pin}`;
-    
     try {
       console.log('🔍 Verificando usuários existentes no Supabase...');
-      // Verificar se já existe no Supabase
       const users = await loadUsersFromSupabase();
       console.log('📋 Usuários encontrados:', users);
       const existingUser = users.find(user => user.username === userData.username);
-      
       if (existingUser) {
         console.log('⚠️ Usuário já existe:', existingUser);
         alert('Este usuário já existe! Tente fazer login ou escolha outro nome.');
@@ -1080,8 +920,6 @@ function App() {
     } catch (error) {
       console.log('⚠️ Erro ao verificar usuários no Supabase:', error.message);
     }
-    
-    // Verificar se já existe no localStorage (fallback)
     console.log('🔍 Verificando localStorage...');
     const existingLocalUser = localStorage.getItem(`brickflow-user-${userKey}`);
     if (existingLocalUser) {
@@ -1089,8 +927,6 @@ function App() {
       alert('Este usuário já existe! Tente fazer login ou escolha outro nome/PIN.');
       return;
     }
-
-    // Criar novo usuário
     console.log('✨ Criando novo usuário...');
     const newUser = {
       userKey,
@@ -1102,30 +938,19 @@ function App() {
       createdAt: new Date().toISOString()
     };
     console.log('👤 Dados do novo usuário:', newUser);
-
-    // Salvar no Supabase
     console.log('💾 Salvando no Supabase...');
     await saveUserToSupabase(newUser);
-
-    // Salvar dados do usuário no localStorage como cache
     console.log('💾 Salvando no localStorage...');
     localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(newUser));
     localStorage.setItem('brickflow-current-user', JSON.stringify(newUser));
-
-    // Fazer login
     console.log('🔐 Fazendo login...');
     setCurrentUser(newUser);
     setIsLoggedIn(true);
     setShowCreateUserModal(false);
     setShowLoginModal(false);
-
-    // Carregar projetos iniciais
     loadUserProjects(userKey);
-    
     console.log('✅ Usuário criado e salvo no Supabase:', newUser);
   };
-
-  // Função de logout
   const handleLogout = () => {
     localStorage.removeItem('brickflow-current-user');
     setCurrentUser(null);
@@ -1136,8 +961,6 @@ function App() {
     setCurrentSubProject(null);
     setShowLoginModal(true);
   };
-
-  // Função para trocar usuário
   const handleSwitchUser = () => {
     setCurrentUser(null);
     setIsLoggedIn(false);
@@ -1147,25 +970,15 @@ function App() {
     setCurrentSubProject(null);
     setShowLoginModal(true);
   };
-
-  // ===== FUNÇÕES DO SISTEMA DE ARQUIVOS =====
-  
-  // Estados para preview
   const [previewFile, setPreviewFile] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  
-  // Função para obter arquivos do projeto atual
   const getCurrentFiles = () => {
     if (!currentSubProject || !files) return [];
-    
-    // Filtrar arquivos pelo subprojeto atual
     return files.filter(file => 
       file.subProjectId === currentSubProject.id || 
       (file.projectId === currentProject?.id && file.subProjectId === currentSubProject.id)
     );
   };
-
-  // Função para formatar tamanho do arquivo
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -1173,21 +986,16 @@ function App() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
-
-  // Função para upload de arquivos
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files);
     if (!uploadedFiles.length || !currentSubProject) return;
-
     for (const file of uploadedFiles) {
       try {
-        // Converter arquivo para base64
         const base64 = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.readAsDataURL(file);
         });
-
         const fileData = {
           name: file.name,
           type: file.type,
@@ -1200,28 +1008,19 @@ function App() {
           projectName: currentProject?.name,
           subProjectName: currentSubProject?.name
         };
-
-        // Salvar arquivo diretamente no Supabase
         await saveFileToSupabase(fileData);
-
         console.log('✅ Arquivo enviado:', file.name);
       } catch (error) {
         console.error('❌ Erro no upload:', error);
         alert(`Erro ao enviar ${file.name}: ${error.message}`);
       }
     }
-
-    // Limpar input
     event.target.value = '';
   };
-
-  // Função para preview de arquivo
   const handlePreviewFile = (file) => {
     setPreviewFile(file);
     setShowPreviewModal(true);
   };
-
-  // Função para download de arquivo
   const handleDownloadFile = (file) => {
     const link = document.createElement('a');
     link.href = file.data;
@@ -1230,64 +1029,42 @@ function App() {
     link.click();
     document.body.removeChild(link);
   };
-
-  // Função para excluir arquivo
   const handleDeleteFile = async (fileId) => {
     if (!confirm('Tem certeza que deseja excluir este arquivo?')) return;
-
-    // Excluir do Supabase
     await deleteFileFromSupabase(fileId);
   };
-
-  // ===== FIM DAS FUNÇÕES DO SISTEMA DE ARQUIVOS =====
-
-  // Função para verificar permissões
   const checkPermissions = (item, action) => {
     if (!currentUser) return false;
-    
-    // Se o usuário criou o item, tem permissão total
     if (item.createdBy === currentUser.userKey) {
       return true;
     }
-    
-    // Se não criou, precisa de senha para ações sensíveis
     if (action === 'archive' || action === 'delete') {
       const password = prompt('Digite a senha para esta ação:');
       return password === 'Brick$Projetos2025';
     }
-    
-    return true; // Para outras ações, permite
+    return true; 
   };
-
-  // Função para mostrar dropdown de ações
   const handleGearClick = (e, item, isSubProject = false, parentProjectId = null) => {
     e.stopPropagation();
-    
     const rect = e.target.getBoundingClientRect();
     setDropdownPosition({
       x: rect.left,
       y: rect.bottom + 5
     });
-    
     setShowDropdown({
       item,
       isSubProject,
       parentProjectId
     });
   };
-
-  // Função para arquivar projeto
   const handleArchiveProject = (projectId, isSubProject = false, parentProjectId = null) => {
     if (!currentUser) return;
-
     const item = isSubProject 
       ? projects.find(p => p.id === parentProjectId)?.subProjects?.find(s => s.id === projectId)
       : projects.find(p => p.id === projectId);
-
     if (!item || !checkPermissions(item, 'archive')) {
       return;
     }
-
     updateProjects(prevProjects => {
       return prevProjects.map(project => {
         if (isSubProject && project.id === parentProjectId) {
@@ -1305,8 +1082,6 @@ function App() {
         return project;
       });
     });
-
-    // Voltar para home se estava visualizando o item arquivado
     if (currentView === 'project' && currentProject?.id === projectId) {
       setCurrentView('home');
       setCurrentProject(null);
@@ -1315,26 +1090,19 @@ function App() {
       setCurrentView('project');
       setCurrentSubProject(null);
     }
-
     setShowDropdown(null);
   };
-
-  // Função para excluir projeto
   const handleDeleteProject = (projectId, isSubProject = false, parentProjectId = null) => {
     if (!currentUser) return;
-
     const item = isSubProject 
       ? projects.find(p => p.id === parentProjectId)?.subProjects?.find(s => s.id === projectId)
       : projects.find(p => p.id === projectId);
-
     if (!item || !checkPermissions(item, 'delete')) {
       return;
     }
-
     if (!confirm('Tem certeza que deseja excluir permanentemente? Esta ação não pode ser desfeita.')) {
       return;
     }
-
     updateProjects(prevProjects => {
       return prevProjects.map(project => {
         if (isSubProject && project.id === parentProjectId) {
@@ -1346,8 +1114,6 @@ function App() {
         return project;
       }).filter(project => !(project.id === projectId && !isSubProject));
     });
-
-    // Voltar para home se estava visualizando o item excluído
     if (currentView === 'project' && currentProject?.id === projectId) {
       setCurrentView('home');
       setCurrentProject(null);
@@ -1356,14 +1122,10 @@ function App() {
       setCurrentView('project');
       setCurrentSubProject(null);
     }
-
     setShowDropdown(null);
   };
-
-  // Função para criar novo projeto
   const handleCreateProject = (projectData) => {
     if (!currentUser) return;
-
     const newProject = {
       id: `project-${Date.now()}`,
       name: projectData.name,
@@ -1403,15 +1165,11 @@ function App() {
         }
       }
     };
-
     updateProjects(prevProjects => [...prevProjects, newProject]);
     setShowNewProjectModal(false);
   };
-
-  // Função para editar projeto
   const handleEditProject = (projectData) => {
     if (!currentUser || !editingProject) return;
-
     updateProjects(prevProjects => 
       prevProjects.map(project => {
         if (project.id === editingProject.id) {
@@ -1424,8 +1182,6 @@ function App() {
             password: projectData.password
           };
         }
-        
-        // Se for um subprojeto, procurar dentro dos projetos
         return {
           ...project,
           subProjects: project.subProjects?.map(subProject => {
@@ -1444,15 +1200,11 @@ function App() {
         };
       })
     );
-    
     setShowEditProjectModal(false);
     setEditingProject(null);
   };
-
-  // Função para criar novo sub-projeto
   const handleCreateSubProject = (subProjectData) => {
     if (!currentUser || !currentProject) return;
-
     const newSubProject = {
       id: `subproject-${Date.now()}`,
       name: subProjectData.name,
@@ -1491,7 +1243,6 @@ function App() {
         }
       }
     };
-
     updateProjects(prevProjects => {
       return prevProjects.map(project => {
         if (project.id === currentProject.id) {
@@ -1499,18 +1250,14 @@ function App() {
             ...project,
             subProjects: [...(project.subProjects || []), newSubProject]
           };
-          // Atualizar currentProject também
           setCurrentProject(updatedProject);
           return updatedProject;
         }
         return project;
       });
     });
-
     setShowNewSubProjectModal(false);
   };
-
-  // Função para acessar projeto
   const handleAccessProject = (project) => {
     if (project.isProtected) {
       setPendingProject(project);
@@ -1520,16 +1267,12 @@ function App() {
       setCurrentView('project');
     }
   };
-
-  // Função para verificar senha
   const handlePasswordSubmit = (password) => {
     if (pendingProject && password === pendingProject.password) {
       if (pendingProject.subProjects !== undefined) {
-        // É um projeto
         setCurrentProject(pendingProject);
         setCurrentView('project');
       } else {
-        // É um sub-projeto
         setCurrentSubProject(pendingProject);
         setCurrentView('subproject');
       }
@@ -1539,8 +1282,6 @@ function App() {
       alert('Senha incorreta!');
     }
   };
-
-  // Função para acessar sub-projeto
   const handleAccessSubProject = (subProject) => {
     if (subProject.isProtected) {
       setPendingProject(subProject);
@@ -1550,8 +1291,6 @@ function App() {
       setCurrentView('subproject');
     }
   };
-
-  // Função para voltar
   const handleBack = () => {
     if (currentView === 'subproject') {
       setCurrentView('project');
@@ -1561,19 +1300,13 @@ function App() {
       setCurrentProject(null);
     }
   };
-
-  // Função para obter dados do quadro atual
   const getCurrentBoardData = useCallback(() => {
     if (!currentSubProject) return null;
     return currentSubProject.boardData?.[currentBoardType] || null;
   }, [currentSubProject, currentBoardType]);
-
-  // Função para atualizar dados do quadro
   const updateCurrentBoardData = useCallback((newData) => {
     if (!currentSubProject || !currentProject) return;
-
     console.log('Atualizando board data:', newData);
-
     updateProjects(prevProjects => {
       return prevProjects.map(project => {
         if (project.id === currentProject.id) {
@@ -1596,8 +1329,6 @@ function App() {
         return project;
       });
     });
-
-    // Atualizar estado local do sub-projeto
     setCurrentSubProject(prev => ({
       ...prev,
       boardData: {
@@ -1605,16 +1336,11 @@ function App() {
         [currentBoardType]: newData
       }
     }));
-
-    // Forçar re-renderização
     setRefreshKey(prev => prev + 1);
   }, [currentSubProject, currentProject, currentBoardType, updateProjects]);
-
-  // Função para adicionar tarefa
   const handleAddTask = useCallback((listId, taskData) => {
     const boardData = getCurrentBoardData();
     if (!boardData) return;
-
     const newTask = {
       id: `task-${Date.now()}`,
       title: taskData.title,
@@ -1627,9 +1353,7 @@ function App() {
       createdAt: new Date().toISOString(),
       createdBy: currentUser?.userKey
     };
-
     let updatedData;
-    
     if (currentBoardType === 'todo' || currentBoardType === 'kanban') {
       updatedData = {
         ...boardData,
@@ -1658,25 +1382,19 @@ function App() {
         createdAt: new Date().toISOString(),
         createdBy: currentUser?.userKey
       };
-      
       updatedData = {
         ...boardData,
         objectives: [...boardData.objectives, newGoal]
       };
     }
-
     updateCurrentBoardData(updatedData);
     setShowTaskModal(false);
     setTargetListId(null);
   }, [getCurrentBoardData, currentBoardType, currentUser, updateCurrentBoardData]);
-
-  // Função para editar tarefa
   const handleEditTask = useCallback((taskData) => {
     const boardData = getCurrentBoardData();
     if (!boardData || !editingTask) return;
-
     let updatedData;
-    
     if (currentBoardType === 'todo' || currentBoardType === 'kanban') {
       updatedData = {
         ...boardData,
@@ -1711,32 +1429,21 @@ function App() {
         )
       };
     }
-
     updateCurrentBoardData(updatedData);
     setShowTaskModal(false);
     setEditingTask(null);
   }, [getCurrentBoardData, currentBoardType, editingTask, updateCurrentBoardData]);
-
-  // Função para alternar conclusão de tarefa (com movimento automático no TO-DO)
   const handleToggleTask = useCallback((taskId, listId) => {
     const boardData = getCurrentBoardData();
     if (!boardData) return;
-
     if (currentBoardType === 'todo') {
-      // Lógica especial para TO-DO: mover entre listas
       const currentListIndex = boardData.lists.findIndex(list => 
         list.tasks.some(task => task.id === taskId)
       );
-      
       if (currentListIndex === -1) return;
-
       const task = boardData.lists[currentListIndex].tasks.find(t => t.id === taskId);
       if (!task) return;
-
-      // Determinar próxima lista (ciclo: 0 -> 1 -> 2 -> 0)
       const nextListIndex = (currentListIndex + 1) % 3;
-      
-      // Remover tarefa da lista atual
       const updatedLists = boardData.lists.map((list, index) => {
         if (index === currentListIndex) {
           return {
@@ -1752,15 +1459,12 @@ function App() {
         }
         return list;
       });
-
       updateCurrentBoardData({
         ...boardData,
         lists: updatedLists
       });
     } else {
-      // Lógica normal para outros tipos: apenas alternar completed
       let updatedData;
-      
       if (currentBoardType === 'kanban') {
         updatedData = {
           ...boardData,
@@ -1786,20 +1490,14 @@ function App() {
           }))
         };
       }
-
       updateCurrentBoardData(updatedData);
     }
   }, [getCurrentBoardData, currentBoardType, updateCurrentBoardData]);
-
-  // Função para excluir tarefa
   const handleDeleteTask = useCallback((taskId) => {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
-
     const boardData = getCurrentBoardData();
     if (!boardData) return;
-
     let updatedData;
-    
     if (currentBoardType === 'todo' || currentBoardType === 'kanban') {
       updatedData = {
         ...boardData,
@@ -1822,181 +1520,118 @@ function App() {
         objectives: boardData.objectives.filter(goal => goal.id !== taskId)
       };
     }
-
     updateCurrentBoardData(updatedData);
   }, [getCurrentBoardData, currentBoardType, updateCurrentBoardData]);
-
-  // NOVAS FUNÇÕES DE DRAG AND DROP MELHORADAS (Substitui as antigas)
   const handleDragStart = (e, task, listId) => {
-    // Armazena informações completas sobre a origem do card
     setDraggedTask({ task, sourceListId: listId });
     e.dataTransfer.effectAllowed = 'move';
   };
-
   const handleDragEnter = (e, targetIndex) => {
-    // Quando o mouse entra em cima de outro card, guarda sua posição
     e.preventDefault();
     setDragOverIndex(targetIndex);
   };
-
   const handleDragOver = (e) => {
-    // Previne o comportamento padrão para permitir o 'drop'
     e.preventDefault();
   };
-
   const handleDragLeave = (e) => {
-    // Limpa o índice quando o mouse sai de cima de um card
     e.preventDefault();
     setDragOverIndex(null);
   };
-
   const handleDrop = useCallback((e, targetListId) => {
     e.preventDefault();
     if (!draggedTask) return;
-
     const boardData = getCurrentBoardData();
     if (!boardData) return;
-
     const sourceListIndex = boardData.lists.findIndex(list => list.id === draggedTask.sourceListId);
     const targetListIndex = boardData.lists.findIndex(list => list.id === targetListId);
-
     if (sourceListIndex === -1 || targetListIndex === -1) return;
-
-    // Clonar as listas para não modificar o estado diretamente
     const newLists = JSON.parse(JSON.stringify(boardData.lists));
-    
-    // Encontrar e remover o card da lista de origem
     const sourceList = newLists[sourceListIndex];
     const taskIndex = sourceList.tasks.findIndex(t => t.id === draggedTask.task.id);
     const [movedTask] = sourceList.tasks.splice(taskIndex, 1);
-
-    // Adicionar o card na lista de destino na posição correta
     const targetList = newLists[targetListIndex];
-    
     if (dragOverIndex !== null) {
-      // Se soltou sobre outro card, insere antes dele
       targetList.tasks.splice(dragOverIndex, 0, movedTask);
     } else {
-      // Se soltou na área da lista, insere no final
       targetList.tasks.push(movedTask);
     }
-
-    // Atualizar o estado com as novas listas
     updateCurrentBoardData({
       ...boardData,
       lists: newLists
     });
-
-    // Limpar estados
     setDraggedTask(null);
     setDragOverIndex(null);
   }, [draggedTask, getCurrentBoardData, updateCurrentBoardData, dragOverIndex]);
-
   const handleDropOnList = (e, targetListId) => {
-    // Função para quando o drop é na área geral da lista, não sobre um card
     e.preventDefault();
-    setDragOverIndex(null); // Garante que será adicionado ao final
+    setDragOverIndex(null); 
     handleDrop(e, targetListId);
   };
-
-  // Funções para drag and drop de projetos
   const handleProjectDragStart = (e, project) => {
     setDraggedProject(project);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', project.id);
   };
-
   const handleProjectDragOver = (e, project) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverProject(project.id);
   };
-
   const handleProjectDragLeave = () => {
     setDragOverProject(null);
   };
-
   const handleProjectDrop = (e, targetProject) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (!draggedProject || draggedProject.id === targetProject.id) {
       setDraggedProject(null);
       setDragOverProject(null);
       return;
     }
-
-    // Usar activeProjects para calcular índices corretos
     const activeProjects = projects.filter(project => !project.isArchived);
     const draggedIndex = activeProjects.findIndex(p => p.id === draggedProject.id);
     const targetIndex = activeProjects.findIndex(p => p.id === targetProject.id);
-
     if (draggedIndex === -1 || targetIndex === -1) return;
-
-    // Reordenar apenas os projetos ativos
     const newActiveProjects = [...activeProjects];
     const [movedProject] = newActiveProjects.splice(draggedIndex, 1);
     newActiveProjects.splice(targetIndex, 0, movedProject);
-
-    // Reconstruir array completo mantendo projetos arquivados no final
     const archivedProjects = projects.filter(project => project.isArchived);
     const newProjects = [...newActiveProjects, ...archivedProjects];
-
-    // Atualizar projetos usando a função correta
     updateProjects(() => newProjects);
-    
-    // Limpar estados de drag
     setDraggedProject(null);
     setDragOverProject(null);
   };
-
-  // Funções para drag and drop de subprojetos
   const handleSubProjectDragStart = (e, subProject) => {
     setDraggedSubProject(subProject);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', subProject.id);
   };
-
   const handleSubProjectDragOver = (e, subProject) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverSubProject(subProject.id);
   };
-
   const handleSubProjectDragLeave = () => {
     setDragOverSubProject(null);
   };
-
   const handleSubProjectDrop = (e, targetSubProject) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (!draggedSubProject || draggedSubProject.id === targetSubProject.id) {
       setDraggedSubProject(null);
       setDragOverSubProject(null);
       return;
     }
-
-    // Encontrar o projeto pai atual
     if (!currentProject) return;
-
-    // Usar activeSubProjects para calcular índices corretos
     const activeSubProjects = currentProject.subProjects?.filter(sub => !sub.isArchived) || [];
     const draggedIndex = activeSubProjects.findIndex(s => s.id === draggedSubProject.id);
     const targetIndex = activeSubProjects.findIndex(s => s.id === targetSubProject.id);
-
     if (draggedIndex === -1 || targetIndex === -1) return;
-
-    // Reordenar apenas os subprojetos ativos
     const newActiveSubProjects = [...activeSubProjects];
     const [movedSubProject] = newActiveSubProjects.splice(draggedIndex, 1);
     newActiveSubProjects.splice(targetIndex, 0, movedSubProject);
-
-    // Reconstruir array completo mantendo subprojetos arquivados no final
     const archivedSubProjects = currentProject.subProjects?.filter(sub => sub.isArchived) || [];
     const newSubProjects = [...newActiveSubProjects, ...archivedSubProjects];
-
-    // Atualizar projetos
     updateProjects(prevProjects => 
       prevProjects.map(project => {
         if (project.id === currentProject.id) {
@@ -2004,25 +1639,18 @@ function App() {
             ...project,
             subProjects: newSubProjects
           };
-          // Atualizar currentProject também
           setCurrentProject(updatedProject);
           return updatedProject;
         }
         return project;
       })
     );
-    
-    // Limpar estados de drag
     setDraggedSubProject(null);
     setDragOverSubProject(null);
   };
-
-  // Função para calcular estatísticas
   const getProjectStats = (project) => {
     let totalSubProjects = project.subProjects?.length || 0;
     let totalTasks = 0;
-
-    // Contar tarefas em todos os tipos de quadro do projeto principal
     if (project.boardData) {
       Object.values(project.boardData).forEach(boardType => {
         if (boardType.lists) {
@@ -2040,8 +1668,6 @@ function App() {
         }
       });
     }
-
-    // Contar tarefas dos sub-projetos
     project.subProjects?.forEach(subProject => {
       if (subProject.boardData) {
         Object.values(subProject.boardData).forEach(boardType => {
@@ -2061,14 +1687,10 @@ function App() {
         });
       }
     });
-
     return { totalSubProjects, totalTasks };
   };
-
-  // Função para calcular estatísticas do sub-projeto
   const getSubProjectStats = (subProject) => {
     let totalTasks = 0;
-
     if (subProject.boardData) {
       Object.values(subProject.boardData).forEach(boardType => {
         if (boardType.lists) {
@@ -2086,18 +1708,14 @@ function App() {
         }
       });
     }
-
     return { totalTasks };
   };
-
-  // Filtrar projetos não arquivados
   const activeProjects = projects.filter(project => !project.isArchived);
   const activeSubProjects = currentProject?.subProjects?.filter(sub => !sub.isArchived) || [];
-
   if (!isLoggedIn) {
     return (
       <div className="app">
-        {/* Modal de Login */}
+        {}
         {showLoginModal && (
           <div className="modal-overlay">
             <div className="modal">
@@ -2144,8 +1762,7 @@ function App() {
             </div>
           </div>
         )}
-
-        {/* Modal de Criar Usuário */}
+        {}
         {showCreateUserModal && (
           <div className="modal-overlay">
             <div className="modal create-user-modal">
@@ -2155,20 +1772,16 @@ function App() {
                 const formData = new FormData(e.target);
                 const pin = formData.get('pin');
                 const confirmPin = formData.get('confirmPin');
-                
                 if (pin !== confirmPin) {
                   alert('PINs não coincidem!');
                   return;
                 }
-                
                 const selectedAvatar = document.querySelector('input[name="avatar"]:checked')?.value;
                 const selectedColor = document.querySelector('input[name="color"]:checked')?.value;
-                
                 if (!selectedAvatar || !selectedColor) {
                   alert('Selecione um avatar e uma cor!');
                   return;
                 }
-                
                 handleCreateUser({
                   username: formData.get('username'),
                   displayName: formData.get('displayName'),
@@ -2217,7 +1830,6 @@ function App() {
                     required 
                   />
                 </div>
-                
                 <div className="form-group">
                   <label>Escolha seu Avatar:</label>
                   <div className="avatar-grid">
@@ -2234,7 +1846,6 @@ function App() {
                     ))}
                   </div>
                 </div>
-                
                 <div className="form-group">
                   <label>Escolha sua Cor:</label>
                   <div className="color-grid">
@@ -2251,7 +1862,6 @@ function App() {
                     ))}
                   </div>
                 </div>
-                
                 <div className="modal-actions">
                   <button type="submit" className="btn-primary">Criar Usuário</button>
                   <button 
@@ -2272,10 +1882,9 @@ function App() {
       </div>
     );
   }
-
   return (
     <div className="app" key={refreshKey}>
-      {/* Header Principal */}
+      {}
       <header className="main-header">
         <div className="header-content">
           <div className="header-left">
@@ -2292,7 +1901,6 @@ function App() {
               <h1>{currentSubProject.name}</h1>
             )}
           </div>
-          
           <div className="header-right">
             <div className="user-info">
               <span className="user-avatar">{currentUser?.avatar}</span>
@@ -2304,7 +1912,6 @@ function App() {
                 🚪
               </button>
             </div>
-            
             {currentView === 'home' && (
               <button 
                 className="btn-primary"
@@ -2313,7 +1920,6 @@ function App() {
                 + Novo Projeto
               </button>
             )}
-            
             {currentView === 'project' && (
               <button 
                 className="btn-primary"
@@ -2325,8 +1931,7 @@ function App() {
           </div>
         </div>
       </header>
-
-      {/* Sorte do Dia + Mega Sena */}
+      {}
       {currentView === 'home' && (
         <div className="daily-luck">
           <div className="luck-content">
@@ -2345,12 +1950,11 @@ function App() {
           </div>
         </div>
       )}
-
-      {/* Conteúdo Principal */}
+      {}
       <main className="main-content">
         {currentView === 'home' && (
           <>
-            {/* Box Minhas Tarefas */}
+            {}
             {currentUser && (
               <div className="my-tasks-box">
                 <h2>📋 Minhas Tarefas</h2>
@@ -2399,13 +2003,11 @@ function App() {
                 </div>
               </div>
             )}
-            
             <div className="projects-grid">
             {activeProjects.map(project => {
               const stats = getProjectStats(project);
               const isDragging = draggedProject?.id === project.id;
               const isDragOver = dragOverProject === project.id;
-              
               return (
                 <div 
                   key={project.id} 
@@ -2416,7 +2018,6 @@ function App() {
                   onDragLeave={handleProjectDragLeave}
                   onDrop={(e) => handleProjectDrop(e, project)}
                   onClick={(e) => {
-                    // Só acessa o projeto se não estiver arrastando
                     if (!draggedProject) {
                       handleAccessProject(project);
                     }
@@ -2447,20 +2048,17 @@ function App() {
           </div>
           </>
         )}
-
         {currentView === 'project' && currentProject && (
           <div className="project-view">
             <div className="project-description">
               <p>{currentProject.description}</p>
             </div>
-            
             {activeSubProjects.length > 0 ? (
               <div className="subprojects-grid">
                 {activeSubProjects.map(subProject => {
                   const stats = getSubProjectStats(subProject);
                   const isDragging = draggedSubProject?.id === subProject.id;
                   const isDragOver = dragOverSubProject === subProject.id;
-                  
                   return (
                     <div 
                       key={subProject.id} 
@@ -2471,7 +2069,6 @@ function App() {
                       onDragLeave={handleSubProjectDragLeave}
                       onDrop={(e) => handleSubProjectDrop(e, subProject)}
                       onClick={(e) => {
-                        // Só acessa o subprojeto se não estiver arrastando
                         if (!draggedSubProject) {
                           handleAccessSubProject(subProject);
                         }
@@ -2507,10 +2104,9 @@ function App() {
             )}
           </div>
         )}
-
         {currentView === 'subproject' && currentSubProject && (
           <div className="subproject-view">
-            {/* Seletor de Tipo de Quadro */}
+            {}
             <div className="board-type-selector">
               <button 
                 className={`board-type-btn ${currentBoardType === 'todo' ? 'active' : ''}`}
@@ -2543,8 +2139,7 @@ function App() {
                 🗄️ Arquivados
               </button>
             </div>
-
-            {/* Conteúdo do Quadro */}
+            {}
             {!showArchived && (
               <div className="board-content">
                 {(currentBoardType === 'todo' || currentBoardType === 'kanban') && (
@@ -2630,7 +2225,6 @@ function App() {
                     ))}
                   </div>
                 )}
-
                 {currentBoardType === 'files' && (
                   <div 
                     className={`files-container ${isDragging ? 'dragging' : ''}`}
@@ -2647,7 +2241,6 @@ function App() {
                       setIsDragging(false);
                       const droppedFiles = Array.from(e.dataTransfer.files);
                       if (droppedFiles.length > 0) {
-                        // Simular evento de upload
                         const fakeEvent = {
                           target: { files: droppedFiles, value: '' }
                         };
@@ -2671,7 +2264,6 @@ function App() {
                         📎 Upload de Arquivo
                       </button>
                     </div>
-                    
                     {isDragging && (
                       <div className="drag-overlay">
                         <div className="drag-message">
@@ -2680,7 +2272,6 @@ function App() {
                         </div>
                       </div>
                     )}
-                    
                     <div className="files-grid">
                       {getCurrentFiles().map(file => (
                         <div key={file.id} className="file-card">
@@ -2730,7 +2321,6 @@ function App() {
                     </div>
                   </div>
                 )}
-
                 {currentBoardType === 'timeline' && (
                   <div className="timeline-container">
                     {getCurrentBoardData()?.periods?.map(period => (
@@ -2797,7 +2387,6 @@ function App() {
                     ))}
                   </div>
                 )}
-
                 {currentBoardType === 'goals' && (
                   <div className="goals-container">
                     <div className="goals-header">
@@ -2856,7 +2445,6 @@ function App() {
                 )}
               </div>
             )}
-
             {showArchived && (
               <div className="archived-content">
                 <h3>Itens Arquivados</h3>
@@ -2866,8 +2454,7 @@ function App() {
           </div>
         )}
       </main>
-
-      {/* Dropdown de Ações */}
+      {}
       {showDropdown && (
         <div 
           className="actions-dropdown"
@@ -2911,8 +2498,7 @@ function App() {
           </button>
         </div>
       )}
-
-      {/* Modais */}
+      {}
       {showNewProjectModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -2974,7 +2560,6 @@ function App() {
           </div>
         </div>
       )}
-
       {showEditProjectModal && editingProject && (
         <div className="modal-overlay">
           <div className="modal">
@@ -3056,7 +2641,6 @@ function App() {
           </div>
         </div>
       )}
-
       {showNewSubProjectModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -3118,7 +2702,6 @@ function App() {
           </div>
         </div>
       )}
-
       {showPasswordModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -3150,7 +2733,6 @@ function App() {
           </div>
         </div>
       )}
-
       {showTaskModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -3168,7 +2750,6 @@ function App() {
                 progress: parseInt(formData.get('progress')) || 0,
                 responsibleUser: formData.get('responsibleUser') || null
               };
-              
               if (editingTask) {
                 handleEditTask(taskData);
               } else {
@@ -3192,7 +2773,6 @@ function App() {
                   defaultValue={editingTask?.description || ''}
                 ></textarea>
               </div>
-              
               {currentBoardType !== 'goals' && (
                 <>
                   <div className="form-group">
@@ -3225,7 +2805,6 @@ function App() {
                   </div>
                 </>
               )}
-              
               {currentBoardType === 'timeline' && (
                 <>
                   <div className="form-group">
@@ -3246,7 +2825,6 @@ function App() {
                   </div>
                 </>
               )}
-              
               {currentBoardType === 'goals' && (
                 <div className="form-group">
                   <label>Progresso (%):</label>
@@ -3259,7 +2837,6 @@ function App() {
                   />
                 </div>
               )}
-              
               <div className="modal-actions">
                 <button type="submit" className="btn-primary">
                   {editingTask ? 'Salvar' : 'Criar'}
@@ -3280,8 +2857,7 @@ function App() {
           </div>
         </div>
       )}
-
-      {/* Modal de Preview de Arquivo */}
+      {}
       {showPreviewModal && previewFile && (
         <div className="preview-modal" onClick={() => setShowPreviewModal(false)}>
           <div className="preview-content" onClick={(e) => e.stopPropagation()}>
@@ -3355,8 +2931,6 @@ export default App;
  useEffect, useCallback } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
-
-// Frases absurdas para "Sorte do dia"
 const absurdPhrases = [
   "Hoje é um ótimo dia para conversar com suas plantas sobre seus planos de carreira.",
   "Lembre-se: o sucesso é como uma pizza de abacaxi - controverso, mas alguns adoram.",
@@ -3393,10 +2967,7 @@ const absurdPhrases = [
   "Cada reunião desnecessária cancela uma encarnação futura sua.",
   "Hoje você vai digitar algo genial... e o Word vai travar.",
   "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações."
-
 ];
-
-// Função para gerar números da Mega Sena
 const generateMegaSenaNumbers = () => {
   const numbers = [];
   while (numbers.length < 6) {
@@ -3407,52 +2978,29 @@ const generateMegaSenaNumbers = () => {
   }
   return numbers.sort((a, b) => a - b);
 };
-
-// Avatares disponíveis (expandido com opções absurdas)
 const avatarOptions = [
-  // Profissionais clássicos
   '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨', 
   '👨‍🔧', '👩‍🔧', '👨‍⚕️', '👩‍⚕️', '👨‍🏫', '👩‍🏫',
   '🧑‍💼', '🧑‍💻', '🧑‍🎨', '🧑‍🔧', '🧑‍⚕️', '🧑‍🏫',
-  
-  // Clássicos com atitude
   '😎', '🤓', '😊', '🤔', '😴', '🤯', '🥳', '🤠',
-  
-  // Animais profissionais
   '🐱', '🐶', '🐼', '🦊', '🐸', '🐧', '🦉', '🐨',
   '🦁', '🐯', '🐵', '🐺', '🦄', '🐙', '🦖', '🐢',
-  
-  // Comida executiva
   '🍕', '🍔', '🌮', '🍩', '🧀', '🥑', '🍎', '🍌',
   '☕', '🍺', '🍷', '🥤', '🍪', '🥨', '🥯', '🧁',
-  
-  // Objetos de escritório absurdos
   '💻', '📱', '⌚', '🖥️', '⌨️', '🖱️', '💾', '📀',
   '📎', '📌', '✂️', '📏', '📐', '🔍', '💡', '🔋',
-  
-  // Símbolos motivacionais
   '🚀', '⭐', '🎯', '💎', '🏆', '🎪', '🎭', '🎨',
   '🎸', '🎺', '🎲', '🎮', '🎳', '⚽', '🏀', '🎾',
-  
-  // Natureza zen
   '🌱', '🌸', '🌺', '🌻', '🌙', '☀️', '⚡', '🌈',
   '🔥', '💧', '🌪️', '❄️', '🌊', '🏔️', '🌋', '🌍',
-  
-  // Transportes executivos
   '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
   '✈️', '🚁', '🚂', '🚇', '🛸', '🚲', '🛴', '⛵',
-  
-  // Místicos corporativos
   '🔮', '🎩', '🧙‍♂️', '🧙‍♀️', '🦸‍♂️', '🦸‍♀️', '🧚‍♂️', '🧚‍♀️',
   '👑', '💍', '🗿', '🎪', '🎭', '🎨', '🎯', '🎲'
 ];
-
-// Cores disponíveis para usuários
 const userColors = [
   'blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'
 ];
-
-// Dados iniciais dos projetos com estruturas separadas por tipo
 const getInitialProjects = () => [
   {
     id: 'brick-adm',
@@ -3463,7 +3011,7 @@ const getInitialProjects = () => [
     password: 'Brick$2025-FGL',
     archived: { tasks: [], goals: [] },
     isArchived: false,
-    createdBy: null, // Será definido quando criado
+    createdBy: null, 
     subProjects: [
       {
         id: 'rh-brick',
@@ -3474,7 +3022,6 @@ const getInitialProjects = () => [
         archived: { tasks: [], goals: [] },
         isArchived: false,
         createdBy: null,
-        // Estruturas separadas por tipo de quadro
         boardData: {
           todo: {
             lists: [
@@ -3751,15 +3298,11 @@ const getInitialProjects = () => [
     }
   }
 ];
-
 function App() {
-  // Estados do usuário
   const [currentUser, setCurrentUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Estados existentes
   const [projects, setProjects] = useState([]);
   const [currentView, setCurrentView] = useState('home');
   const [currentProject, setCurrentProject] = useState(null);
@@ -3781,26 +3324,14 @@ function App() {
   const [draggedTask, setDraggedTask] = useState(null);
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
-  
-  // Estados para dropdown de ações
   const [showDropdown, setShowDropdown] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
-
-  // Estado para forçar re-renderização
   const [refreshKey, setRefreshKey] = useState(0);
-  
-  // Estados para drag and drop de projetos
   const [draggedProject, setDraggedProject] = useState(null);
   const [dragOverProject, setDragOverProject] = useState(null);
-  
-  // Estados para drag and drop de subprojetos
   const [draggedSubProject, setDraggedSubProject] = useState(null);
   const [dragOverSubProject, setDragOverSubProject] = useState(null);
-  
-  // Estado para drag and drop de tarefas com posição precisa
   const [dragOverIndex, setDragOverIndex] = useState(null);
-
-  // Verificar se há usuário logado ao carregar
   useEffect(() => {
     const savedUser = localStorage.getItem('brickflow-current-user');
     if (savedUser) {
@@ -3812,57 +3343,40 @@ function App() {
       setShowLoginModal(true);
     }
   }, []);
-
-  // Gerar frase do dia e números da Mega Sena
   useEffect(() => {
     const randomPhrase = absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)];
     const luckyNumbers = generateMegaSenaNumbers();
     setDailyPhrase(randomPhrase);
     setMegaSenaNumbers(luckyNumbers);
   }, []);
-
-  // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = () => {
       setShowDropdown(null);
     };
-    
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showDropdown]);
-
-  // Configuração do Supabase
-  const SUPABASE_URL = 'https://ujpvyslrosmismgbcczl.supabase.co';
+  const SUPABASE_URL = 'https:
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHZ5c2xyb3NtaXNtZ2JjY3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NzU5MDgsImV4cCI6MjA2NjM1MTkwOH0.XkgwQ4VF7_7plt8-cw9VsatX4WwLolZEO6a6YtovUFs';
-
-  // Estados para arquivos
   const [files, setFiles] = useState([]);
   const [showFileModal, setShowFileModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  // Estados para usuários
   const [allUsers, setAllUsers] = useState([]);
-
-  // Funções para gerenciar usuários no Supabase
   const saveUserToSupabase = async (userData) => {
     try {
       console.log('💾 Salvando usuário no Supabase:', userData);
-      
-      // Verificar se usuário já existe
       const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (checkResponse.ok) {
         const existingUsers = await checkResponse.json();
         if (existingUsers.length > 0) {
-          // Usuário já existe, atualizar
           const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
             method: 'PATCH',
             headers: {
@@ -3877,12 +3391,10 @@ function App() {
               pin: userData.pin
             })
           });
-          
           if (updateResponse.ok) {
             console.log('✅ Usuário atualizado no Supabase');
           }
         } else {
-          // Criar novo usuário - enviar apenas campos que existem na tabela
           const userDataForSupabase = {
             username: userData.username,
             displayName: userData.displayName,
@@ -3890,9 +3402,7 @@ function App() {
             color: userData.color,
             pin: userData.pin
           };
-          
           console.log('📤 Dados enviados para Supabase:', userDataForSupabase);
-          
           const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
             method: 'POST',
             headers: {
@@ -3902,7 +3412,6 @@ function App() {
             },
             body: JSON.stringify(userDataForSupabase)
           });
-          
           if (createResponse.ok) {
             console.log('✅ Usuário criado no Supabase');
           } else {
@@ -3915,7 +3424,6 @@ function App() {
       console.log('⚠️ Erro ao salvar usuário no Supabase:', error.message);
     }
   };
-
   const loadUsersFromSupabase = async () => {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
@@ -3924,7 +3432,6 @@ function App() {
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (response.ok) {
         const users = await response.json();
         console.log('✅ Usuários carregados do Supabase:', users);
@@ -3935,12 +3442,9 @@ function App() {
     }
     return [];
   };
-
-  // Funções para gerenciar arquivos no Supabase
   const saveFileToSupabase = async (fileData) => {
     try {
       console.log('📁 Salvando arquivo no Supabase:', fileData.name);
-      
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files`, {
         method: 'POST',
         headers: {
@@ -3950,7 +3454,6 @@ function App() {
         },
         body: JSON.stringify(fileData)
       });
-      
       if (response.ok) {
         console.log('✅ Arquivo salvo no Supabase');
         loadFilesFromSupabase();
@@ -3959,7 +3462,6 @@ function App() {
       console.log('⚠️ Erro ao salvar arquivo no Supabase:', error.message);
     }
   };
-
   const loadFilesFromSupabase = async () => {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?order=created_at.desc`, {
@@ -3968,7 +3470,6 @@ function App() {
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (response.ok) {
         const filesData = await response.json();
         setFiles(filesData);
@@ -3978,7 +3479,6 @@ function App() {
       console.log('⚠️ Erro ao carregar arquivos do Supabase:', error.message);
     }
   };
-
   const deleteFileFromSupabase = async (fileId) => {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?id=eq.${fileId}`, {
@@ -3988,7 +3488,6 @@ function App() {
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (response.ok) {
         console.log('✅ Arquivo deletado do Supabase');
         loadFilesFromSupabase();
@@ -3997,25 +3496,19 @@ function App() {
       console.log('⚠️ Erro ao deletar arquivo do Supabase:', error.message);
     }
   };
-
-  // Carregar arquivos ao entrar em um sub-projeto
   useEffect(() => {
     if (currentSubProject) {
       loadFilesFromSupabase();
     }
   }, [currentSubProject]);
-
-  // Carregar projetos compartilhados (Supabase + fallback localStorage)
   const loadUserProjects = useCallback(async (userKey) => {
     try {
-      // Tentar carregar do Supabase
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`
         }
       });
-      
       if (response.ok) {
         const data = await response.json();
         if (data.length > 0 && data[0].data) {
@@ -4027,15 +3520,12 @@ function App() {
     } catch (error) {
       console.log('⚠️ Erro ao carregar do Supabase:', error.message);
     }
-
-    // Fallback: localStorage
     const savedProjects = localStorage.getItem(`brickflow-projects-${userKey}`);
     if (savedProjects) {
       const parsedProjects = JSON.parse(savedProjects);
       setProjects(parsedProjects);
       console.log('📁 Projetos carregados do localStorage:', parsedProjects);
     } else {
-      // Primeira vez do usuário - criar projetos iniciais
       const initialProjects = getInitialProjects().map(project => ({
         ...project,
         createdBy: userKey,
@@ -4049,18 +3539,13 @@ function App() {
       console.log('Projetos iniciais criados:', initialProjects);
     }
   }, []);
-
-  // Salvar projetos automaticamente (localStorage + Supabase)
   useEffect(() => {
     if (projects.length > 0 && currentUser && isLoggedIn) {
       console.log('💾 Salvando projetos para usuário:', currentUser.userKey, projects);
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
-      
-      // Sincronizar com Supabase (com debounce)
       const timeoutId = setTimeout(async () => {
         try {
           console.log('🔄 Iniciando sincronização com Supabase...');
-          
           const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
             method: 'GET',
             headers: {
@@ -4069,19 +3554,14 @@ function App() {
               'Content-Type': 'application/json'
             }
           });
-          
           console.log('📡 Resposta do GET:', response.status, response.statusText);
-          
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
-          
           const existingData = await response.json();
           console.log('📊 Dados existentes:', existingData);
-          
           let saveResponse;
           if (existingData.length > 0) {
-            // Atualizar registro existente
             console.log('🔄 Atualizando registro existente...');
             saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?id=eq.${existingData[0].id}`, {
               method: 'PATCH',
@@ -4093,7 +3573,6 @@ function App() {
               body: JSON.stringify({ data: projects })
             });
           } else {
-            // Criar novo registro
             console.log('➕ Criando novo registro...');
             saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
               method: 'POST',
@@ -4105,9 +3584,7 @@ function App() {
               body: JSON.stringify({ data: projects })
             });
           }
-          
           console.log('💾 Resposta do salvamento:', saveResponse.status, saveResponse.statusText);
-          
           if (saveResponse.ok) {
             console.log('✅ Projetos sincronizados com Supabase com sucesso!');
           } else {
@@ -4117,33 +3594,24 @@ function App() {
           console.error('❌ Erro na sincronização com Supabase:', error);
           console.log('📁 Dados salvos apenas no localStorage como fallback');
         }
-      }, 500); // Debounce de 500ms (meio segundo)
-      
-      // Forçar re-renderização
+      }, 500); 
       setRefreshKey(prev => prev + 1);
-      
       return () => clearTimeout(timeoutId);
     }
   }, [projects, currentUser, isLoggedIn]);
-
-  // Função auxiliar para atualizar projetos de forma imutável
   const updateProjects = useCallback((updateFunction) => {
     setProjects(prevProjects => {
-      const newProjects = updateFunction(JSON.parse(JSON.stringify(prevProjects))); // Deep clone
+      const newProjects = updateFunction(JSON.parse(JSON.stringify(prevProjects))); 
       console.log('Atualizando projetos:', newProjects);
       return newProjects;
     });
   }, []);
-
-  // Salvar usuário atual
   useEffect(() => {
     if (currentUser && isLoggedIn) {
       console.log('Salvando usuário atual:', currentUser.userKey);
       localStorage.setItem('brickflow-current-user', JSON.stringify(currentUser));
     }
   }, [currentUser, isLoggedIn]);
-
-  // Carregar lista de usuários
   useEffect(() => {
     const loadAllUsers = async () => {
       try {
@@ -4153,20 +3621,14 @@ function App() {
         console.log('⚠️ Erro ao carregar usuários:', error.message);
       }
     };
-    
     loadAllUsers();
   }, []);
-
-  // Função para converter URLs em hyperlinks clicáveis
   const convertUrlsToLinks = (text) => {
     if (!text) return text;
-    
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const parts = text.split(urlRegex);
-    
     return parts.map((part, index) => {
       if (urlRegex.test(part)) {
-        // Encurtar URL para exibição se for muito longa
         const displayUrl = part.length > 30 ? part.substring(0, 30) + '...' : part;
         return (
           <a 
@@ -4184,24 +3646,15 @@ function App() {
       return part;
     });
   };
-
-  // Função para obter informações do usuário responsável
   const getResponsibleUserInfo = (username) => {
     if (!username) return null;
     return allUsers.find(user => user.username === username);
   };
-
-  // Função para buscar todas as tarefas do usuário atual
   const getUserTasks = () => {
     if (!currentUser) return [];
-    
     const userTasks = [];
-    
-    // Percorrer todos os projetos
     projects.forEach(project => {
-      // Verificar tarefas nos boards do projeto principal
       if (project.boardData) {
-        // TO-DO e Kanban
         ['todo', 'kanban'].forEach(boardType => {
           if (project.boardData[boardType]?.lists) {
             project.boardData[boardType].lists.forEach(list => {
@@ -4224,8 +3677,6 @@ function App() {
             });
           }
         });
-        
-        // Timeline
         if (project.boardData.timeline?.periods) {
           project.boardData.timeline.periods.forEach(period => {
             if (period.tasks) {
@@ -4246,8 +3697,6 @@ function App() {
             }
           });
         }
-        
-        // Metas
         if (project.boardData.goals?.objectives) {
           project.boardData.goals.objectives.forEach(goal => {
             if (goal.responsibleUser === currentUser.username) {
@@ -4265,12 +3714,9 @@ function App() {
           });
         }
       }
-      
-      // Verificar tarefas nos subprojetos
       if (project.subProjects) {
         project.subProjects.forEach(subProject => {
           if (subProject.boardData) {
-            // TO-DO e Kanban dos subprojetos
             ['todo', 'kanban'].forEach(boardType => {
               if (subProject.boardData[boardType]?.lists) {
                 subProject.boardData[boardType].lists.forEach(list => {
@@ -4293,8 +3739,6 @@ function App() {
                 });
               }
             });
-            
-            // Timeline dos subprojetos
             if (subProject.boardData.timeline?.periods) {
               subProject.boardData.timeline.periods.forEach(period => {
                 if (period.tasks) {
@@ -4315,8 +3759,6 @@ function App() {
                 }
               });
             }
-            
-            // Metas dos subprojetos
             if (subProject.boardData.goals?.objectives) {
               subProject.boardData.goals.objectives.forEach(goal => {
                 if (goal.responsibleUser === currentUser.username) {
@@ -4337,17 +3779,11 @@ function App() {
         });
       }
     });
-    
     return userTasks;
   };
-
-  // Função para navegar para uma tarefa específica
   const navigateToTask = (task) => {
-    // Encontrar o projeto
     const project = projects.find(p => p.id === task.projectId);
     if (!project) return;
-    
-    // Se for um subprojeto, navegar para ele
     if (task.subProjectId) {
       const subProject = project.subProjects?.find(sp => sp.id === task.subProjectId);
       if (subProject) {
@@ -4356,24 +3792,17 @@ function App() {
         setCurrentBoardType(task.boardType);
       }
     } else {
-      // Se for projeto principal
       setCurrentProject(project);
       setCurrentSubProject(null);
       setCurrentBoardType(task.boardType);
     }
   };
-
-  // Função de login
   const handleLogin = async (username, pin) => {
     const userKey = `${username.toLowerCase()}-${pin}`;
-    
     try {
-      // Tentar carregar do Supabase primeiro
       const users = await loadUsersFromSupabase();
       const supabaseUser = users.find(user => user.username === username && user.pin === pin);
-      
       if (supabaseUser) {
-        // Usuário encontrado no Supabase
         const userData = {
           userKey,
           username: supabaseUser.username,
@@ -4382,14 +3811,10 @@ function App() {
           color: supabaseUser.color,
           createdAt: supabaseUser.created_at
         };
-        
         setCurrentUser(userData);
         setIsLoggedIn(true);
         setShowLoginModal(false);
-        
-        // Salvar no localStorage como cache
         localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(userData));
-        
         loadUserProjects(userKey);
         console.log('✅ Login realizado com dados do Supabase');
         return;
@@ -4397,11 +3822,8 @@ function App() {
     } catch (error) {
       console.log('⚠️ Erro ao verificar usuário no Supabase:', error.message);
     }
-    
-    // Fallback: verificar localStorage
     const savedUserData = localStorage.getItem(`brickflow-user-${userKey}`);
     if (savedUserData) {
-      // Usuário existente no localStorage
       const userData = JSON.parse(savedUserData);
       setCurrentUser(userData);
       setIsLoggedIn(true);
@@ -4409,23 +3831,17 @@ function App() {
       loadUserProjects(userKey);
       console.log('📁 Login realizado com dados do localStorage');
     } else {
-      // Usuário não existe
       alert('Usuário não encontrado! Clique em "Criar Usuário" para se cadastrar.');
     }
   };
-
-  // Função para criar usuário
   const handleCreateUser = async (userData) => {
     console.log('🔄 handleCreateUser chamado com:', userData);
     const userKey = `${userData.username.toLowerCase()}-${userData.pin}`;
-    
     try {
       console.log('🔍 Verificando usuários existentes no Supabase...');
-      // Verificar se já existe no Supabase
       const users = await loadUsersFromSupabase();
       console.log('📋 Usuários encontrados:', users);
       const existingUser = users.find(user => user.username === userData.username);
-      
       if (existingUser) {
         console.log('⚠️ Usuário já existe:', existingUser);
         alert('Este usuário já existe! Tente fazer login ou escolha outro nome.');
@@ -4434,8 +3850,6 @@ function App() {
     } catch (error) {
       console.log('⚠️ Erro ao verificar usuários no Supabase:', error.message);
     }
-    
-    // Verificar se já existe no localStorage (fallback)
     console.log('🔍 Verificando localStorage...');
     const existingLocalUser = localStorage.getItem(`brickflow-user-${userKey}`);
     if (existingLocalUser) {
@@ -4443,8 +3857,6 @@ function App() {
       alert('Este usuário já existe! Tente fazer login ou escolha outro nome/PIN.');
       return;
     }
-
-    // Criar novo usuário
     console.log('✨ Criando novo usuário...');
     const newUser = {
       userKey,
@@ -4456,30 +3868,19 @@ function App() {
       createdAt: new Date().toISOString()
     };
     console.log('👤 Dados do novo usuário:', newUser);
-
-    // Salvar no Supabase
     console.log('💾 Salvando no Supabase...');
     await saveUserToSupabase(newUser);
-
-    // Salvar dados do usuário no localStorage como cache
     console.log('💾 Salvando no localStorage...');
     localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(newUser));
     localStorage.setItem('brickflow-current-user', JSON.stringify(newUser));
-
-    // Fazer login
     console.log('🔐 Fazendo login...');
     setCurrentUser(newUser);
     setIsLoggedIn(true);
     setShowCreateUserModal(false);
     setShowLoginModal(false);
-
-    // Carregar projetos iniciais
     loadUserProjects(userKey);
-    
     console.log('✅ Usuário criado e salvo no Supabase:', newUser);
   };
-
-  // Função de logout
   const handleLogout = () => {
     localStorage.removeItem('brickflow-current-user');
     setCurrentUser(null);
@@ -4490,8 +3891,6 @@ function App() {
     setCurrentSubProject(null);
     setShowLoginModal(true);
   };
-
-  // Função para trocar usuário
   const handleSwitchUser = () => {
     setCurrentUser(null);
     setIsLoggedIn(false);
@@ -4501,25 +3900,15 @@ function App() {
     setCurrentSubProject(null);
     setShowLoginModal(true);
   };
-
-  // ===== FUNÇÕES DO SISTEMA DE ARQUIVOS =====
-  
-  // Estados para preview
   const [previewFile, setPreviewFile] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  
-  // Função para obter arquivos do projeto atual
   const getCurrentFiles = () => {
     if (!currentSubProject || !files) return [];
-    
-    // Filtrar arquivos pelo subprojeto atual
     return files.filter(file => 
       file.subProjectId === currentSubProject.id || 
       (file.projectId === currentProject?.id && file.subProjectId === currentSubProject.id)
     );
   };
-
-  // Função para formatar tamanho do arquivo
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -4527,21 +3916,16 @@ function App() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
-
-  // Função para upload de arquivos
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files);
     if (!uploadedFiles.length || !currentSubProject) return;
-
     for (const file of uploadedFiles) {
       try {
-        // Converter arquivo para base64
         const base64 = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.readAsDataURL(file);
         });
-
         const fileData = {
           name: file.name,
           type: file.type,
@@ -4554,28 +3938,19 @@ function App() {
           projectName: currentProject?.name,
           subProjectName: currentSubProject?.name
         };
-
-        // Salvar arquivo diretamente no Supabase
         await saveFileToSupabase(fileData);
-
         console.log('✅ Arquivo enviado:', file.name);
       } catch (error) {
         console.error('❌ Erro no upload:', error);
         alert(`Erro ao enviar ${file.name}: ${error.message}`);
       }
     }
-
-    // Limpar input
     event.target.value = '';
   };
-
-  // Função para preview de arquivo
   const handlePreviewFile = (file) => {
     setPreviewFile(file);
     setShowPreviewModal(true);
   };
-
-  // Função para download de arquivo
   const handleDownloadFile = (file) => {
     const link = document.createElement('a');
     link.href = file.data;
@@ -4584,64 +3959,42 @@ function App() {
     link.click();
     document.body.removeChild(link);
   };
-
-  // Função para excluir arquivo
   const handleDeleteFile = async (fileId) => {
     if (!confirm('Tem certeza que deseja excluir este arquivo?')) return;
-
-    // Excluir do Supabase
     await deleteFileFromSupabase(fileId);
   };
-
-  // ===== FIM DAS FUNÇÕES DO SISTEMA DE ARQUIVOS =====
-
-  // Função para verificar permissões
   const checkPermissions = (item, action) => {
     if (!currentUser) return false;
-    
-    // Se o usuário criou o item, tem permissão total
     if (item.createdBy === currentUser.userKey) {
       return true;
     }
-    
-    // Se não criou, precisa de senha para ações sensíveis
     if (action === 'archive' || action === 'delete') {
       const password = prompt('Digite a senha para esta ação:');
       return password === 'Brick$Projetos2025';
     }
-    
-    return true; // Para outras ações, permite
+    return true; 
   };
-
-  // Função para mostrar dropdown de ações
   const handleGearClick = (e, item, isSubProject = false, parentProjectId = null) => {
     e.stopPropagation();
-    
     const rect = e.target.getBoundingClientRect();
     setDropdownPosition({
       x: rect.left,
       y: rect.bottom + 5
     });
-    
     setShowDropdown({
       item,
       isSubProject,
       parentProjectId
     });
   };
-
-  // Função para arquivar projeto
   const handleArchiveProject = (projectId, isSubProject = false, parentProjectId = null) => {
     if (!currentUser) return;
-
     const item = isSubProject 
       ? projects.find(p => p.id === parentProjectId)?.subProjects?.find(s => s.id === projectId)
       : projects.find(p => p.id === projectId);
-
     if (!item || !checkPermissions(item, 'archive')) {
       return;
     }
-
     updateProjects(prevProjects => {
       return prevProjects.map(project => {
         if (isSubProject && project.id === parentProjectId) {
@@ -4659,8 +4012,6 @@ function App() {
         return project;
       });
     });
-
-    // Voltar para home se estava visualizando o item arquivado
     if (currentView === 'project' && currentProject?.id === projectId) {
       setCurrentView('home');
       setCurrentProject(null);
@@ -4669,26 +4020,19 @@ function App() {
       setCurrentView('project');
       setCurrentSubProject(null);
     }
-
     setShowDropdown(null);
   };
-
-  // Função para excluir projeto
   const handleDeleteProject = (projectId, isSubProject = false, parentProjectId = null) => {
     if (!currentUser) return;
-
     const item = isSubProject 
       ? projects.find(p => p.id === parentProjectId)?.subProjects?.find(s => s.id === projectId)
       : projects.find(p => p.id === projectId);
-
     if (!item || !checkPermissions(item, 'delete')) {
       return;
     }
-
     if (!confirm('Tem certeza que deseja excluir permanentemente? Esta ação não pode ser desfeita.')) {
       return;
     }
-
     updateProjects(prevProjects => {
       return prevProjects.map(project => {
         if (isSubProject && project.id === parentProjectId) {
@@ -4700,8 +4044,6 @@ function App() {
         return project;
       }).filter(project => !(project.id === projectId && !isSubProject));
     });
-
-    // Voltar para home se estava visualizando o item excluído
     if (currentView === 'project' && currentProject?.id === projectId) {
       setCurrentView('home');
       setCurrentProject(null);
@@ -4710,14 +4052,10 @@ function App() {
       setCurrentView('project');
       setCurrentSubProject(null);
     }
-
     setShowDropdown(null);
   };
-
-  // Função para criar novo projeto
   const handleCreateProject = (projectData) => {
     if (!currentUser) return;
-
     const newProject = {
       id: `project-${Date.now()}`,
       name: projectData.name,
@@ -4757,15 +4095,11 @@ function App() {
         }
       }
     };
-
     updateProjects(prevProjects => [...prevProjects, newProject]);
     setShowNewProjectModal(false);
   };
-
-  // Função para editar projeto
   const handleEditProject = (projectData) => {
     if (!currentUser || !editingProject) return;
-
     updateProjects(prevProjects => 
       prevProjects.map(project => {
         if (project.id === editingProject.id) {
@@ -4778,8 +4112,6 @@ function App() {
             password: projectData.password
           };
         }
-        
-        // Se for um subprojeto, procurar dentro dos projetos
         return {
           ...project,
           subProjects: project.subProjects?.map(subProject => {
@@ -4798,15 +4130,11 @@ function App() {
         };
       })
     );
-    
     setShowEditProjectModal(false);
     setEditingProject(null);
   };
-
-  // Função para criar novo sub-projeto
   const handleCreateSubProject = (subProjectData) => {
     if (!currentUser || !currentProject) return;
-
     const newSubProject = {
       id: `subproject-${Date.now()}`,
       name: subProjectData.name,
@@ -4845,7 +4173,6 @@ function App() {
         }
       }
     };
-
     updateProjects(prevProjects => {
       return prevProjects.map(project => {
         if (project.id === currentProject.id) {
@@ -4853,18 +4180,14 @@ function App() {
             ...project,
             subProjects: [...(project.subProjects || []), newSubProject]
           };
-          // Atualizar currentProject também
           setCurrentProject(updatedProject);
           return updatedProject;
         }
         return project;
       });
     });
-
     setShowNewSubProjectModal(false);
   };
-
-  // Função para acessar projeto
   const handleAccessProject = (project) => {
     if (project.isProtected) {
       setPendingProject(project);
@@ -4874,16 +4197,12 @@ function App() {
       setCurrentView('project');
     }
   };
-
-  // Função para verificar senha
   const handlePasswordSubmit = (password) => {
     if (pendingProject && password === pendingProject.password) {
       if (pendingProject.subProjects !== undefined) {
-        // É um projeto
         setCurrentProject(pendingProject);
         setCurrentView('project');
       } else {
-        // É um sub-projeto
         setCurrentSubProject(pendingProject);
         setCurrentView('subproject');
       }
@@ -4893,8 +4212,6 @@ function App() {
       alert('Senha incorreta!');
     }
   };
-
-  // Função para acessar sub-projeto
   const handleAccessSubProject = (subProject) => {
     if (subProject.isProtected) {
       setPendingProject(subProject);
@@ -4904,8 +4221,6 @@ function App() {
       setCurrentView('subproject');
     }
   };
-
-  // Função para voltar
   const handleBack = () => {
     if (currentView === 'subproject') {
       setCurrentView('project');
@@ -4915,19 +4230,13 @@ function App() {
       setCurrentProject(null);
     }
   };
-
-  // Função para obter dados do quadro atual
   const getCurrentBoardData = useCallback(() => {
     if (!currentSubProject) return null;
     return currentSubProject.boardData?.[currentBoardType] || null;
   }, [currentSubProject, currentBoardType]);
-
-  // Função para atualizar dados do quadro
   const updateCurrentBoardData = useCallback((newData) => {
     if (!currentSubProject || !currentProject) return;
-
     console.log('Atualizando board data:', newData);
-
     updateProjects(prevProjects => {
       return prevProjects.map(project => {
         if (project.id === currentProject.id) {
@@ -4950,8 +4259,6 @@ function App() {
         return project;
       });
     });
-
-    // Atualizar estado local do sub-projeto
     setCurrentSubProject(prev => ({
       ...prev,
       boardData: {
@@ -4959,16 +4266,11 @@ function App() {
         [currentBoardType]: newData
       }
     }));
-
-    // Forçar re-renderização
     setRefreshKey(prev => prev + 1);
   }, [currentSubProject, currentProject, currentBoardType, updateProjects]);
-
-  // Função para adicionar tarefa
   const handleAddTask = useCallback((listId, taskData) => {
     const boardData = getCurrentBoardData();
     if (!boardData) return;
-
     const newTask = {
       id: `task-${Date.now()}`,
       title: taskData.title,
@@ -4981,9 +4283,7 @@ function App() {
       createdAt: new Date().toISOString(),
       createdBy: currentUser?.userKey
     };
-
     let updatedData;
-    
     if (currentBoardType === 'todo' || currentBoardType === 'kanban') {
       updatedData = {
         ...boardData,
@@ -5012,25 +4312,19 @@ function App() {
         createdAt: new Date().toISOString(),
         createdBy: currentUser?.userKey
       };
-      
       updatedData = {
         ...boardData,
         objectives: [...boardData.objectives, newGoal]
       };
     }
-
     updateCurrentBoardData(updatedData);
     setShowTaskModal(false);
     setTargetListId(null);
   }, [getCurrentBoardData, currentBoardType, currentUser, updateCurrentBoardData]);
-
-  // Função para editar tarefa
   const handleEditTask = useCallback((taskData) => {
     const boardData = getCurrentBoardData();
     if (!boardData || !editingTask) return;
-
     let updatedData;
-    
     if (currentBoardType === 'todo' || currentBoardType === 'kanban') {
       updatedData = {
         ...boardData,
@@ -5065,32 +4359,21 @@ function App() {
         )
       };
     }
-
     updateCurrentBoardData(updatedData);
     setShowTaskModal(false);
     setEditingTask(null);
   }, [getCurrentBoardData, currentBoardType, editingTask, updateCurrentBoardData]);
-
-  // Função para alternar conclusão de tarefa (com movimento automático no TO-DO)
   const handleToggleTask = useCallback((taskId, listId) => {
     const boardData = getCurrentBoardData();
     if (!boardData) return;
-
     if (currentBoardType === 'todo') {
-      // Lógica especial para TO-DO: mover entre listas
       const currentListIndex = boardData.lists.findIndex(list => 
         list.tasks.some(task => task.id === taskId)
       );
-      
       if (currentListIndex === -1) return;
-
       const task = boardData.lists[currentListIndex].tasks.find(t => t.id === taskId);
       if (!task) return;
-
-      // Determinar próxima lista (ciclo: 0 -> 1 -> 2 -> 0)
       const nextListIndex = (currentListIndex + 1) % 3;
-      
-      // Remover tarefa da lista atual
       const updatedLists = boardData.lists.map((list, index) => {
         if (index === currentListIndex) {
           return {
@@ -5106,15 +4389,12 @@ function App() {
         }
         return list;
       });
-
       updateCurrentBoardData({
         ...boardData,
         lists: updatedLists
       });
     } else {
-      // Lógica normal para outros tipos: apenas alternar completed
       let updatedData;
-      
       if (currentBoardType === 'kanban') {
         updatedData = {
           ...boardData,
@@ -5140,20 +4420,14 @@ function App() {
           }))
         };
       }
-
       updateCurrentBoardData(updatedData);
     }
   }, [getCurrentBoardData, currentBoardType, updateCurrentBoardData]);
-
-  // Função para excluir tarefa
   const handleDeleteTask = useCallback((taskId) => {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
-
     const boardData = getCurrentBoardData();
     if (!boardData) return;
-
     let updatedData;
-    
     if (currentBoardType === 'todo' || currentBoardType === 'kanban') {
       updatedData = {
         ...boardData,
@@ -5176,181 +4450,118 @@ function App() {
         objectives: boardData.objectives.filter(goal => goal.id !== taskId)
       };
     }
-
     updateCurrentBoardData(updatedData);
   }, [getCurrentBoardData, currentBoardType, updateCurrentBoardData]);
-
-  // NOVAS FUNÇÕES DE DRAG AND DROP MELHORADAS (Substitui as antigas)
   const handleDragStart = (e, task, listId) => {
-    // Armazena informações completas sobre a origem do card
     setDraggedTask({ task, sourceListId: listId });
     e.dataTransfer.effectAllowed = 'move';
   };
-
   const handleDragEnter = (e, targetIndex) => {
-    // Quando o mouse entra em cima de outro card, guarda sua posição
     e.preventDefault();
     setDragOverIndex(targetIndex);
   };
-
   const handleDragOver = (e) => {
-    // Previne o comportamento padrão para permitir o 'drop'
     e.preventDefault();
   };
-
   const handleDragLeave = (e) => {
-    // Limpa o índice quando o mouse sai de cima de um card
     e.preventDefault();
     setDragOverIndex(null);
   };
-
   const handleDrop = useCallback((e, targetListId) => {
     e.preventDefault();
     if (!draggedTask) return;
-
     const boardData = getCurrentBoardData();
     if (!boardData) return;
-
     const sourceListIndex = boardData.lists.findIndex(list => list.id === draggedTask.sourceListId);
     const targetListIndex = boardData.lists.findIndex(list => list.id === targetListId);
-
     if (sourceListIndex === -1 || targetListIndex === -1) return;
-
-    // Clonar as listas para não modificar o estado diretamente
     const newLists = JSON.parse(JSON.stringify(boardData.lists));
-    
-    // Encontrar e remover o card da lista de origem
     const sourceList = newLists[sourceListIndex];
     const taskIndex = sourceList.tasks.findIndex(t => t.id === draggedTask.task.id);
     const [movedTask] = sourceList.tasks.splice(taskIndex, 1);
-
-    // Adicionar o card na lista de destino na posição correta
     const targetList = newLists[targetListIndex];
-    
     if (dragOverIndex !== null) {
-      // Se soltou sobre outro card, insere antes dele
       targetList.tasks.splice(dragOverIndex, 0, movedTask);
     } else {
-      // Se soltou na área da lista, insere no final
       targetList.tasks.push(movedTask);
     }
-
-    // Atualizar o estado com as novas listas
     updateCurrentBoardData({
       ...boardData,
       lists: newLists
     });
-
-    // Limpar estados
     setDraggedTask(null);
     setDragOverIndex(null);
   }, [draggedTask, getCurrentBoardData, updateCurrentBoardData, dragOverIndex]);
-
   const handleDropOnList = (e, targetListId) => {
-    // Função para quando o drop é na área geral da lista, não sobre um card
     e.preventDefault();
-    setDragOverIndex(null); // Garante que será adicionado ao final
+    setDragOverIndex(null); 
     handleDrop(e, targetListId);
   };
-
-  // Funções para drag and drop de projetos
   const handleProjectDragStart = (e, project) => {
     setDraggedProject(project);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', project.id);
   };
-
   const handleProjectDragOver = (e, project) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverProject(project.id);
   };
-
   const handleProjectDragLeave = () => {
     setDragOverProject(null);
   };
-
   const handleProjectDrop = (e, targetProject) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (!draggedProject || draggedProject.id === targetProject.id) {
       setDraggedProject(null);
       setDragOverProject(null);
       return;
     }
-
-    // Usar activeProjects para calcular índices corretos
     const activeProjects = projects.filter(project => !project.isArchived);
     const draggedIndex = activeProjects.findIndex(p => p.id === draggedProject.id);
     const targetIndex = activeProjects.findIndex(p => p.id === targetProject.id);
-
     if (draggedIndex === -1 || targetIndex === -1) return;
-
-    // Reordenar apenas os projetos ativos
     const newActiveProjects = [...activeProjects];
     const [movedProject] = newActiveProjects.splice(draggedIndex, 1);
     newActiveProjects.splice(targetIndex, 0, movedProject);
-
-    // Reconstruir array completo mantendo projetos arquivados no final
     const archivedProjects = projects.filter(project => project.isArchived);
     const newProjects = [...newActiveProjects, ...archivedProjects];
-
-    // Atualizar projetos usando a função correta
     updateProjects(() => newProjects);
-    
-    // Limpar estados de drag
     setDraggedProject(null);
     setDragOverProject(null);
   };
-
-  // Funções para drag and drop de subprojetos
   const handleSubProjectDragStart = (e, subProject) => {
     setDraggedSubProject(subProject);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', subProject.id);
   };
-
   const handleSubProjectDragOver = (e, subProject) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverSubProject(subProject.id);
   };
-
   const handleSubProjectDragLeave = () => {
     setDragOverSubProject(null);
   };
-
   const handleSubProjectDrop = (e, targetSubProject) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (!draggedSubProject || draggedSubProject.id === targetSubProject.id) {
       setDraggedSubProject(null);
       setDragOverSubProject(null);
       return;
     }
-
-    // Encontrar o projeto pai atual
     if (!currentProject) return;
-
-    // Usar activeSubProjects para calcular índices corretos
     const activeSubProjects = currentProject.subProjects?.filter(sub => !sub.isArchived) || [];
     const draggedIndex = activeSubProjects.findIndex(s => s.id === draggedSubProject.id);
     const targetIndex = activeSubProjects.findIndex(s => s.id === targetSubProject.id);
-
     if (draggedIndex === -1 || targetIndex === -1) return;
-
-    // Reordenar apenas os subprojetos ativos
     const newActiveSubProjects = [...activeSubProjects];
     const [movedSubProject] = newActiveSubProjects.splice(draggedIndex, 1);
     newActiveSubProjects.splice(targetIndex, 0, movedSubProject);
-
-    // Reconstruir array completo mantendo subprojetos arquivados no final
     const archivedSubProjects = currentProject.subProjects?.filter(sub => sub.isArchived) || [];
     const newSubProjects = [...newActiveSubProjects, ...archivedSubProjects];
-
-    // Atualizar projetos
     updateProjects(prevProjects => 
       prevProjects.map(project => {
         if (project.id === currentProject.id) {
@@ -5358,25 +4569,18 @@ function App() {
             ...project,
             subProjects: newSubProjects
           };
-          // Atualizar currentProject também
           setCurrentProject(updatedProject);
           return updatedProject;
         }
         return project;
       })
     );
-    
-    // Limpar estados de drag
     setDraggedSubProject(null);
     setDragOverSubProject(null);
   };
-
-  // Função para calcular estatísticas
   const getProjectStats = (project) => {
     let totalSubProjects = project.subProjects?.length || 0;
     let totalTasks = 0;
-
-    // Contar tarefas em todos os tipos de quadro do projeto principal
     if (project.boardData) {
       Object.values(project.boardData).forEach(boardType => {
         if (boardType.lists) {
@@ -5394,8 +4598,6 @@ function App() {
         }
       });
     }
-
-    // Contar tarefas dos sub-projetos
     project.subProjects?.forEach(subProject => {
       if (subProject.boardData) {
         Object.values(subProject.boardData).forEach(boardType => {
@@ -5415,14 +4617,10 @@ function App() {
         });
       }
     });
-
     return { totalSubProjects, totalTasks };
   };
-
-  // Função para calcular estatísticas do sub-projeto
   const getSubProjectStats = (subProject) => {
     let totalTasks = 0;
-
     if (subProject.boardData) {
       Object.values(subProject.boardData).forEach(boardType => {
         if (boardType.lists) {
@@ -5440,18 +4638,14 @@ function App() {
         }
       });
     }
-
     return { totalTasks };
   };
-
-  // Filtrar projetos não arquivados
   const activeProjects = projects.filter(project => !project.isArchived);
   const activeSubProjects = currentProject?.subProjects?.filter(sub => !sub.isArchived) || [];
-
   if (!isLoggedIn) {
     return (
       <div className="app">
-        {/* Modal de Login */}
+        {}
         {showLoginModal && (
           <div className="modal-overlay">
             <div className="modal">
@@ -5498,8 +4692,7 @@ function App() {
             </div>
           </div>
         )}
-
-        {/* Modal de Criar Usuário */}
+        {}
         {showCreateUserModal && (
           <div className="modal-overlay">
             <div className="modal create-user-modal">
@@ -5509,20 +4702,16 @@ function App() {
                 const formData = new FormData(e.target);
                 const pin = formData.get('pin');
                 const confirmPin = formData.get('confirmPin');
-                
                 if (pin !== confirmPin) {
                   alert('PINs não coincidem!');
                   return;
                 }
-                
                 const selectedAvatar = document.querySelector('input[name="avatar"]:checked')?.value;
                 const selectedColor = document.querySelector('input[name="color"]:checked')?.value;
-                
                 if (!selectedAvatar || !selectedColor) {
                   alert('Selecione um avatar e uma cor!');
                   return;
                 }
-                
                 handleCreateUser({
                   username: formData.get('username'),
                   displayName: formData.get('displayName'),
@@ -5571,7 +4760,6 @@ function App() {
                     required 
                   />
                 </div>
-                
                 <div className="form-group">
                   <label>Escolha seu Avatar:</label>
                   <div className="avatar-grid">
@@ -5588,7 +4776,6 @@ function App() {
                     ))}
                   </div>
                 </div>
-                
                 <div className="form-group">
                   <label>Escolha sua Cor:</label>
                   <div className="color-grid">
@@ -5605,7 +4792,6 @@ function App() {
                     ))}
                   </div>
                 </div>
-                
                 <div className="modal-actions">
                   <button type="submit" className="btn-primary">Criar Usuário</button>
                   <button 
@@ -5626,10 +4812,9 @@ function App() {
       </div>
     );
   }
-
   return (
     <div className="app" key={refreshKey}>
-      {/* Header Principal */}
+      {}
       <header className="main-header">
         <div className="header-content">
           <div className="header-left">
@@ -5646,7 +4831,6 @@ function App() {
               <h1>{currentSubProject.name}</h1>
             )}
           </div>
-          
           <div className="header-right">
             <div className="user-info">
               <span className="user-avatar">{currentUser?.avatar}</span>
@@ -5658,7 +4842,6 @@ function App() {
                 🚪
               </button>
             </div>
-            
             {currentView === 'home' && (
               <button 
                 className="btn-primary"
@@ -5667,7 +4850,6 @@ function App() {
                 + Novo Projeto
               </button>
             )}
-            
             {currentView === 'project' && (
               <button 
                 className="btn-primary"
@@ -5679,8 +4861,7 @@ function App() {
           </div>
         </div>
       </header>
-
-      {/* Sorte do Dia + Mega Sena */}
+      {}
       {currentView === 'home' && (
         <div className="daily-luck">
           <div className="luck-content">
@@ -5699,12 +4880,11 @@ function App() {
           </div>
         </div>
       )}
-
-      {/* Conteúdo Principal */}
+      {}
       <main className="main-content">
         {currentView === 'home' && (
           <>
-            {/* Box Minhas Tarefas */}
+            {}
             {currentUser && (
               <div className="my-tasks-box">
                 <h2>📋 Minhas Tarefas</h2>
@@ -5753,13 +4933,11 @@ function App() {
                 </div>
               </div>
             )}
-            
             <div className="projects-grid">
             {activeProjects.map(project => {
               const stats = getProjectStats(project);
               const isDragging = draggedProject?.id === project.id;
               const isDragOver = dragOverProject === project.id;
-              
               return (
                 <div 
                   key={project.id} 
@@ -5770,7 +4948,6 @@ function App() {
                   onDragLeave={handleProjectDragLeave}
                   onDrop={(e) => handleProjectDrop(e, project)}
                   onClick={(e) => {
-                    // Só acessa o projeto se não estiver arrastando
                     if (!draggedProject) {
                       handleAccessProject(project);
                     }
@@ -5801,20 +4978,17 @@ function App() {
           </div>
           </>
         )}
-
         {currentView === 'project' && currentProject && (
           <div className="project-view">
             <div className="project-description">
               <p>{currentProject.description}</p>
             </div>
-            
             {activeSubProjects.length > 0 ? (
               <div className="subprojects-grid">
                 {activeSubProjects.map(subProject => {
                   const stats = getSubProjectStats(subProject);
                   const isDragging = draggedSubProject?.id === subProject.id;
                   const isDragOver = dragOverSubProject === subProject.id;
-                  
                   return (
                     <div 
                       key={subProject.id} 
@@ -5825,7 +4999,6 @@ function App() {
                       onDragLeave={handleSubProjectDragLeave}
                       onDrop={(e) => handleSubProjectDrop(e, subProject)}
                       onClick={(e) => {
-                        // Só acessa o subprojeto se não estiver arrastando
                         if (!draggedSubProject) {
                           handleAccessSubProject(subProject);
                         }
@@ -5861,10 +5034,9 @@ function App() {
             )}
           </div>
         )}
-
         {currentView === 'subproject' && currentSubProject && (
           <div className="subproject-view">
-            {/* Seletor de Tipo de Quadro */}
+            {}
             <div className="board-type-selector">
               <button 
                 className={`board-type-btn ${currentBoardType === 'todo' ? 'active' : ''}`}
@@ -5897,8 +5069,7 @@ function App() {
                 🗄️ Arquivados
               </button>
             </div>
-
-            {/* Conteúdo do Quadro */}
+            {}
             {!showArchived && (
               <div className="board-content">
                 {(currentBoardType === 'todo' || currentBoardType === 'kanban') && (
@@ -5984,7 +5155,6 @@ function App() {
                     ))}
                   </div>
                 )}
-
                 {currentBoardType === 'files' && (
                   <div 
                     className={`files-container ${isDragging ? 'dragging' : ''}`}
@@ -6001,7 +5171,6 @@ function App() {
                       setIsDragging(false);
                       const droppedFiles = Array.from(e.dataTransfer.files);
                       if (droppedFiles.length > 0) {
-                        // Simular evento de upload
                         const fakeEvent = {
                           target: { files: droppedFiles, value: '' }
                         };
@@ -6025,7 +5194,6 @@ function App() {
                         📎 Upload de Arquivo
                       </button>
                     </div>
-                    
                     {isDragging && (
                       <div className="drag-overlay">
                         <div className="drag-message">
@@ -6034,7 +5202,6 @@ function App() {
                         </div>
                       </div>
                     )}
-                    
                     <div className="files-grid">
                       {getCurrentFiles().map(file => (
                         <div key={file.id} className="file-card">
@@ -6084,7 +5251,6 @@ function App() {
                     </div>
                   </div>
                 )}
-
                 {currentBoardType === 'timeline' && (
                   <div className="timeline-container">
                     {getCurrentBoardData()?.periods?.map(period => (
@@ -6151,7 +5317,6 @@ function App() {
                     ))}
                   </div>
                 )}
-
                 {currentBoardType === 'goals' && (
                   <div className="goals-container">
                     <div className="goals-header">
@@ -6210,7 +5375,6 @@ function App() {
                 )}
               </div>
             )}
-
             {showArchived && (
               <div className="archived-content">
                 <h3>Itens Arquivados</h3>
@@ -6220,8 +5384,7 @@ function App() {
           </div>
         )}
       </main>
-
-      {/* Dropdown de Ações */}
+      {}
       {showDropdown && (
         <div 
           className="actions-dropdown"
@@ -6265,8 +5428,7 @@ function App() {
           </button>
         </div>
       )}
-
-      {/* Modais */}
+      {}
       {showNewProjectModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -6328,7 +5490,6 @@ function App() {
           </div>
         </div>
       )}
-
       {showEditProjectModal && editingProject && (
         <div className="modal-overlay">
           <div className="modal">
@@ -6410,7 +5571,6 @@ function App() {
           </div>
         </div>
       )}
-
       {showNewSubProjectModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -6472,7 +5632,6 @@ function App() {
           </div>
         </div>
       )}
-
       {showPasswordModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -6504,7 +5663,6 @@ function App() {
           </div>
         </div>
       )}
-
       {showTaskModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -6522,7 +5680,6 @@ function App() {
                 progress: parseInt(formData.get('progress')) || 0,
                 responsibleUser: formData.get('responsibleUser') || null
               };
-              
               if (editingTask) {
                 handleEditTask(taskData);
               } else {
@@ -6546,7 +5703,6 @@ function App() {
                   defaultValue={editingTask?.description || ''}
                 ></textarea>
               </div>
-              
               {currentBoardType !== 'goals' && (
                 <>
                   <div className="form-group">
@@ -6579,7 +5735,6 @@ function App() {
                   </div>
                 </>
               )}
-              
               {currentBoardType === 'timeline' && (
                 <>
                   <div className="form-group">
@@ -6600,7 +5755,6 @@ function App() {
                   </div>
                 </>
               )}
-              
               {currentBoardType === 'goals' && (
                 <div className="form-group">
                   <label>Progresso (%):</label>
@@ -6613,7 +5767,6 @@ function App() {
                   />
                 </div>
               )}
-              
               <div className="modal-actions">
                 <button type="submit" className="btn-primary">
                   {editingTask ? 'Salvar' : 'Criar'}
@@ -6634,8 +5787,7 @@ function App() {
           </div>
         </div>
       )}
-
-      {/* Modal de Preview de Arquivo */}
+      {}
       {showPreviewModal && previewFile && (
         <div className="preview-modal" onClick={() => setShowPreviewModal(false)}>
           <div className="preview-content" onClick={(e) => e.stopPropagation()}>
