@@ -428,8 +428,8 @@ function App() {
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showDropdown]);
-  const SUPABASE_URL = 'https:
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHZ5c2xyb3NtaXNtZ2JjY3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NzU5MDgsImV4cCI6MjA2NjM1MTkwOH0.XkgwQ4VF7_7plt8-cw9VsatX4WwLolZEO6a6YtovUFs';
+  const SUPABASE_URL = 'https://your-project.supabase.co';
+  const SUPABASE_KEY = 'your-anon-key';';
   const [files, setFiles] = useState([]);
   const [showFileModal, setShowFileModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -3358,8 +3358,8 @@ function App() {
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showDropdown]);
-  const SUPABASE_URL = 'https:
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHZ5c2xyb3NtaXNtZ2JjY3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NzU5MDgsImV4cCI6MjA2NjM1MTkwOH0.XkgwQ4VF7_7plt8-cw9VsatX4WwLolZEO6a6YtovUFs';
+  const SUPABASE_URL = 'https://your-project.supabase.co';
+  const SUPABASE_KEY = 'your-anon-key';';
   const [files, setFiles] = useState([]);
   const [showFileModal, setShowFileModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
