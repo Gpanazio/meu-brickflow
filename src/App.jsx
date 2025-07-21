@@ -3182,7 +3182,7 @@ function App() {
             )}
           </div>
         )}
-      </main>
+    </div>
 
       {/* Dropdown de Ações */}
       {showDropdown && (
