@@ -3366,7 +3366,6 @@ function App() {
                       ))}
                     </select>
                   </div>
-                </>
               )}
               
               {currentBoardType === 'timeline' && (
