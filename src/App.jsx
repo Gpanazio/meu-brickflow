@@ -479,6 +479,7 @@ function App() {
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
+      <>
     }
   }, [showDropdown]);
 
@@ -982,6 +983,7 @@ function App() {
             onClick={(e) => e.stopPropagation()}
           >
             {displayUrl}
+      </>
           </a>
         );
       }
@@ -2517,7 +2519,7 @@ function App() {
       )}
 
       {/* Conteúdo Principal */}
-      <main className="main-content">
+      <div className="main-content">
         {currentView === 'home' && (
           <>
             {/* Box Minhas Tarefas */}
@@ -3184,14 +3186,6 @@ function App() {
         )}
     </div>
 
-      {/* Dropdown de Ações */}
-      {showDropdown && (
-        <div 
-          className="actions-dropdown"
-          style={{
-            position: 'fixed',
-            left: dropdownPosition.x,
-            top: dropdownPosition.y,
             zIndex: 1000
           }}
           onClick={(e) => e.stopPropagation()}
@@ -3648,6 +3642,14 @@ function App() {
           </div>
         </div>
       )}
+      {/* Dropdown de Ações */}
+      {showDropdown && (
+        <div 
+          className="actions-dropdown"
+          style={{
+            position: 'fixed',
+            left: dropdownPosition.x,
+            top: dropdownPosition.y,
     </div>
   );
 }
