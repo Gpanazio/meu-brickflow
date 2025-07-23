@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
-import { useNavigate } from "react-router-dom";
 
 // Frases absurdas para "Sorte do dia"
 const absurdPhrases = [
@@ -24,22 +23,7 @@ const absurdPhrases = [
   "Hoje é um excelente dia para tratar suas tarefas como pokémons - você precisa capturar todas.",
   "Sua intuição hoje será mais precisa que o GPS recalculando rota pela quinta vez.",
   "O sucesso hoje virá disfarçado de uma reunião que poderia ter sido um e-mail.",
-  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado.",
-  "Hoje é um ótimo dia para responder e-mails com enigmas em vez de respostas diretas.",
-  "Use o elevador hoje como se fosse um portal interdimensional — apenas entre confiante.",
-  "A produtividade bate diferente quando você finge que está num reality show de escritórios.",
-  "Lembre-se: todo post-it é um grito de socorro com cola.",
-  "Hoje, tente resolver um problema usando apenas frases motivacionais e uma garrafinha d'água.",
-  "Seu café está te observando — e julgando suas decisões.",
-  "Confie na sua intuição, especialmente se ela vier com gráficos e uma apresentação em PowerPoint.",
-  "Cada clique hoje será interpretado como uma declaração de guerra pelo seu mouse.",
-  "Hoje é um bom dia para se declarar gerente do caos e seguir em frente.",
-  "Se algo der errado hoje, acuse Mercúrio retrógrado e siga com classe.",
-  "Sua senha de Wi-Fi pode estar influenciando seu destino.",
-  "A impressora está em greve e exige um aumento em toner.",
-  "Cada reunião desnecessária cancela uma encarnação futura sua.",
-  "Hoje você vai digitar algo genial... e o Word vai travar.",
-  "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações."
+  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado."
 ];
 
 // Função para gerar números da Mega Sena
@@ -120,13 +104,26 @@ const getInitialProjects = () => [
         archived: { tasks: [], goals: [] },
         isArchived: false,
         createdBy: null,
+        // Nomes personalizados das abas e colunas
+        customNames: {
+          tabs: {
+            todo: 'To-Do',
+            kanban: 'Kanban',
+            files: 'Arquivos',
+            goals: 'Metas'
+          },
+          columns: {
+            todo: ['A Fazer', 'Em Progresso', 'Concluído'],
+            kanban: ['Backlog', 'Em Desenvolvimento', 'Finalizado']
+          }
+        },
         // Estruturas separadas por tipo de quadro
         boardData: {
           todo: {
             lists: [
-              { id: 'todo-1', title: 'Potenciais', tasks: [] },
-              { id: 'todo-2', title: 'Enviados', tasks: [] },
-              { id: 'todo-3', title: 'Negados', tasks: [] }
+              { id: 'todo-1', title: 'A Fazer', tasks: [] },
+              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+              { id: 'todo-3', title: 'Concluído', tasks: [] }
             ]
           },
           kanban: {
@@ -160,16 +157,16 @@ const getInitialProjects = () => [
         boardData: {
           todo: {
             lists: [
-              { id: 'todo-1', title: 'Potenciais', tasks: [] },
-              { id: 'todo-2', title: 'Enviados', tasks: [] },
-              { id: 'todo-3', title: 'Negados', tasks: [] }
+              { id: 'todo-1', title: 'A Fazer', tasks: [] },
+              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+              { id: 'todo-3', title: 'Concluído', tasks: [] }
             ]
           },
           kanban: {
             lists: [
-              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-              { id: 'kanban-2', title: 'Enviados', tasks: [] },
-              { id: 'kanban-3', title: 'Negados', tasks: [] }
+              { id: 'kanban-1', title: 'Pendente', tasks: [] },
+              { id: 'kanban-2', title: 'Em Análise', tasks: [] },
+              { id: 'kanban-3', title: 'Aprovado', tasks: [] }
             ]
           },
           timeline: {
@@ -188,16 +185,16 @@ const getInitialProjects = () => [
     boardData: {
       todo: {
         lists: [
-          { id: 'todo-1', title: 'Potenciais', tasks: [] },
-          { id: 'todo-2', title: 'Enviados', tasks: [] },
-          { id: 'todo-3', title: 'Negados', tasks: [] }
+          { id: 'todo-1', title: 'A Fazer', tasks: [] },
+          { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+          { id: 'todo-3', title: 'Concluído', tasks: [] }
         ]
       },
       kanban: {
         lists: [
-          { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-          { id: 'kanban-2', title: 'Enviados', tasks: [] },
-          { id: 'kanban-3', title: 'Negados', tasks: [] }
+          { id: 'kanban-1', title: 'A Fazer', tasks: [] },
+          { id: 'kanban-2', title: 'Em Progresso', tasks: [] },
+          { id: 'kanban-3', title: 'Concluído', tasks: [] }
         ]
       },
       timeline: {
@@ -221,6 +218,19 @@ const getInitialProjects = () => [
     archived: { tasks: [], goals: [] },
     isArchived: false,
     createdBy: null,
+    // Nomes personalizados das abas e colunas
+    customNames: {
+      tabs: {
+        todo: 'To-Do',
+        kanban: 'Kanban',
+        files: 'Arquivos',
+        goals: 'Metas'
+      },
+      columns: {
+        todo: ['A Fazer', 'Em Progresso', 'Concluído'],
+        kanban: ['A Fazer', 'Em Progresso', 'Concluído']
+      }
+    },
     subProjects: [
       {
         id: 'design-produtos',
@@ -234,23 +244,23 @@ const getInitialProjects = () => [
         boardData: {
           todo: {
             lists: [
-              { id: 'todo-1', title: 'Potenciais', tasks: [] },
-              { id: 'todo-2', title: 'Enviados', tasks: [] },
-              { id: 'todo-3', title: 'Negados', tasks: [] }
+              { id: 'todo-1', title: 'A Fazer', tasks: [] },
+              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+              { id: 'todo-3', title: 'Concluído', tasks: [] }
             ]
           },
           kanban: {
             lists: [
-              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-              { id: 'kanban-2', title: 'Enviados', tasks: [] },
-              { id: 'kanban-3', title: 'Negados', tasks: [] }
+              { id: 'kanban-1', title: 'Ideias', tasks: [] },
+              { id: 'kanban-2', title: 'Prototipagem', tasks: [] },
+              { id: 'kanban-3', title: 'Finalizado', tasks: [] }
             ]
           },
           timeline: {
             periods: [
               { id: 'timeline-1', title: 'Conceito', tasks: [] },
-              { id: 'timeline-2', title: 'Enviados', tasks: [] },
-              { id: 'timeline-3', title: 'Negados', tasks: [] }
+              { id: 'timeline-2', title: 'Desenvolvimento', tasks: [] },
+              { id: 'timeline-3', title: 'Lançamento', tasks: [] }
             ]
           },
           goals: {
@@ -270,22 +280,22 @@ const getInitialProjects = () => [
         boardData: {
           todo: {
             lists: [
-              { id: 'todo-1', title: 'Potenciais', tasks: [] },
-              { id: 'todo-2', title: 'Enviados', tasks: [] },
-              { id: 'todo-3', title: 'Negados', tasks: [] }
+              { id: 'todo-1', title: 'A Fazer', tasks: [] },
+              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+              { id: 'todo-3', title: 'Concluído', tasks: [] }
             ]
           },
           kanban: {
             lists: [
-              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-              { id: 'kanban-2', title: 'Enviados', tasks: [] },
-              { id: 'kanban-3', title: 'Negados', tasks: [] }
+              { id: 'kanban-1', title: 'Backlog', tasks: [] },
+              { id: 'kanban-2', title: 'Desenvolvimento', tasks: [] },
+              { id: 'kanban-3', title: 'Deploy', tasks: [] }
             ]
           },
           timeline: {
             periods: [
-              { id: 'timeline-1', title: 'Potenciais', tasks: [] },
-              { id: 'timeline-2', title: 'Enviados', tasks: [] },
+              { id: 'timeline-1', title: 'Planejamento', tasks: [] },
+              { id: 'timeline-2', title: 'Execução', tasks: [] },
               { id: 'timeline-3', title: 'Entrega', tasks: [] }
             ]
           },
@@ -298,16 +308,16 @@ const getInitialProjects = () => [
     boardData: {
       todo: {
         lists: [
-          { id: 'todo-1', title: 'Potenciais', tasks: [] },
-          { id: 'todo-2', title: 'Enviados', tasks: [] },
-          { id: 'todo-3', title: 'Negados', tasks: [] }
+          { id: 'todo-1', title: 'A Fazer', tasks: [] },
+          { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+          { id: 'todo-3', title: 'Concluído', tasks: [] }
         ]
       },
       kanban: {
         lists: [
-          { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-          { id: 'kanban-2', title: 'Enviados', tasks: [] },
-          { id: 'kanban-3', title: 'Negados', tasks: [] }
+          { id: 'kanban-1', title: 'Ideação', tasks: [] },
+          { id: 'kanban-2', title: 'Desenvolvimento', tasks: [] },
+          { id: 'kanban-3', title: 'Lançamento', tasks: [] }
         ]
       },
       timeline: {
@@ -344,16 +354,16 @@ const getInitialProjects = () => [
         boardData: {
           todo: {
             lists: [
-              { id: 'todo-1', title: 'Potenciais', tasks: [] },
-              { id: 'todo-2', title: 'Enviados', tasks: [] },
-              { id: 'todo-3', title: 'Negados', tasks: [] }
+              { id: 'todo-1', title: 'A Fazer', tasks: [] },
+              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+              { id: 'todo-3', title: 'Concluído', tasks: [] }
             ]
           },
           kanban: {
             lists: [
-              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-              { id: 'kanban-2', title: 'Enviados', tasks: [] },
-              { id: 'kanban-3', title: 'Negados', tasks: [] }
+              { id: 'kanban-1', title: 'Planejamento', tasks: [] },
+              { id: 'kanban-2', title: 'Produção', tasks: [] },
+              { id: 'kanban-3', title: 'Publicado', tasks: [] }
             ]
           },
           timeline: {
@@ -372,16 +382,16 @@ const getInitialProjects = () => [
     boardData: {
       todo: {
         lists: [
-          { id: 'todo-1', title: 'Potenciais', tasks: [] },
-          { id: 'todo-2', title: 'Enviados', tasks: [] },
-          { id: 'todo-3', title: 'Negados', tasks: [] }
+          { id: 'todo-1', title: 'A Fazer', tasks: [] },
+          { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+          { id: 'todo-3', title: 'Concluído', tasks: [] }
         ]
       },
       kanban: {
         lists: [
-          { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-          { id: 'kanban-2', title: 'Enviados', tasks: [] },
-          { id: 'kanban-3', title: 'Negados', tasks: [] }
+          { id: 'kanban-1', title: 'Estratégia', tasks: [] },
+          { id: 'kanban-2', title: 'Execução', tasks: [] },
+          { id: 'kanban-3', title: 'Análise', tasks: [] }
         ]
       },
       timeline: {
@@ -399,9 +409,6 @@ const getInitialProjects = () => [
 ];
 
 function App() {
-  // Hook de navegação
-  const navigate = useNavigate();
-  
   // Estados do usuário
   const [currentUser, setCurrentUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -422,6 +429,8 @@ function App() {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [customizingProject, setCustomizingProject] = useState(null);
   const [pendingProject, setPendingProject] = useState(null);
   const [itemToArchive, setItemToArchive] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
@@ -478,7 +487,24 @@ function App() {
     
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showDropdown]);
 
+  // Configuração do Supabase
+  const SUPABASE_URL = 'https://ujpvyslrosmismgbcczl.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHZ5c2xyb3NtaXNtZ2JjY3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NzU5MDgsImV4cCI6MjA2NjM1MTkwOH0.XkgwQ4VF7_7plt8-cw9VsatX4WwLolZEO6a6YtovUFs';
+
+  // Estados para arquivos
+  const [files, setFiles] = useState([]);
+  const [showFileModal, setShowFileModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Estados para usuários
+  const [allUsers, setAllUsers] = useState([]);
+
+  // Funções para gerenciar usuários no Supabase
   const saveUserToSupabase = async (userData) => {
     try {
       console.log('💾 Salvando usuário no Supabase:', userData);
@@ -522,159 +548,6 @@ function App() {
             color: userData.color,
             pin: userData.pin
           };
-
-
-  const saveFileToSupabase = async (fileData) => {
-    try {
-      console.log('📁 Salvando arquivo no Supabase:', fileData.name);
-      
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(fileData)
-      });
-      
-      if (response.ok) {
-        console.log('✅ Arquivo salvo no Supabase');
-        loadFilesFromSupabase();
-      } else {
-        console.log('⚠️ Erro ao salvar arquivo - Status:', response.status);
-        const errorText = await response.text();
-        console.log('⚠️ Detalhes do erro:', errorText);
-      }
-    } catch (error) {
-      console.log('⚠️ Erro ao salvar arquivo no Supabase:', error.message);
-    }
-  };
-
-
-  const loadFilesFromSupabase = async () => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?order=created_at.desc`, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      
-      if (response.ok) {
-        const filesData = await response.json();
-        setFiles(filesData);
-        console.log('✅ Arquivos carregados do Supabase:', filesData.length);
-      } else {
-        console.log('⚠️ Erro ao carregar arquivos - Status:', response.status);
-        setFiles([]);
-      }
-    } catch (error) {
-      console.log('⚠️ Erro ao carregar arquivos do Supabase:', error.message);
-      setFiles([]);
-    }
-  };
-
-
-  const migratePlayersColumns = (projects) => {
-    const columnMigrationMap = {
-      'A Fazer': 'Potenciais',
-      'Em Progresso': 'Enviados', 
-      'Em Análise': 'Enviados',
-      'Concluído': 'Negados',
-      'Aprovado': 'Negados',
-      'Pendente': 'Potenciais',
-      'Ideias': 'Potenciais',
-      'Prototipagem': 'Enviados',
-      'Finalizado': 'Negados',
-      'Backlog': 'Potenciais',
-      'Desenvolvimento': 'Enviados',
-      'Deploy': 'Negados',
-      'Ideação': 'Potenciais',
-      'Lançamento': 'Negados',
-      'Planejamento': 'Potenciais',
-      'Produção': 'Enviados',
-      'Publicado': 'Negados',
-      'Estratégia': 'Potenciais',
-      'Execução': 'Enviados',
-      'Análise': 'Negados'
-    };
-
-
-        const migratedLists = project.kanban.lists.map(list => {
-          const newTitle = columnMigrationMap[list.title] || list.title;
-          return {
-            ...list,
-            title: newTitle
-          };
-
-
-            const migratedSubLists = subProject.kanban.lists.map(list => {
-              const newTitle = columnMigrationMap[list.title] || list.title;
-              return {
-                ...list,
-                title: newTitle
-              };
-
-
-    const loadAllUsers = async () => {
-      try {
-        const users = await loadUsersFromSupabase();
-        setAllUsers(users);
-      } catch (error) {
-        console.log('⚠️ Erro ao carregar usuários:', error.message);
-      }
-    };
-
-
-  const convertUrlsToLinks = (text) => {
-    if (!text) return text;
-    
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const parts = text.split(urlRegex);
-    
-    return parts.map((part, index) => {
-      if (urlRegex.test(part)) {
-        // Encurtar URL para exibição se for muito longa
-        const displayUrl = part.length > 30 ? part.substring(0, 30) + '...' : part;
-        return (
-          <a 
-            key={index} 
-            href={part} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="task-link"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {displayUrl}
-      </>
-          </a>
-        );
-      }
-      return part;
-    });
-  };
-
-
-      return () => document.removeEventListener('click', handleClickOutside);
-      <>
-    }
-  }, [showDropdown]);
-
-  // Configuração do Supabase
-  const SUPABASE_URL = 'https://ujpvyslrosmismgbcczl.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqcHZ5c2xyb3NtaXNtZ2JjY3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NzU5MDgsImV4cCI6MjA2NjM1MTkwOH0.XkgwQ4VF7_7plt8-cw9VsatX4WwLolZEO6a6YtovUFs';
-
-  // Estados para arquivos
-  const [files, setFiles] = useState([]);
-  const [showFileModal, setShowFileModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  // Estados para usuários
-  const [allUsers, setAllUsers] = useState([]);
-
-  // Funções para gerenciar usuários no Supabase
           
           console.log('📤 Dados enviados para Supabase:', userDataForSupabase);
           
@@ -701,127 +574,274 @@ function App() {
     }
   };
 
-
-
-
-    return projects.map(project => {
-      // Migrar apenas projetos principais (não subprojetos)
-      if (project.kanban && project.kanban.lists) {
-        });
-
-        // Garantir que temos exatamente as 3 colunas do Players
-        const playersColumns = [
-          { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-          { id: 'kanban-2', title: 'Enviados', tasks: [] },
-          { id: 'kanban-3', title: 'Negados', tasks: [] }
-        ];
-
-        // Redistribuir tarefas existentes
-        migratedLists.forEach(oldList => {
-          const targetColumn = playersColumns.find(col => col.title === (columnMigrationMap[oldList.title] || oldList.title));
-          if (targetColumn && oldList.tasks) {
-            targetColumn.tasks.push(...oldList.tasks);
-          }
-        });
-
-        project.kanban.lists = playersColumns;
+  const loadUsersFromSupabase = async () => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      
+      if (response.ok) {
+        const users = await response.json();
+        console.log('✅ Usuários carregados do Supabase:', users);
+        return users;
       }
-
-      // Migrar subprojetos também (mas eles não terão a aba Players)
-      if (project.subProjects) {
-        project.subProjects = project.subProjects.map(subProject => {
-          if (subProject.kanban && subProject.kanban.lists) {
-            });
-
-            const playersColumns = [
-              { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-              { id: 'kanban-2', title: 'Enviados', tasks: [] },
-              { id: 'kanban-3', title: 'Negados', tasks: [] }
-            ];
-
-            migratedSubLists.forEach(oldList => {
-              const targetColumn = playersColumns.find(col => col.title === (columnMigrationMap[oldList.title] || oldList.title));
-              if (targetColumn && oldList.tasks) {
-                targetColumn.tasks.push(...oldList.tasks);
-              }
-            });
-
-            subProject.kanban.lists = playersColumns;
-          }
-          return subProject;
-        });
-      }
-
-      return project;
-    });
+    } catch (error) {
+      console.log('⚠️ Erro ao carregar usuários do Supabase:', error.message);
+    }
+    return [];
   };
 
+  // Funções para gerenciar arquivos no Supabase
+  const saveFileToSupabase = async (fileData) => {
+    try {
+      console.log('📁 Salvando arquivo no Supabase:', fileData.name);
+      
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fileData)
+      });
+      
+      if (response.ok) {
+        console.log('✅ Arquivo salvo no Supabase');
+        loadFilesFromSupabase();
+      }
+    } catch (error) {
+      console.log('⚠️ Erro ao salvar arquivo no Supabase:', error.message);
+    }
+  };
+
+  const loadFilesFromSupabase = async () => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?order=created_at.desc`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      
+      if (response.ok) {
+        const filesData = await response.json();
+        setFiles(filesData);
+        console.log('✅ Arquivos carregados do Supabase:', filesData.length);
+      }
+    } catch (error) {
+      console.log('⚠️ Erro ao carregar arquivos do Supabase:', error.message);
+    }
+  };
+
+  const deleteFileFromSupabase = async (fileId) => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?id=eq.${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      
+      if (response.ok) {
+        console.log('✅ Arquivo deletado do Supabase');
+        loadFilesFromSupabase();
+      }
+    } catch (error) {
+      console.log('⚠️ Erro ao deletar arquivo do Supabase:', error.message);
+    }
+  };
+
+  // Carregar arquivos ao entrar em um sub-projeto
+  useEffect(() => {
+    if (currentSubProject) {
+      loadFilesFromSupabase();
+    }
+  }, [currentSubProject]);
+
   // Carregar projetos compartilhados (Supabase + fallback localStorage)
+  const loadUserProjects = useCallback(async (userKey) => {
+    try {
+      // Tentar carregar do Supabase
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.length > 0 && data[0].data) {
+          setProjects(data[0].data);
+          console.log('✅ Projetos carregados do Supabase:', data[0].data);
+          return;
+        }
+      }
+    } catch (error) {
+      console.log('⚠️ Erro ao carregar do Supabase:', error.message);
+    }
+
+    // Fallback: localStorage
+    const savedProjects = localStorage.getItem(`brickflow-projects-${userKey}`);
+    if (savedProjects) {
+      const parsedProjects = JSON.parse(savedProjects);
+      setProjects(parsedProjects);
+      console.log('📁 Projetos carregados do localStorage:', parsedProjects);
+    } else {
+      // Primeira vez do usuário - criar projetos iniciais
+      const initialProjects = getInitialProjects().map(project => ({
+        ...project,
+        createdBy: userKey,
+        subProjects: project.subProjects?.map(sub => ({
+          ...sub,
+          createdBy: userKey
+        })) || []
+      }));
+      setProjects(initialProjects);
+      localStorage.setItem(`brickflow-projects-${userKey}`, JSON.stringify(initialProjects));
+      console.log('Projetos iniciais criados:', initialProjects);
+    }
+  }, []);
+
+  // Salvar projetos automaticamente (localStorage + Supabase)
+  useEffect(() => {
+    if (projects.length > 0 && currentUser && isLoggedIn) {
+      console.log('💾 Salvando projetos para usuário:', currentUser.userKey, projects);
+      localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
+      
+      // Sincronizar com Supabase (com debounce)
+      const timeoutId = setTimeout(async () => {
+        try {
+          console.log('🔄 Iniciando sincronização com Supabase...');
+          
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
+            method: 'GET',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('📡 Resposta do GET:', response.status, response.statusText);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const existingData = await response.json();
+          console.log('📊 Dados existentes:', existingData);
+          
+          let saveResponse;
+          if (existingData.length > 0) {
+            // Atualizar registro existente
+            console.log('🔄 Atualizando registro existente...');
+            saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?id=eq.${existingData[0].id}`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ data: projects })
+            });
+          } else {
+            // Criar novo registro
+            console.log('➕ Criando novo registro...');
+            saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
+              method: 'POST',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ data: projects })
+            });
+          }
+          
+          console.log('💾 Resposta do salvamento:', saveResponse.status, saveResponse.statusText);
+          
+          if (saveResponse.ok) {
+            console.log('✅ Projetos sincronizados com Supabase com sucesso!');
+          } else {
+            throw new Error(`Erro no salvamento: ${saveResponse.status} ${saveResponse.statusText}`);
+          }
+        } catch (error) {
+          console.error('❌ Erro na sincronização com Supabase:', error);
+          console.log('📁 Dados salvos apenas no localStorage como fallback');
+        }
+      }, 500); // Debounce de 500ms (meio segundo)
+      
+      // Forçar re-renderização
+      setRefreshKey(prev => prev + 1);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [projects, currentUser, isLoggedIn]);
+
+  // Função auxiliar para atualizar projetos de forma imutável
+  const updateProjects = useCallback((updateFunction) => {
+    setProjects(prevProjects => {
+      const newProjects = updateFunction(JSON.parse(JSON.stringify(prevProjects))); // Deep clone
+      console.log('Atualizando projetos:', newProjects);
+      return newProjects;
+    });
+  }, []);
+
+  // Salvar usuário atual
+  useEffect(() => {
+    if (currentUser && isLoggedIn) {
+      console.log('Salvando usuário atual:', currentUser.userKey);
+      localStorage.setItem('brickflow-current-user', JSON.stringify(currentUser));
+    }
+  }, [currentUser, isLoggedIn]);
+
+  // Carregar lista de usuários
+  useEffect(() => {
+    const loadAllUsers = async () => {
+      try {
+        const users = await loadUsersFromSupabase();
+        setAllUsers(users);
+      } catch (error) {
+        console.log('⚠️ Erro ao carregar usuários:', error.message);
+      }
+    };
     
     loadAllUsers();
   }, []);
 
-  // useEffect para scroll automático para tarefa específica
-  useEffect(() => {
-    const scrollToTaskId = localStorage.getItem("scrollToTaskId");
-    
-    if (scrollToTaskId && (currentView === 'project' || currentView === 'subproject')) {
-      console.log('🎯 Tentando fazer scroll para tarefa:', scrollToTaskId);
-      
-      // Aguardar um pouco para o DOM carregar
-      setTimeout(() => {
-        // Procurar pelo card da tarefa
-        const taskElements = document.querySelectorAll('.task-card');
-        let targetElement = null;
-        
-        taskElements.forEach(element => {
-          // Verificar se o elemento contém a tarefa com o ID correto
-          const taskTitle = element.querySelector('h4');
-          if (taskTitle) {
-            // Buscar nos dados das tarefas
-            const currentData = getCurrentBoardData();
-            if (currentData?.lists) {
-              currentData.lists.forEach(list => {
-                list.tasks?.forEach(task => {
-                  if (task.id === scrollToTaskId && taskTitle.textContent === task.title) {
-                    targetElement = element;
-                  }
-                });
-              });
-            }
-          }
-        });
-        
-        if (targetElement) {
-          console.log('✅ Tarefa encontrada, fazendo scroll...');
-          
-          // Adicionar destaque visual temporário
-          targetElement.style.border = '3px solid #ff6b6b';
-          targetElement.style.boxShadow = '0 0 20px rgba(255, 107, 107, 0.5)';
-          
-          // Fazer scroll suave
-          targetElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-          
-          // Remover destaque após 3 segundos
-          setTimeout(() => {
-            targetElement.style.border = '';
-            targetElement.style.boxShadow = '';
-          }, 3000);
-          
-          // Limpar localStorage
-          localStorage.removeItem("scrollToTaskId");
-          console.log('✅ Scroll concluído e localStorage limpo');
-        } else {
-          console.log('❌ Tarefa não encontrada no DOM');
-        }
-      }, 1000); // Aguardar 1 segundo para garantir que o DOM carregou
-    }
-  }, [currentView, currentProject, currentSubProject, currentBoardType]);
-
   // Função para converter URLs em hyperlinks clicáveis
+  const convertUrlsToLinks = (text) => {
+    if (!text) return text;
+    
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+      if (urlRegex.test(part)) {
+        // Encurtar URL para exibição se for muito longa
+        const displayUrl = part.length > 30 ? part.substring(0, 30) + '...' : part;
+        return (
+          <a 
+            key={index} 
+            href={part} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="task-link"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {displayUrl}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
 
   // Função para obter informações do usuário responsável
   const getResponsibleUserInfo = (username) => {
@@ -831,23 +851,12 @@ function App() {
 
   // Função para buscar todas as tarefas do usuário atual
   const getUserTasks = () => {
-    console.log('🔍 getUserTasks chamada');
-    console.log('📋 currentUser:', currentUser);
-    console.log('📂 projects:', projects);
-    
-    if (!currentUser) {
-      console.log('❌ Sem usuário logado');
-      return [];
-    }
+    if (!currentUser) return [];
     
     const userTasks = [];
-    console.log('🔍 Iniciando busca por tarefas...');
     
     // Percorrer todos os projetos
-    projects.forEach((project, projectIndex) => {
-      console.log(`📁 Projeto ${projectIndex + 1}:`, project.name);
-      console.log('📊 boardData:', project.boardData);
-      
+    projects.forEach(project => {
       // Verificar tarefas nos boards do projeto principal
       if (project.boardData) {
         // TO-DO e Kanban
@@ -991,20 +1000,25 @@ function App() {
   };
 
   // Função para navegar para uma tarefa específica
-  const handleTaskClick = (task) => {
-    console.log("Tarefa clicada:", task); // Teste
-
-    if (!task?.project_slug) {
-      console.warn("Tarefa sem project_slug:", task);
-      return;
+  const navigateToTask = (task) => {
+    // Encontrar o projeto
+    const project = projects.find(p => p.id === task.projectId);
+    if (!project) return;
+    
+    // Se for um subprojeto, navegar para ele
+    if (task.subProjectId) {
+      const subProject = project.subProjects?.find(sp => sp.id === task.subProjectId);
+      if (subProject) {
+        setCurrentProject(project);
+        setCurrentSubProject(subProject);
+        setCurrentBoardType(task.boardType);
+      }
+    } else {
+      // Se for projeto principal
+      setCurrentProject(project);
+      setCurrentSubProject(null);
+      setCurrentBoardType(task.boardType);
     }
-
-    // Salva ID da tarefa para scroll automático no board
-    localStorage.setItem("scrollToTaskId", task.id);
-
-    // Altera o projeto atual e muda a view para o board
-    setCurrentProject(task.project_slug);
-    setCurrentView("project");
   };
 
   // Função de login
@@ -1189,7 +1203,7 @@ function App() {
         const fileData = {
           name: file.name,
           type: file.type,
-          size: Number(file.size), // Garantir que é um número simples
+          size: file.size,
           data: base64,
           uploadDate: new Date().toISOString(),
           uploadedBy: currentUser.username,
@@ -1377,16 +1391,16 @@ function App() {
       boardData: {
         todo: {
           lists: [
-            { id: 'todo-1', title: 'Potenciais', tasks: [] },
-            { id: 'todo-2', title: 'Enviados', tasks: [] },
-            { id: 'todo-3', title: 'Negados', tasks: [] }
+            { id: 'todo-1', title: 'A Fazer', tasks: [] },
+            { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+            { id: 'todo-3', title: 'Concluído', tasks: [] }
           ]
         },
         kanban: {
           lists: [
-            { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-            { id: 'kanban-2', title: 'Enviados', tasks: [] },
-            { id: 'kanban-3', title: 'Negados', tasks: [] }
+            { id: 'kanban-1', title: 'A Fazer', tasks: [] },
+            { id: 'kanban-2', title: 'Em Progresso', tasks: [] },
+            { id: 'kanban-3', title: 'Concluído', tasks: [] }
           ]
         },
         timeline: {
@@ -1465,16 +1479,16 @@ function App() {
       boardData: {
         todo: {
           lists: [
-            { id: 'todo-1', title: 'Potenciais', tasks: [] },
-            { id: 'todo-2', title: 'Enviados', tasks: [] },
-            { id: 'todo-3', title: 'Negados', tasks: [] }
+            { id: 'todo-1', title: 'A Fazer', tasks: [] },
+            { id: 'todo-2', title: 'Em Progresso', tasks: [] },
+            { id: 'todo-3', title: 'Concluído', tasks: [] }
           ]
         },
         kanban: {
           lists: [
-            { id: 'kanban-1', title: 'Potenciais', tasks: [] },
-            { id: 'kanban-2', title: 'Enviados', tasks: [] },
-            { id: 'kanban-3', title: 'Negados', tasks: [] }
+            { id: 'kanban-1', title: 'A Fazer', tasks: [] },
+            { id: 'kanban-2', title: 'Em Progresso', tasks: [] },
+            { id: 'kanban-3', title: 'Concluído', tasks: [] }
           ]
         },
         timeline: {
@@ -1560,17 +1574,26 @@ function App() {
     }
   };
 
-  // Função para obter dados do quadro atual
-  const getCurrentBoardData = useCallback(() => {
-    if (!currentSubProject) return null;
-    return currentSubProject.boardData?.[currentBoardType] || null;
-  }, [currentSubProject, currentBoardType]);
-
   // Função para obter dados do quadro do projeto principal
   const getProjectBoardData = useCallback(() => {
     if (!currentProject) return null;
     return currentProject[currentBoardType] || null;
   }, [currentProject, currentBoardType]);
+
+  // Função para obter nomes personalizados
+  const getCustomName = useCallback((type, key, defaultName) => {
+    const project = currentView === 'subproject' ? currentSubProject : currentProject;
+    if (!project?.customNames) return defaultName;
+    
+    if (type === 'tab') {
+      return project.customNames.tabs?.[key] || defaultName;
+    } else if (type === 'column') {
+      const columns = project.customNames.columns?.[currentBoardType];
+      return columns?.[key] || defaultName;
+    }
+    
+    return defaultName;
+  }, [currentProject, currentSubProject, currentView, currentBoardType]);
 
   // Função para atualizar dados do quadro
   const updateCurrentBoardData = useCallback((newData) => {
@@ -2351,7 +2374,7 @@ function App() {
       )}
 
       {/* Conteúdo Principal */}
-      <div className="main-content">
+      <main className="main-content">
         {currentView === 'home' && (
           <>
             {/* Box Minhas Tarefas */}
@@ -2367,12 +2390,7 @@ function App() {
                         <div 
                           key={`${task.projectId}-${task.subProjectId}-${task.id}-${index}`}
                           className="my-task-item"
-                          onClick={() => {
-                            alert('CLIQUE FUNCIONOU!');
-                            console.log('🔥 TESTE: CLIQUE DETECTADO!');
-                            handleTaskClick(task);
-                          }}
-                          style={{ cursor: 'pointer' }}
+                          onClick={() => navigateToTask(task)}
                         >
                           <div className="task-info">
                             <h4>{task.title}</h4>
@@ -2381,7 +2399,7 @@ function App() {
                               {task.subProjectName && ` > ${task.subProjectName}`}
                               {' • '}
                               {task.boardType === 'todo' && '📋 TO-DO'}
-                              {task.boardType === 'kanban' && '👥 Players'}
+                              {task.boardType === 'kanban' && '📊 Kanban'}
                               {task.boardType === 'timeline' && '📅 Timeline'}
                               {task.boardType === 'goals' && '🎯 Metas'}
                               {' • '}
@@ -2463,156 +2481,8 @@ function App() {
               <p>{currentProject.description}</p>
             </div>
             
-            {/* Seletor de Tipo de Quadro para Projetos Principais */}
-            <div className="board-type-selector">
-              <button 
-                className={`board-type-btn ${currentBoardType === 'todo' ? 'active' : ''}`}
-                onClick={() => setCurrentBoardType('todo')}
-              >
-                📋 To-Do
-              </button>
-              <button 
-                className={`board-type-btn ${currentBoardType === 'kanban' ? 'active' : ''}`}
-                onClick={() => setCurrentBoardType('kanban')}
-              >
-                👥 Players
-              </button>
-              <button 
-                className={`board-type-btn ${currentBoardType === 'files' ? 'active' : ''}`}
-                onClick={() => setCurrentBoardType('files')}
-              >
-                📁 Arquivos
-              </button>
-              <button 
-                className={`board-type-btn ${currentBoardType === 'goals' ? 'active' : ''}`}
-                onClick={() => setCurrentBoardType('goals')}
-              >
-                📈 Metas
-              </button>
-              <button 
-                className={`board-type-btn ${showArchived ? 'active' : ''}`}
-                onClick={() => setShowArchived(!showArchived)}
-              >
-                🗄️ Arquivados
-              </button>
-            </div>
-
-            {/* Conteúdo do Quadro para Projetos Principais */}
-            {!showArchived && (
-              <div className="board-content">
-                {(currentBoardType === 'todo' || currentBoardType === 'kanban') && (
-                  <div className="lists-container">
-                    {getProjectBoardData()?.lists?.map(list => (
-                      <div 
-                        key={list.id} 
-                        className="list"
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDropOnList(e, list.id)}
-                      >
-                        <div className="list-header">
-                          <h3>{list.title}</h3>
-                          <span className="task-count">{list.tasks?.length || 0}</span>
-                          <button 
-                            className="btn-add-task"
-                            onClick={() => {
-                              setTargetListId(list.id);
-                              setShowNewTaskModal(true);
-                            }}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <div className="tasks-container">
-                          {list.tasks?.map((task, taskIndex) => (
-                            <div 
-                              key={task.id} 
-                              className={`task ${draggedTask?.id === task.id ? 'dragging' : ''} ${dragOverIndex === taskIndex ? 'drag-over' : ''}`}
-                              draggable={currentBoardType === 'kanban' || currentBoardType === 'todo'}
-                              onDragStart={(e) => handleDragStart(e, task, list.id)}
-                              onDragEnter={(e) => handleDragEnter(e, taskIndex)}
-                              onClick={() => {
-                                setSelectedTask(task);
-                                setShowTaskModal(true);
-                              }}
-                            >
-                              <div className="task-content">
-                                <h4>{task.title}</h4>
-                                <p>{convertUrlsToLinks(task.description)}</p>
-                                {task.assignedTo && (
-                                  <div className="task-assignee">
-                                    <span className="assignee-avatar">
-                                      {allUsers.find(u => u.userKey === task.assignedTo)?.avatar || '👤'}
-                                    </span>
-                                    <span className="assignee-name">
-                                      {allUsers.find(u => u.userKey === task.assignedTo)?.displayName || 'Usuário'}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {currentBoardType === 'files' && (
-                  <div className="files-section">
-                    <div className="files-header">
-                      <h3>📁 Arquivos do Projeto</h3>
-                      <div className="files-actions">
-                        <input
-                          type="file"
-                          id="file-upload-project"
-                          multiple
-                          onChange={handleFileUpload}
-                          style={{ display: 'none' }}
-                        />
-                        <label htmlFor="file-upload-project" className="btn-upload">
-                          📤 Upload
-                        </label>
-                      </div>
-                    </div>
-                    <div className="files-grid">
-                      {projectFiles.map(file => (
-                        <div key={file.id} className="file-card">
-                          <div className="file-icon">
-                            {getFileIcon(file.type)}
-                          </div>
-                          <div className="file-info">
-                            <h4>{file.name}</h4>
-                            <p>{formatFileSize(file.size)}</p>
-                            <small>Por: {allUsers.find(u => u.userKey === file.uploadedBy)?.displayName || 'Usuário'}</small>
-                          </div>
-                          <div className="file-actions">
-                            <button onClick={() => handleFileDownload(file)} className="btn-download">
-                              ⬇️
-                            </button>
-                            <button onClick={() => handleFileDelete(file.id)} className="btn-delete">
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {currentBoardType === 'goals' && (
-                  <div className="goals-section">
-                    <h3>🎯 Metas do Projeto</h3>
-                    <p>Funcionalidade de metas em desenvolvimento...</p>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {activeSubProjects.length > 0 && (
-              <div className="subprojects-section">
-                <h3>📂 Sub-projetos</h3>
-                <div className="subprojects-grid">
+            {activeSubProjects.length > 0 ? (
+              <div className="subprojects-grid">
                 {activeSubProjects.map(subProject => {
                   const stats = getSubProjectStats(subProject);
                   const isDragging = draggedSubProject?.id === subProject.id;
@@ -2673,19 +2543,25 @@ function App() {
                 className={`board-type-btn ${currentBoardType === 'todo' ? 'active' : ''}`}
                 onClick={() => setCurrentBoardType('todo')}
               >
-                📋 To-Do
+                📋 {getCustomName('tab', 'todo', 'To-Do')}
+              </button>
+              <button 
+                className={`board-type-btn ${currentBoardType === 'kanban' ? 'active' : ''}`}
+                onClick={() => setCurrentBoardType('kanban')}
+              >
+                📊 {getCustomName('tab', 'kanban', 'Kanban')}
               </button>
               <button 
                 className={`board-type-btn ${currentBoardType === 'files' ? 'active' : ''}`}
                 onClick={() => setCurrentBoardType('files')}
               >
-                📁 Arquivos
+                📁 {getCustomName('tab', 'files', 'Arquivos')}
               </button>
               <button 
                 className={`board-type-btn ${currentBoardType === 'goals' ? 'active' : ''}`}
                 onClick={() => setCurrentBoardType('goals')}
               >
-                📈 Metas
+                📈 {getCustomName('tab', 'goals', 'Metas')}
               </button>
               <button 
                 className={`board-type-btn ${showArchived ? 'active' : ''}`}
@@ -2709,7 +2585,7 @@ function App() {
                         onDrop={(e) => handleDropOnList(e, list.id)}
                       >
                         <div className="list-header">
-                          <h3>{list.title}</h3>
+                          <h3>{getCustomName('column', currentBoardData?.lists?.indexOf(list), list.title)}</h3>
                           <span className="task-count">{list.tasks?.length || 0}</span>
                           <button 
                             className="btn-add-task"
@@ -3016,8 +2892,16 @@ function App() {
             )}
           </div>
         )}
-    </div>
+      </main>
 
+      {/* Dropdown de Ações */}
+      {showDropdown && (
+        <div 
+          className="actions-dropdown"
+          style={{
+            position: 'fixed',
+            left: dropdownPosition.x,
+            top: dropdownPosition.y,
             zIndex: 1000
           }}
           onClick={(e) => e.stopPropagation()}
@@ -3031,6 +2915,16 @@ function App() {
             }}
           >
             ✏️ Modificar
+          </button>
+          <button 
+            className="dropdown-item"
+            onClick={() => {
+              setCustomizingProject(showDropdown.item);
+              setShowCustomizeModal(true);
+              setShowDropdown(null);
+            }}
+          >
+            🎨 Personalizar Nomes
           </button>
           <button 
             className="dropdown-item"
@@ -3366,6 +3260,7 @@ function App() {
                       ))}
                     </select>
                   </div>
+                </>
               )}
               
               {currentBoardType === 'timeline' && (
@@ -3473,14 +3368,202 @@ function App() {
           </div>
         </div>
       )}
-      {/* Dropdown de Ações */}
-      {showDropdown && (
-        <div 
-          className="actions-dropdown"
-          style={{
-            position: 'fixed',
-            left: dropdownPosition.x,
-            top: dropdownPosition.y,
+
+      {/* Modal de Personalização de Nomes */}
+      {showCustomizeModal && customizingProject && (
+        <div className="modal-overlay">
+          <div className="modal customize-modal">
+            <h2>🎨 Personalizar Nomes - {customizingProject.name}</h2>
+            
+            <div className="customize-section">
+              <h3>📋 Nomes das Abas</h3>
+              <div className="customize-tabs">
+                <div className="customize-item">
+                  <label>To-Do:</label>
+                  <input 
+                    type="text" 
+                    value={customizingProject.customNames?.tabs?.todo || 'To-Do'}
+                    onChange={(e) => {
+                      const updated = {
+                        ...customizingProject,
+                        customNames: {
+                          ...customizingProject.customNames,
+                          tabs: {
+                            ...customizingProject.customNames?.tabs,
+                            todo: e.target.value
+                          }
+                        }
+                      };
+                      setCustomizingProject(updated);
+                    }}
+                  />
+                </div>
+                <div className="customize-item">
+                  <label>Kanban:</label>
+                  <input 
+                    type="text" 
+                    value={customizingProject.customNames?.tabs?.kanban || 'Kanban'}
+                    onChange={(e) => {
+                      const updated = {
+                        ...customizingProject,
+                        customNames: {
+                          ...customizingProject.customNames,
+                          tabs: {
+                            ...customizingProject.customNames?.tabs,
+                            kanban: e.target.value
+                          }
+                        }
+                      };
+                      setCustomizingProject(updated);
+                    }}
+                  />
+                </div>
+                <div className="customize-item">
+                  <label>Arquivos:</label>
+                  <input 
+                    type="text" 
+                    value={customizingProject.customNames?.tabs?.files || 'Arquivos'}
+                    onChange={(e) => {
+                      const updated = {
+                        ...customizingProject,
+                        customNames: {
+                          ...customizingProject.customNames,
+                          tabs: {
+                            ...customizingProject.customNames?.tabs,
+                            files: e.target.value
+                          }
+                        }
+                      };
+                      setCustomizingProject(updated);
+                    }}
+                  />
+                </div>
+                <div className="customize-item">
+                  <label>Metas:</label>
+                  <input 
+                    type="text" 
+                    value={customizingProject.customNames?.tabs?.goals || 'Metas'}
+                    onChange={(e) => {
+                      const updated = {
+                        ...customizingProject,
+                        customNames: {
+                          ...customizingProject.customNames,
+                          tabs: {
+                            ...customizingProject.customNames?.tabs,
+                            goals: e.target.value
+                          }
+                        }
+                      };
+                      setCustomizingProject(updated);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="customize-section">
+              <h3>📊 Colunas do To-Do</h3>
+              <div className="customize-columns">
+                {(customizingProject.customNames?.columns?.todo || ['A Fazer', 'Em Progresso', 'Concluído']).map((column, index) => (
+                  <div key={index} className="customize-item">
+                    <label>Coluna {index + 1}:</label>
+                    <input 
+                      type="text" 
+                      value={column}
+                      onChange={(e) => {
+                        const newColumns = [...(customizingProject.customNames?.columns?.todo || ['A Fazer', 'Em Progresso', 'Concluído'])];
+                        newColumns[index] = e.target.value;
+                        const updated = {
+                          ...customizingProject,
+                          customNames: {
+                            ...customizingProject.customNames,
+                            columns: {
+                              ...customizingProject.customNames?.columns,
+                              todo: newColumns
+                            }
+                          }
+                        };
+                        setCustomizingProject(updated);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="customize-section">
+              <h3>📈 Colunas do Kanban</h3>
+              <div className="customize-columns">
+                {(customizingProject.customNames?.columns?.kanban || ['A Fazer', 'Em Progresso', 'Concluído']).map((column, index) => (
+                  <div key={index} className="customize-item">
+                    <label>Coluna {index + 1}:</label>
+                    <input 
+                      type="text" 
+                      value={column}
+                      onChange={(e) => {
+                        const newColumns = [...(customizingProject.customNames?.columns?.kanban || ['A Fazer', 'Em Progresso', 'Concluído'])];
+                        newColumns[index] = e.target.value;
+                        const updated = {
+                          ...customizingProject,
+                          customNames: {
+                            ...customizingProject.customNames,
+                            columns: {
+                              ...customizingProject.customNames?.columns,
+                              kanban: newColumns
+                            }
+                          }
+                        };
+                        setCustomizingProject(updated);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                className="btn-secondary"
+                onClick={() => {
+                  setShowCustomizeModal(false);
+                  setCustomizingProject(null);
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={() => {
+                  // Salvar as personalizações
+                  const updatedProjects = projects.map(project => {
+                    if (project.id === customizingProject.id) {
+                      return customizingProject;
+                    }
+                    // Verificar subprojetos
+                    if (project.subProjects) {
+                      const updatedSubProjects = project.subProjects.map(subProject => {
+                        if (subProject.id === customizingProject.id) {
+                          return customizingProject;
+                        }
+                        return subProject;
+                      });
+                      return { ...project, subProjects: updatedSubProjects };
+                    }
+                    return project;
+                  });
+                  
+                  setProjects(updatedProjects);
+                  updateProjects(updatedProjects);
+                  setShowCustomizeModal(false);
+                  setCustomizingProject(null);
+                }}
+              >
+                Salvar Personalizações
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
