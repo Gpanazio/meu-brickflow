@@ -409,6 +409,25 @@ const getInitialProjects = () => [
 ];
 
 function App() {
+
+const getCurrentBoardData = useCallback(() => {
+  if (!currentProject || !currentBoardType) return null;
+
+  switch (currentBoardType) {
+    case 'todo':
+      return currentProject.todo;
+    case 'kanban':
+      return currentProject.kanban;
+    case 'timeline':
+      return currentProject.timeline;
+    case 'goals':
+      return currentProject.goals;
+    default:
+      return null;
+  }
+}, [currentProject, currentBoardType]);
+
+
   // Estados do usuário
   const [currentUser, setCurrentUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -487,24 +506,7 @@ function App() {
     
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside);
-      function getCurrentBoardData() {
-  if (!currentProject || !currentBoardType) return null;
-
-  switch (currentBoardType) {
-    case 'todo':
-      return currentProject.todo;
-    case 'kanban':
-      return currentProject.kanban;
-    case 'timeline':
-      return currentProject.timeline;
-    case 'goals':
-      return currentProject.goals;
-    default:
-      return null;
-  }
-}
-
-return () => document.removeEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showDropdown]);
 

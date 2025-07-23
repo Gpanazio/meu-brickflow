@@ -7,4 +7,6 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
   </StrictMode>,
+import { getCurrentBoardData as globalGetCurrentBoardData } from "./utils/getCurrentBoardData";
+window.getCurrentBoardData = globalGetCurrentBoardData;
 )
