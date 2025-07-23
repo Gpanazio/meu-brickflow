@@ -410,7 +410,7 @@ const getInitialProjects = () => [
 
 function App() {
 
-function getCurrentBoardData() {
+const getCurrentBoardData = useCallback(() => {
   if (!currentProject || !currentBoardType) return null;
 
   switch (currentBoardType) {
@@ -425,7 +425,11 @@ function getCurrentBoardData() {
     default:
       return null;
   }
-}
+}, [currentProject, currentBoardType]);
+
+
+
+
 
 
 
@@ -507,22 +511,7 @@ function getCurrentBoardData() {
     
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside);
-      function getCurrentBoardData() {
-  if (!currentProject || !currentBoardType) return null;
-
-  switch (currentBoardType) {
-    case 'todo':
-      return currentProject.todo;
-    case 'kanban':
-      return currentProject.kanban;
-    case 'timeline':
-      return currentProject.timeline;
-    case 'goals':
-      return currentProject.goals;
-    default:
-      return null;
-  }
-}
+      
 
 return () => document.removeEventListener('click', handleClickOutside);
     }
