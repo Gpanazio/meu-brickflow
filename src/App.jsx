@@ -487,7 +487,24 @@ function App() {
     
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
+      function getCurrentBoardData() {
+  if (!currentProject || !currentBoardType) return null;
+
+  switch (currentBoardType) {
+    case 'todo':
+      return currentProject.todo;
+    case 'kanban':
+      return currentProject.kanban;
+    case 'timeline':
+      return currentProject.timeline;
+    case 'goals':
+      return currentProject.goals;
+    default:
+      return null;
+  }
+}
+
+return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showDropdown]);
 
