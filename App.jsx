@@ -428,11 +428,6 @@ const getCurrentBoardData = useCallback(() => {
 }, [currentProject, currentBoardType]);
 
 
-
-
-
-
-
   // Estados do usuário
   const [currentUser, setCurrentUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -511,9 +506,7 @@ const getCurrentBoardData = useCallback(() => {
     
     if (showDropdown) {
       document.addEventListener('click', handleClickOutside);
-      
-
-return () => document.removeEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showDropdown]);
 
@@ -1665,7 +1658,7 @@ return () => document.removeEventListener('click', handleClickOutside);
 
   // Função para adicionar tarefa
   const handleAddTask = useCallback((listId, taskData) => {
-    const boardData = getCurrentBoardData();
+    const boardData = getCurrentBoardData(currentProject, currentBoardType);
     if (!boardData) return;
 
     const newTask = {
@@ -1725,7 +1718,7 @@ return () => document.removeEventListener('click', handleClickOutside);
 
   // Função para editar tarefa
   const handleEditTask = useCallback((taskData) => {
-    const boardData = getCurrentBoardData();
+    const boardData = getCurrentBoardData(currentProject, currentBoardType);
     if (!boardData || !editingTask) return;
 
     let updatedData;
@@ -1772,7 +1765,7 @@ return () => document.removeEventListener('click', handleClickOutside);
 
   // Função para alternar conclusão de tarefa (com movimento automático no TO-DO)
   const handleToggleTask = useCallback((taskId, listId) => {
-    const boardData = getCurrentBoardData();
+    const boardData = getCurrentBoardData(currentProject, currentBoardType);
     if (!boardData) return;
 
     if (currentBoardType === 'todo') {
@@ -1848,7 +1841,7 @@ return () => document.removeEventListener('click', handleClickOutside);
   const handleDeleteTask = useCallback((taskId) => {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
 
-    const boardData = getCurrentBoardData();
+    const boardData = getCurrentBoardData(currentProject, currentBoardType);
     if (!boardData) return;
 
     let updatedData;
@@ -1907,7 +1900,7 @@ return () => document.removeEventListener('click', handleClickOutside);
     e.preventDefault();
     if (!draggedTask) return;
 
-    const boardData = getCurrentBoardData();
+    const boardData = getCurrentBoardData(currentProject, currentBoardType);
     if (!boardData) return;
 
     const sourceListIndex = boardData.lists.findIndex(list => list.id === draggedTask.sourceListId);
@@ -2602,7 +2595,7 @@ return () => document.removeEventListener('click', handleClickOutside);
               <div className="board-content">
                 {(currentBoardType === 'todo' || currentBoardType === 'kanban') && (
                   <div className="lists-container">
-                    {getCurrentBoardData()?.lists?.map(list => (
+                    {getCurrentBoardData(currentProject, currentBoardType)?.lists?.map(list => (
                       <div 
                         key={list.id} 
                         className="list"
@@ -2786,7 +2779,7 @@ return () => document.removeEventListener('click', handleClickOutside);
 
                 {currentBoardType === 'timeline' && (
                   <div className="timeline-container">
-                    {getCurrentBoardData()?.periods?.map(period => (
+                    {getCurrentBoardData(currentProject, currentBoardType)?.periods?.map(period => (
                       <div key={period.id} className="timeline-period">
                         <div className="period-header">
                           <h3>{period.title}</h3>
@@ -2866,7 +2859,7 @@ return () => document.removeEventListener('click', handleClickOutside);
                       </button>
                     </div>
                     <div className="goals-list">
-                      {getCurrentBoardData()?.objectives?.map(goal => (
+                      {getCurrentBoardData(currentProject, currentBoardType)?.objectives?.map(goal => (
                         <div 
                           key={goal.id} 
                           className="goal-card"
