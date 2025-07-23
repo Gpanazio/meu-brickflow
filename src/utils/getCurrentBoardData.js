@@ -1,16 +1,11 @@
-export function getCurrentBoardData(currentProject, currentBoardType) {
-  if (!currentProject || !currentBoardType) return null;
+export function getCurrentBoardData(project, boardType) {
+  if (!project || !boardType) return null;
 
-  switch (currentBoardType) {
-    case 'todo':
-      return currentProject.todo;
-    case 'kanban':
-      return currentProject.kanban;
-    case 'timeline':
-      return currentProject.timeline;
-    case 'goals':
-      return currentProject.goals;
-    default:
-      return null;
+  switch (boardType) {
+    case "todo": return project.todo;
+    case "kanban": return project.kanban;
+    case "timeline": return project.timeline;
+    case "goals": return project.goals;
+    default: return null;
   }
 }
