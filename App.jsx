@@ -2604,7 +2604,7 @@ const getCurrentBoardData = useCallback(() => {
                         onDrop={(e) => handleDropOnList(e, list.id)}
                       >
                         <div className="list-header">
-                          <h3>{getCustomName('column', currentBoardData?.lists?.indexOf(list), list.title)}</h3>
+                          <h3>{getCustomName('column', getCurrentBoardData()?.lists?.indexOf(list), list.title)}</h3>
                           <span className="task-count">{list.tasks?.length || 0}</span>
                           <button 
                             className="btn-add-task"
