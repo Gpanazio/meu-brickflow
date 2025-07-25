@@ -999,6 +999,16 @@ function App() {
     return userTasks;
   };
 
+  // Função para obter dados do board atual
+  const getCurrentBoardData = () => {
+    if (currentView === 'subproject' && currentSubProject) {
+      return currentSubProject.boardData?.[currentBoardType] || {};
+    } else if (currentView === 'project' && currentProject) {
+      return currentProject.boardData?.[currentBoardType] || {};
+    }
+    return {};
+  };
+
   // Função para navegar para uma tarefa específica
   const navigateToTask = (task) => {
     // Encontrar o projeto
