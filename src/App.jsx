@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
+import { debugLog } from './utils/debugLog';
 
 // Frases absurdas para "Sorte do dia"
 const absurdPhrases = [
@@ -507,7 +508,7 @@ function App() {
   // Funções para gerenciar usuários no Supabase
   const saveUserToSupabase = async (userData) => {
     try {
-      console.log('💾 Salvando usuário no Supabase:', userData);
+      debugLog('💾 Salvando usuário no Supabase:', userData);
       
       // Verificar se usuário já existe
       const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
@@ -537,7 +538,7 @@ function App() {
           });
           
           if (updateResponse.ok) {
-            console.log('✅ Usuário atualizado no Supabase');
+            debugLog('✅ Usuário atualizado no Supabase');
           }
         } else {
           // Criar novo usuário - enviar apenas campos que existem na tabela
@@ -549,7 +550,7 @@ function App() {
             pin: userData.pin
           };
           
-          console.log('📤 Dados enviados para Supabase:', userDataForSupabase);
+          debugLog('📤 Dados enviados para Supabase:', userDataForSupabase);
           
           const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
             method: 'POST',
@@ -562,15 +563,15 @@ function App() {
           });
           
           if (createResponse.ok) {
-            console.log('✅ Usuário criado no Supabase');
+            debugLog('✅ Usuário criado no Supabase');
           } else {
             const errorText = await createResponse.text();
-            console.log('❌ Erro ao criar usuário:', createResponse.status, errorText);
+            debugLog('❌ Erro ao criar usuário:', createResponse.status, errorText);
           }
         }
       }
     } catch (error) {
-      console.log('⚠️ Erro ao salvar usuário no Supabase:', error.message);
+      debugLog('⚠️ Erro ao salvar usuário no Supabase:', error.message);
     }
   };
 
@@ -585,11 +586,11 @@ function App() {
       
       if (response.ok) {
         const users = await response.json();
-        console.log('✅ Usuários carregados do Supabase:', users);
+        debugLog('✅ Usuários carregados do Supabase:', users);
         return users;
       }
     } catch (error) {
-      console.log('⚠️ Erro ao carregar usuários do Supabase:', error.message);
+      debugLog('⚠️ Erro ao carregar usuários do Supabase:', error.message);
     }
     return [];
   };
@@ -597,7 +598,7 @@ function App() {
   // Funções para gerenciar arquivos no Supabase
   const saveFileToSupabase = async (fileData) => {
     try {
-      console.log('📁 Salvando arquivo no Supabase:', fileData.name);
+      debugLog('📁 Salvando arquivo no Supabase:', fileData.name);
       
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files`, {
         method: 'POST',
@@ -610,11 +611,11 @@ function App() {
       });
       
       if (response.ok) {
-        console.log('✅ Arquivo salvo no Supabase');
+        debugLog('✅ Arquivo salvo no Supabase');
         loadFilesFromSupabase();
       }
     } catch (error) {
-      console.log('⚠️ Erro ao salvar arquivo no Supabase:', error.message);
+      debugLog('⚠️ Erro ao salvar arquivo no Supabase:', error.message);
     }
   };
 
@@ -630,10 +631,10 @@ function App() {
       if (response.ok) {
         const filesData = await response.json();
         setFiles(filesData);
-        console.log('✅ Arquivos carregados do Supabase:', filesData.length);
+        debugLog('✅ Arquivos carregados do Supabase:', filesData.length);
       }
     } catch (error) {
-      console.log('⚠️ Erro ao carregar arquivos do Supabase:', error.message);
+      debugLog('⚠️ Erro ao carregar arquivos do Supabase:', error.message);
     }
   };
 
@@ -648,11 +649,11 @@ function App() {
       });
       
       if (response.ok) {
-        console.log('✅ Arquivo deletado do Supabase');
+        debugLog('✅ Arquivo deletado do Supabase');
         loadFilesFromSupabase();
       }
     } catch (error) {
-      console.log('⚠️ Erro ao deletar arquivo do Supabase:', error.message);
+      debugLog('⚠️ Erro ao deletar arquivo do Supabase:', error.message);
     }
   };
 
@@ -678,12 +679,12 @@ function App() {
         const data = await response.json();
         if (data.length > 0 && data[0].data) {
           setProjects(data[0].data);
-          console.log('✅ Projetos carregados do Supabase:', data[0].data);
+          debugLog('✅ Projetos carregados do Supabase:', data[0].data);
           return;
         }
       }
     } catch (error) {
-      console.log('⚠️ Erro ao carregar do Supabase:', error.message);
+      debugLog('⚠️ Erro ao carregar do Supabase:', error.message);
     }
 
     // Fallback: localStorage
@@ -691,7 +692,7 @@ function App() {
     if (savedProjects) {
       const parsedProjects = JSON.parse(savedProjects);
       setProjects(parsedProjects);
-      console.log('📁 Projetos carregados do localStorage:', parsedProjects);
+      debugLog('📁 Projetos carregados do localStorage:', parsedProjects);
     } else {
       // Primeira vez do usuário - criar projetos iniciais
       const initialProjects = getInitialProjects().map(project => ({
@@ -704,20 +705,20 @@ function App() {
       }));
       setProjects(initialProjects);
       localStorage.setItem(`brickflow-projects-${userKey}`, JSON.stringify(initialProjects));
-      console.log('Projetos iniciais criados:', initialProjects);
+      debugLog('Projetos iniciais criados:', initialProjects);
     }
   }, []);
 
   // Salvar projetos automaticamente (localStorage + Supabase)
   useEffect(() => {
     if (projects.length > 0 && currentUser && isLoggedIn) {
-      console.log('💾 Salvando projetos para usuário:', currentUser.userKey, projects);
+      debugLog('💾 Salvando projetos para usuário:', currentUser.userKey, projects);
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
       
       // Sincronizar com Supabase (com debounce)
       const timeoutId = setTimeout(async () => {
         try {
-          console.log('🔄 Iniciando sincronização com Supabase...');
+          debugLog('🔄 Iniciando sincronização com Supabase...');
           
           const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
             method: 'GET',
@@ -728,19 +729,19 @@ function App() {
             }
           });
           
-          console.log('📡 Resposta do GET:', response.status, response.statusText);
+          debugLog('📡 Resposta do GET:', response.status, response.statusText);
           
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
           
           const existingData = await response.json();
-          console.log('📊 Dados existentes:', existingData);
+          debugLog('📊 Dados existentes:', existingData);
           
           let saveResponse;
           if (existingData.length > 0) {
             // Atualizar registro existente
-            console.log('🔄 Atualizando registro existente...');
+            debugLog('🔄 Atualizando registro existente...');
             saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?id=eq.${existingData[0].id}`, {
               method: 'PATCH',
               headers: {
@@ -752,7 +753,7 @@ function App() {
             });
           } else {
             // Criar novo registro
-            console.log('➕ Criando novo registro...');
+            debugLog('➕ Criando novo registro...');
             saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
               method: 'POST',
               headers: {
@@ -764,16 +765,16 @@ function App() {
             });
           }
           
-          console.log('💾 Resposta do salvamento:', saveResponse.status, saveResponse.statusText);
+          debugLog('💾 Resposta do salvamento:', saveResponse.status, saveResponse.statusText);
           
           if (saveResponse.ok) {
-            console.log('✅ Projetos sincronizados com Supabase com sucesso!');
+            debugLog('✅ Projetos sincronizados com Supabase com sucesso!');
           } else {
             throw new Error(`Erro no salvamento: ${saveResponse.status} ${saveResponse.statusText}`);
           }
         } catch (error) {
           console.error('❌ Erro na sincronização com Supabase:', error);
-          console.log('📁 Dados salvos apenas no localStorage como fallback');
+          debugLog('📁 Dados salvos apenas no localStorage como fallback');
         }
       }, 500); // Debounce de 500ms (meio segundo)
       
@@ -788,7 +789,7 @@ function App() {
   const updateProjects = useCallback((updateFunction) => {
     setProjects(prevProjects => {
       const newProjects = updateFunction(JSON.parse(JSON.stringify(prevProjects))); // Deep clone
-      console.log('Atualizando projetos:', newProjects);
+      debugLog('Atualizando projetos:', newProjects);
       return newProjects;
     });
   }, []);
@@ -796,7 +797,7 @@ function App() {
   // Salvar usuário atual
   useEffect(() => {
     if (currentUser && isLoggedIn) {
-      console.log('Salvando usuário atual:', currentUser.userKey);
+      debugLog('Salvando usuário atual:', currentUser.userKey);
       localStorage.setItem('brickflow-current-user', JSON.stringify(currentUser));
     }
   }, [currentUser, isLoggedIn]);
@@ -808,7 +809,7 @@ function App() {
         const users = await loadUsersFromSupabase();
         setAllUsers(users);
       } catch (error) {
-        console.log('⚠️ Erro ao carregar usuários:', error.message);
+        debugLog('⚠️ Erro ao carregar usuários:', error.message);
       }
     };
     
@@ -1059,11 +1060,11 @@ function App() {
         localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(userData));
         
         loadUserProjects(userKey);
-        console.log('✅ Login realizado com dados do Supabase');
+        debugLog('✅ Login realizado com dados do Supabase');
         return;
       }
     } catch (error) {
-      console.log('⚠️ Erro ao verificar usuário no Supabase:', error.message);
+      debugLog('⚠️ Erro ao verificar usuário no Supabase:', error.message);
     }
     
     // Fallback: verificar localStorage
@@ -1075,7 +1076,7 @@ function App() {
       setIsLoggedIn(true);
       setShowLoginModal(false);
       loadUserProjects(userKey);
-      console.log('📁 Login realizado com dados do localStorage');
+      debugLog('📁 Login realizado com dados do localStorage');
     } else {
       // Usuário não existe
       alert('Usuário não encontrado! Clique em "Criar Usuário" para se cadastrar.');
@@ -1084,36 +1085,36 @@ function App() {
 
   // Função para criar usuário
   const handleCreateUser = async (userData) => {
-    console.log('🔄 handleCreateUser chamado com:', userData);
+    debugLog('🔄 handleCreateUser chamado com:', userData);
     const userKey = `${userData.username.toLowerCase()}-${userData.pin}`;
     
     try {
-      console.log('🔍 Verificando usuários existentes no Supabase...');
+      debugLog('🔍 Verificando usuários existentes no Supabase...');
       // Verificar se já existe no Supabase
       const users = await loadUsersFromSupabase();
-      console.log('📋 Usuários encontrados:', users);
+      debugLog('📋 Usuários encontrados:', users);
       const existingUser = users.find(user => user.username === userData.username);
       
       if (existingUser) {
-        console.log('⚠️ Usuário já existe:', existingUser);
+        debugLog('⚠️ Usuário já existe:', existingUser);
         alert('Este usuário já existe! Tente fazer login ou escolha outro nome.');
         return;
       }
     } catch (error) {
-      console.log('⚠️ Erro ao verificar usuários no Supabase:', error.message);
+      debugLog('⚠️ Erro ao verificar usuários no Supabase:', error.message);
     }
     
     // Verificar se já existe no localStorage (fallback)
-    console.log('🔍 Verificando localStorage...');
+    debugLog('🔍 Verificando localStorage...');
     const existingLocalUser = localStorage.getItem(`brickflow-user-${userKey}`);
     if (existingLocalUser) {
-      console.log('⚠️ Usuário já existe no localStorage');
+      debugLog('⚠️ Usuário já existe no localStorage');
       alert('Este usuário já existe! Tente fazer login ou escolha outro nome/PIN.');
       return;
     }
 
     // Criar novo usuário
-    console.log('✨ Criando novo usuário...');
+    debugLog('✨ Criando novo usuário...');
     const newUser = {
       userKey,
       username: userData.username,
@@ -1123,19 +1124,19 @@ function App() {
       pin: userData.pin,
       createdAt: new Date().toISOString()
     };
-    console.log('👤 Dados do novo usuário:', newUser);
+    debugLog('👤 Dados do novo usuário:', newUser);
 
     // Salvar no Supabase
-    console.log('💾 Salvando no Supabase...');
+    debugLog('💾 Salvando no Supabase...');
     await saveUserToSupabase(newUser);
 
     // Salvar dados do usuário no localStorage como cache
-    console.log('💾 Salvando no localStorage...');
+    debugLog('💾 Salvando no localStorage...');
     localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(newUser));
     localStorage.setItem('brickflow-current-user', JSON.stringify(newUser));
 
     // Fazer login
-    console.log('🔐 Fazendo login...');
+    debugLog('🔐 Fazendo login...');
     setCurrentUser(newUser);
     setIsLoggedIn(true);
     setShowCreateUserModal(false);
@@ -1144,7 +1145,7 @@ function App() {
     // Carregar projetos iniciais
     loadUserProjects(userKey);
     
-    console.log('✅ Usuário criado e salvo no Supabase:', newUser);
+    debugLog('✅ Usuário criado e salvo no Supabase:', newUser);
   };
 
   // Função de logout
@@ -1226,7 +1227,7 @@ function App() {
         // Salvar arquivo diretamente no Supabase
         await saveFileToSupabase(fileData);
 
-        console.log('✅ Arquivo enviado:', file.name);
+        debugLog('✅ Arquivo enviado:', file.name);
       } catch (error) {
         console.error('❌ Erro no upload:', error);
         alert(`Erro ao enviar ${file.name}: ${error.message}`);
@@ -1609,7 +1610,7 @@ function App() {
   const updateCurrentBoardData = useCallback((newData) => {
     if (!currentSubProject || !currentProject) return;
 
-    console.log('Atualizando board data:', newData);
+    debugLog('Atualizando board data:', newData);
 
     updateProjects(prevProjects => {
       return prevProjects.map(project => {
