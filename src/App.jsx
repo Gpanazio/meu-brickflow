@@ -83,6 +83,9 @@ const userColors = [
   'blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'
 ];
 
+// Aba padrão disponível em todos os projetos
+const DEFAULT_TABS = ['todo', 'kanban', 'files', 'goals'];
+
 // Dados iniciais dos projetos com estruturas separadas por tipo
 const getInitialProjects = () => [
   {
@@ -95,6 +98,7 @@ const getInitialProjects = () => [
     archived: { tasks: [], goals: [] },
     isArchived: false,
     createdBy: null, // Será definido quando criado
+    enabledTabs: [...DEFAULT_TABS],
     subProjects: [
       {
         id: 'rh-brick',
@@ -105,6 +109,7 @@ const getInitialProjects = () => [
         archived: { tasks: [], goals: [] },
         isArchived: false,
         createdBy: null,
+        enabledTabs: [...DEFAULT_TABS],
         // Nomes personalizados das abas e colunas
         customNames: {
           tabs: {
@@ -155,6 +160,7 @@ const getInitialProjects = () => [
         archived: { tasks: [], goals: [] },
         isArchived: false,
         createdBy: null,
+        enabledTabs: [...DEFAULT_TABS],
         boardData: {
           todo: {
             lists: [
@@ -219,6 +225,7 @@ const getInitialProjects = () => [
     archived: { tasks: [], goals: [] },
     isArchived: false,
     createdBy: null,
+    enabledTabs: [...DEFAULT_TABS],
     // Nomes personalizados das abas e colunas
     customNames: {
       tabs: {
@@ -242,6 +249,7 @@ const getInitialProjects = () => [
         archived: { tasks: [], goals: [] },
         isArchived: false,
         createdBy: null,
+        enabledTabs: [...DEFAULT_TABS],
         boardData: {
           todo: {
             lists: [
@@ -278,6 +286,7 @@ const getInitialProjects = () => [
         archived: { tasks: [], goals: [] },
         isArchived: false,
         createdBy: null,
+        enabledTabs: [...DEFAULT_TABS],
         boardData: {
           todo: {
             lists: [
@@ -342,6 +351,7 @@ const getInitialProjects = () => [
     archived: { tasks: [], goals: [] },
     isArchived: false,
     createdBy: null,
+    enabledTabs: [...DEFAULT_TABS],
     subProjects: [
       {
         id: 'marketing-digital',
@@ -352,6 +362,7 @@ const getInitialProjects = () => [
         archived: { tasks: [], goals: [] },
         isArchived: false,
         createdBy: null,
+        enabledTabs: [...DEFAULT_TABS],
         boardData: {
           todo: {
             lists: [
@@ -664,6 +675,15 @@ function App() {
     }
   }, [currentSubProject]);
 
+  // Garantir que o tipo de quadro atual esteja habilitado
+  useEffect(() => {
+    const project = currentView === 'subproject' ? currentSubProject : currentProject;
+    const enabled = project?.enabledTabs || DEFAULT_TABS;
+    if (project && !enabled.includes(currentBoardType)) {
+      setCurrentBoardType(enabled[0]);
+    }
+  }, [currentProject, currentSubProject]);
+
   // Carregar projetos compartilhados (Supabase + fallback localStorage)
   const loadUserProjects = useCallback(async (userKey) => {
     try {
@@ -678,8 +698,16 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         if (data.length > 0 && data[0].data) {
-          setProjects(data[0].data);
-          debugLog('✅ Projetos carregados do Supabase:', data[0].data);
+          const loaded = data[0].data.map(p => ({
+            ...p,
+            enabledTabs: p.enabledTabs || [...DEFAULT_TABS],
+            subProjects: p.subProjects?.map(sp => ({
+              ...sp,
+              enabledTabs: sp.enabledTabs || [...DEFAULT_TABS]
+            })) || []
+          }));
+          setProjects(loaded);
+          debugLog('✅ Projetos carregados do Supabase:', loaded);
           return;
         }
       }
@@ -690,7 +718,14 @@ function App() {
     // Fallback: localStorage
     const savedProjects = localStorage.getItem(`brickflow-projects-${userKey}`);
     if (savedProjects) {
-      const parsedProjects = JSON.parse(savedProjects);
+      const parsedProjects = JSON.parse(savedProjects).map(p => ({
+        ...p,
+        enabledTabs: p.enabledTabs || [...DEFAULT_TABS],
+        subProjects: p.subProjects?.map(sp => ({
+          ...sp,
+          enabledTabs: sp.enabledTabs || [...DEFAULT_TABS]
+        })) || []
+      }));
       setProjects(parsedProjects);
       debugLog('📁 Projetos carregados do localStorage:', parsedProjects);
     } else {
@@ -698,9 +733,11 @@ function App() {
       const initialProjects = getInitialProjects().map(project => ({
         ...project,
         createdBy: userKey,
+        enabledTabs: project.enabledTabs || [...DEFAULT_TABS],
         subProjects: project.subProjects?.map(sub => ({
           ...sub,
-          createdBy: userKey
+          createdBy: userKey,
+          enabledTabs: sub.enabledTabs || [...DEFAULT_TABS]
         })) || []
       }));
       setProjects(initialProjects);
@@ -1595,8 +1632,9 @@ function App() {
   const getCustomName = useCallback((type, key, defaultName) => {
     const project = currentView === 'subproject' ? currentSubProject : currentProject;
     if (!project?.customNames) return defaultName;
-    
+
     if (type === 'tab') {
+      if (!project.enabledTabs?.includes(key)) return defaultName;
       return project.customNames.tabs?.[key] || defaultName;
     } else if (type === 'column') {
       const columns = project.customNames.columns?.[currentBoardType];
@@ -2550,31 +2588,20 @@ function App() {
           <div className="subproject-view">
             {/* Seletor de Tipo de Quadro */}
             <div className="board-type-selector">
-              <button 
-                className={`board-type-btn ${currentBoardType === 'todo' ? 'active' : ''}`}
-                onClick={() => setCurrentBoardType('todo')}
-              >
-                📋 {getCustomName('tab', 'todo', 'To-Do')}
-              </button>
-              <button 
-                className={`board-type-btn ${currentBoardType === 'kanban' ? 'active' : ''}`}
-                onClick={() => setCurrentBoardType('kanban')}
-              >
-                📊 {getCustomName('tab', 'kanban', 'Kanban')}
-              </button>
-              <button 
-                className={`board-type-btn ${currentBoardType === 'files' ? 'active' : ''}`}
-                onClick={() => setCurrentBoardType('files')}
-              >
-                📁 {getCustomName('tab', 'files', 'Arquivos')}
-              </button>
-              <button 
-                className={`board-type-btn ${currentBoardType === 'goals' ? 'active' : ''}`}
-                onClick={() => setCurrentBoardType('goals')}
-              >
-                📈 {getCustomName('tab', 'goals', 'Metas')}
-              </button>
-              <button 
+              {(currentSubProject.enabledTabs || DEFAULT_TABS).map(tab => (
+                <button
+                  key={tab}
+                  className={`board-type-btn ${currentBoardType === tab ? 'active' : ''}`}
+                  onClick={() => setCurrentBoardType(tab)}
+                >
+                  {tab === 'todo' && '📋'}
+                  {tab === 'kanban' && '📊'}
+                  {tab === 'files' && '📁'}
+                  {tab === 'goals' && '📈'}
+                  {' '} {getCustomName('tab', tab, tab === 'todo' ? 'To-Do' : tab === 'kanban' ? 'Kanban' : tab === 'files' ? 'Arquivos' : 'Metas')}
+                </button>
+              ))}
+              <button
                 className={`board-type-btn ${showArchived ? 'active' : ''}`}
                 onClick={() => setShowArchived(!showArchived)}
               >
@@ -2927,10 +2954,13 @@ function App() {
           >
             ✏️ Modificar
           </button>
-          <button 
+          <button
             className="dropdown-item"
             onClick={() => {
-              setCustomizingProject(showDropdown.item);
+              setCustomizingProject({
+                ...showDropdown.item,
+                enabledTabs: showDropdown.item.enabledTabs || [...DEFAULT_TABS]
+              });
               setShowCustomizeModal(true);
               setShowDropdown(null);
             }}
@@ -3389,86 +3419,43 @@ function App() {
             <div className="customize-section">
               <h3>📋 Nomes das Abas</h3>
               <div className="customize-tabs">
-                <div className="customize-item">
-                  <label>To-Do:</label>
-                  <input 
-                    type="text" 
-                    value={customizingProject.customNames?.tabs?.todo || 'To-Do'}
-                    onChange={(e) => {
-                      const updated = {
-                        ...customizingProject,
-                        customNames: {
-                          ...customizingProject.customNames,
-                          tabs: {
-                            ...customizingProject.customNames?.tabs,
-                            todo: e.target.value
+                {['todo', 'kanban', 'files', 'goals'].map(tab => (
+                  <div key={tab} className="customize-item">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={customizingProject.enabledTabs?.includes(tab)}
+                        onChange={() => {
+                          const enabled = customizingProject.enabledTabs?.includes(tab);
+                          const updatedTabs = enabled
+                            ? customizingProject.enabledTabs.filter(t => t !== tab)
+                            : [...(customizingProject.enabledTabs || []), tab];
+                          setCustomizingProject({
+                            ...customizingProject,
+                            enabledTabs: updatedTabs
+                          });
+                        }}
+                      /> {tab === 'todo' ? 'To-Do' : tab === 'kanban' ? 'Kanban' : tab === 'files' ? 'Arquivos' : 'Metas'}:
+                    </label>
+                    <input
+                      type="text"
+                      value={customizingProject.customNames?.tabs?.[tab] || (tab === 'todo' ? 'To-Do' : tab === 'kanban' ? 'Kanban' : tab === 'files' ? 'Arquivos' : 'Metas')}
+                      onChange={(e) => {
+                        const updated = {
+                          ...customizingProject,
+                          customNames: {
+                            ...customizingProject.customNames,
+                            tabs: {
+                              ...customizingProject.customNames?.tabs,
+                              [tab]: e.target.value
+                            }
                           }
-                        }
-                      };
-                      setCustomizingProject(updated);
-                    }}
-                  />
-                </div>
-                <div className="customize-item">
-                  <label>Kanban:</label>
-                  <input 
-                    type="text" 
-                    value={customizingProject.customNames?.tabs?.kanban || 'Kanban'}
-                    onChange={(e) => {
-                      const updated = {
-                        ...customizingProject,
-                        customNames: {
-                          ...customizingProject.customNames,
-                          tabs: {
-                            ...customizingProject.customNames?.tabs,
-                            kanban: e.target.value
-                          }
-                        }
-                      };
-                      setCustomizingProject(updated);
-                    }}
-                  />
-                </div>
-                <div className="customize-item">
-                  <label>Arquivos:</label>
-                  <input 
-                    type="text" 
-                    value={customizingProject.customNames?.tabs?.files || 'Arquivos'}
-                    onChange={(e) => {
-                      const updated = {
-                        ...customizingProject,
-                        customNames: {
-                          ...customizingProject.customNames,
-                          tabs: {
-                            ...customizingProject.customNames?.tabs,
-                            files: e.target.value
-                          }
-                        }
-                      };
-                      setCustomizingProject(updated);
-                    }}
-                  />
-                </div>
-                <div className="customize-item">
-                  <label>Metas:</label>
-                  <input 
-                    type="text" 
-                    value={customizingProject.customNames?.tabs?.goals || 'Metas'}
-                    onChange={(e) => {
-                      const updated = {
-                        ...customizingProject,
-                        customNames: {
-                          ...customizingProject.customNames,
-                          tabs: {
-                            ...customizingProject.customNames?.tabs,
-                            goals: e.target.value
-                          }
-                        }
-                      };
-                      setCustomizingProject(updated);
-                    }}
-                  />
-                </div>
+                        };
+                        setCustomizingProject(updated);
+                      }}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -3550,7 +3537,6 @@ function App() {
                     if (project.id === customizingProject.id) {
                       return customizingProject;
                     }
-                    // Verificar subprojetos
                     if (project.subProjects) {
                       const updatedSubProjects = project.subProjects.map(subProject => {
                         if (subProject.id === customizingProject.id) {
@@ -3562,8 +3548,21 @@ function App() {
                     }
                     return project;
                   });
-                  
+
                   setProjects(updatedProjects);
+
+                  if (currentSubProject?.id === customizingProject.id) {
+                    setCurrentSubProject(customizingProject);
+                    if (!customizingProject.enabledTabs.includes(currentBoardType)) {
+                      setCurrentBoardType(customizingProject.enabledTabs[0]);
+                    }
+                  } else if (currentProject?.id === customizingProject.id) {
+                    setCurrentProject(customizingProject);
+                    if (!customizingProject.enabledTabs.includes(currentBoardType)) {
+                      setCurrentBoardType(customizingProject.enabledTabs[0]);
+                    }
+                  }
+
                   updateProjects(() => updatedProjects);
                   setShowCustomizeModal(false);
                   setCustomizingProject(null);
