@@ -3563,8 +3563,16 @@ function App() {
                     return project;
                   });
                   
-                  setProjects(updatedProjects);
                   updateProjects(() => updatedProjects);
+
+                  if (currentProject?.id === customizingProject.id) {
+                    setCurrentProject(customizingProject);
+                    setRefreshKey(prev => prev + 1);
+                  } else if (currentSubProject?.id === customizingProject.id) {
+                    setCurrentSubProject(customizingProject);
+                    setRefreshKey(prev => prev + 1);
+                  }
+
                   setShowCustomizeModal(false);
                   setCustomizingProject(null);
                 }}
