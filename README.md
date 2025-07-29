@@ -3,12 +3,14 @@
 ## 🚀 Como Hospedar (SUPER FÁCIL)
 
 ### 1. Configurar Supabase
-Antes de fazer o deploy, configure estas variáveis no Netlify:
+Antes de fazer o deploy, crie um arquivo `.env` (ou copie `.env.example`) e configure estas variáveis no Netlify:
 
 ```
 VITE_SUPABASE_URL=sua_url_aqui
 VITE_SUPABASE_ANON_KEY=sua_chave_aqui
 ```
+Essas variáveis são lidas diretamente em `src/App.jsx` via `import.meta.env`.
+Um modelo está disponível em `.env.example`.
 
 ### 2. Deploy no Netlify
 - Faça upload deste repositório no GitHub
