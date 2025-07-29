@@ -3549,7 +3549,7 @@ function App() {
                     return project;
                   });
 
-                  setProjects(updatedProjects);
+                  updateProjects(() => updatedProjects);
 
                   if (currentSubProject?.id === customizingProject.id) {
                     setCurrentSubProject(customizingProject);
@@ -3563,7 +3563,7 @@ function App() {
                     }
                   }
 
-                  updateProjects(() => updatedProjects);
+                  setRefreshKey(prev => prev + 1);
                   setShowCustomizeModal(false);
                   setCustomizingProject(null);
                 }}
