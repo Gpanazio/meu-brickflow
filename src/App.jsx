@@ -3563,7 +3563,7 @@ function App() {
                   });
                   
                   setProjects(updatedProjects);
-                  updateProjects(updatedProjects);
+                  updateProjects(() => updatedProjects);
                   setShowCustomizeModal(false);
                   setCustomizingProject(null);
                 }}
