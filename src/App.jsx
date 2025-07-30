@@ -438,13 +438,10 @@ function App() {
   const [showEditProjectModal, setShowEditProjectModal] = useState(false);
   const [showNewSubProjectModal, setShowNewSubProjectModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showListModal, setShowListModal] = useState(false);
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [customizingProject, setCustomizingProject] = useState(null);
   const [pendingProject, setPendingProject] = useState(null);
-  const [itemToArchive, setItemToArchive] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
   const [targetListId, setTargetListId] = useState(null);
@@ -509,8 +506,6 @@ function App() {
 
   // Estados para arquivos
   const [files, setFiles] = useState([]);
-  const [showFileModal, setShowFileModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
   // Estados para usuários
@@ -1622,12 +1617,6 @@ function App() {
     }
   };
 
-  // Função para obter dados do quadro do projeto principal
-  const getProjectBoardData = useCallback(() => {
-    if (!currentProject) return null;
-    return currentProject[currentBoardType] || null;
-  }, [currentProject, currentBoardType]);
-
   // Função para obter nomes personalizados
   const getCustomName = useCallback((type, key, defaultName) => {
     const project = currentView === 'subproject' ? currentSubProject : currentProject;
@@ -1794,7 +1783,7 @@ function App() {
   }, [getCurrentBoardData, currentBoardType, editingTask, updateCurrentBoardData]);
 
   // Função para alternar conclusão de tarefa (com movimento automático no TO-DO)
-  const handleToggleTask = useCallback((taskId, listId) => {
+  const handleToggleTask = useCallback((taskId) => {
     const boardData = getCurrentBoardData();
     if (!boardData) return;
 
@@ -2491,7 +2480,7 @@ function App() {
                   onDragOver={(e) => handleProjectDragOver(e, project)}
                   onDragLeave={handleProjectDragLeave}
                   onDrop={(e) => handleProjectDrop(e, project)}
-                  onClick={(e) => {
+                  onClick={() => {
                     // Só acessa o projeto se não estiver arrastando
                     if (!draggedProject) {
                       handleAccessProject(project);
@@ -2546,7 +2535,7 @@ function App() {
                       onDragOver={(e) => handleSubProjectDragOver(e, subProject)}
                       onDragLeave={handleSubProjectDragLeave}
                       onDrop={(e) => handleSubProjectDrop(e, subProject)}
-                      onClick={(e) => {
+                      onClick={() => {
                         // Só acessa o subprojeto se não estiver arrastando
                         if (!draggedSubProject) {
                           handleAccessSubProject(subProject);
@@ -2654,7 +2643,7 @@ function App() {
                                   checked={task.completed}
                                   onChange={(e) => {
                                     e.stopPropagation();
-                                    handleToggleTask(task.id, list.id);
+                                    handleToggleTask(task.id);
                                   }}
                                 />
                                 <h4>{task.title}</h4>
@@ -2829,7 +2818,7 @@ function App() {
                                   checked={task.completed}
                                   onChange={(e) => {
                                     e.stopPropagation();
-                                    handleToggleTask(task.id, period.id);
+                                    handleToggleTask(task.id);
                                   }}
                                 />
                                 <h4>{task.title}</h4>
