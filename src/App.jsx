@@ -1047,7 +1047,7 @@ function App() {
     // Encontrar o projeto
     const project = projects.find(p => p.id === task.projectId);
     if (!project) return;
-    
+
     // Se for um subprojeto, navegar para ele
     if (task.subProjectId) {
       const subProject = project.subProjects?.find(sp => sp.id === task.subProjectId);
@@ -1055,12 +1055,14 @@ function App() {
         setCurrentProject(project);
         setCurrentSubProject(subProject);
         setCurrentBoardType(task.boardType);
+        setCurrentView('subproject');
       }
     } else {
       // Se for projeto principal
       setCurrentProject(project);
       setCurrentSubProject(null);
       setCurrentBoardType(task.boardType);
+      setCurrentView('project');
     }
   };
 
