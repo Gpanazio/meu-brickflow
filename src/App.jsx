@@ -448,6 +448,8 @@ function App() {
   const [draggedTask, setDraggedTask] = useState(null);
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
+  // Estado para armazenar a tarefa selecionada ao navegar a partir de "Minhas Tarefas"
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
   
   // Estados para dropdown de ações
   const [showDropdown, setShowDropdown] = useState(null);
@@ -678,6 +680,17 @@ function App() {
       setCurrentBoardType(enabled[0]);
     }
   }, [currentProject, currentSubProject]);
+
+  // Ao navegar para uma tarefa, rolar até ela no quadro correspondente
+  useEffect(() => {
+    if (selectedTaskId) {
+      document.getElementById('task-' + selectedTaskId)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+      setSelectedTaskId(null);
+    }
+  }, [selectedTaskId, currentProject, currentSubProject, currentBoardType]);
 
   // Carregar projetos compartilhados (Supabase + fallback localStorage)
   const loadUserProjects = useCallback(async (userKey) => {
@@ -1056,6 +1069,7 @@ function App() {
         setCurrentSubProject(subProject);
         setCurrentBoardType(task.boardType);
         setCurrentView('subproject');
+        setSelectedTaskId(task.id);
       }
     } else {
       // Se for projeto principal
@@ -1063,6 +1077,7 @@ function App() {
       setCurrentSubProject(null);
       setCurrentBoardType(task.boardType);
       setCurrentView('project');
+      setSelectedTaskId(task.id);
     }
   };
 
@@ -2628,8 +2643,9 @@ function App() {
                         </div>
                         <div className="tasks-container">
                           {list.tasks?.map((task, index) => (
-                            <div 
-                              key={task.id} 
+                            <div
+                              key={task.id}
+                              id={`task-${task.id}`}
                               className={`task-card ${task.completed ? 'completed' : ''}`}
                               draggable={currentBoardType === 'kanban' || currentBoardType === 'todo'}
                               onDragStart={(e) => handleDragStart(e, task, list.id)}
@@ -2806,8 +2822,9 @@ function App() {
                         </div>
                         <div className="period-tasks">
                           {period.tasks?.map(task => (
-                            <div 
-                              key={task.id} 
+                            <div
+                              key={task.id}
+                              id={`task-${task.id}`}
                               className={`task-card ${task.completed ? 'completed' : ''}`}
                               onClick={() => {
                                 setEditingTask(task);
@@ -2870,8 +2887,9 @@ function App() {
                     </div>
                     <div className="goals-list">
                       {getCurrentBoardData()?.objectives?.map(goal => (
-                        <div 
-                          key={goal.id} 
+                        <div
+                          key={goal.id}
+                          id={`task-${goal.id}`}
                           className="goal-card"
                           onClick={() => {
                             setEditingTask(goal);
