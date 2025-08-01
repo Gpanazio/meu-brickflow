@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useUsers } from './hooks/useUsers'
 import { useFiles } from './hooks/useFiles'
 import { useBoards } from './hooks/useBoards'
+import { useRealtimeProjects } from './hooks/useRealtimeProjects'
 
 export default function App() {
   const [projects, setProjects] = useState([])
@@ -19,6 +20,8 @@ export default function App() {
   const { files, handleFileUpload } = useFiles(currentProject, currentSubProject, currentUser || {})
 
   const { getCurrentBoardData, updateCurrentBoardData } = useBoards(currentView, currentProject, currentSubProject, currentBoardType, updateProjects, setCurrentSubProject, setRefreshKey)
+
+  useRealtimeProjects(isLoggedIn, updateProjects)
 
   function loadUserProjects() {}
 
