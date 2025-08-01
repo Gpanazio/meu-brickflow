@@ -911,7 +911,7 @@ function App() {
             project.boardData[boardType].lists.forEach(list => {
               if (list.tasks) {
                 list.tasks.forEach(task => {
-                  if (task.responsibleUser === currentUser.username) {
+                  if (task.responsibleUsers?.includes(currentUser.username)) {
                     userTasks.push({
                       ...task,
                       projectId: project.id,
@@ -934,7 +934,7 @@ function App() {
           project.boardData.timeline.periods.forEach(period => {
             if (period.tasks) {
               period.tasks.forEach(task => {
-                if (task.responsibleUser === currentUser.username) {
+                if (task.responsibleUsers?.includes(currentUser.username)) {
                   userTasks.push({
                     ...task,
                     projectId: project.id,
@@ -954,7 +954,7 @@ function App() {
         // Metas
         if (project.boardData.goals?.objectives) {
           project.boardData.goals.objectives.forEach(goal => {
-            if (goal.responsibleUser === currentUser.username) {
+            if (goal.responsibleUsers?.includes(currentUser.username)) {
               userTasks.push({
                 ...goal,
                 projectId: project.id,
@@ -980,7 +980,7 @@ function App() {
                 subProject.boardData[boardType].lists.forEach(list => {
                   if (list.tasks) {
                     list.tasks.forEach(task => {
-                      if (task.responsibleUser === currentUser.username) {
+                      if (task.responsibleUsers?.includes(currentUser.username)) {
                         userTasks.push({
                           ...task,
                           projectId: project.id,
@@ -1003,7 +1003,7 @@ function App() {
               subProject.boardData.timeline.periods.forEach(period => {
                 if (period.tasks) {
                   period.tasks.forEach(task => {
-                    if (task.responsibleUser === currentUser.username) {
+                    if (task.responsibleUsers?.includes(currentUser.username)) {
                       userTasks.push({
                         ...task,
                         projectId: project.id,
@@ -1023,7 +1023,7 @@ function App() {
             // Metas dos subprojetos
             if (subProject.boardData.goals?.objectives) {
               subProject.boardData.goals.objectives.forEach(goal => {
-                if (goal.responsibleUser === currentUser.username) {
+                if (goal.responsibleUsers?.includes(currentUser.username)) {
                   userTasks.push({
                     ...goal,
                     projectId: project.id,
@@ -1705,6 +1705,7 @@ function App() {
       priority: taskData.priority || 'medium',
       startDate: taskData.startDate || '',
       endDate: taskData.endDate || '',
+      responsibleUsers: taskData.responsibleUsers || [],
       completed: false,
       createdAt: new Date().toISOString(),
       createdBy: currentUser?.userKey
@@ -1737,6 +1738,7 @@ function App() {
         description: taskData.description || '',
         progress: 0,
         keyResults: [],
+        responsibleUsers: taskData.responsibleUsers || [],
         createdAt: new Date().toISOString(),
         createdBy: currentUser?.userKey
       };
@@ -2676,9 +2678,13 @@ function App() {
                                 </button>
                               </div>
                               {task.description && <p>{convertUrlsToLinks(task.description)}</p>}
-                              {task.responsibleUser && (
+                              {task.responsibleUsers && task.responsibleUsers.length > 0 && (
                                 <div className="task-responsible">
-                                  👤 {getResponsibleUserInfo(task.responsibleUser)?.displayName || task.responsibleUser}
+                                  {task.responsibleUsers.map(user => (
+                                    <div key={user}>
+                                      👤 {getResponsibleUserInfo(user)?.displayName || user}
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                               {task.tags?.length > 0 && (
@@ -2852,9 +2858,13 @@ function App() {
                                 </button>
                               </div>
                               {task.description && <p>{convertUrlsToLinks(task.description)}</p>}
-                              {task.responsibleUser && (
+                              {task.responsibleUsers && task.responsibleUsers.length > 0 && (
                                 <div className="task-responsible">
-                                  👤 {getResponsibleUserInfo(task.responsibleUser)?.displayName || task.responsibleUser}
+                                  {task.responsibleUsers.map(user => (
+                                    <div key={user}>
+                                      👤 {getResponsibleUserInfo(user)?.displayName || user}
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                               {(task.startDate || task.endDate) && (
@@ -2909,9 +2919,13 @@ function App() {
                             </button>
                           </div>
                           {goal.description && <p>{convertUrlsToLinks(goal.description)}</p>}
-                          {goal.responsibleUser && (
+                          {goal.responsibleUsers && goal.responsibleUsers.length > 0 && (
                             <div className="task-responsible">
-                              👤 {getResponsibleUserInfo(goal.responsibleUser)?.displayName || goal.responsibleUser}
+                              {goal.responsibleUsers.map(user => (
+                                <div key={user}>
+                                  👤 {getResponsibleUserInfo(user)?.displayName || user}
+                                </div>
+                              ))}
                             </div>
                           )}
                           <div className="goal-progress">
@@ -3253,7 +3267,7 @@ function App() {
                 startDate: formData.get('startDate'),
                 endDate: formData.get('endDate'),
                 progress: parseInt(formData.get('progress')) || 0,
-                responsibleUser: formData.get('responsibleUser') || null
+                responsibleUsers: formData.getAll('responsibleUsers')
               };
               
               if (editingTask) {
@@ -3300,9 +3314,12 @@ function App() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Usuário Responsável:</label>
-                    <select name="responsibleUser" defaultValue={editingTask?.responsibleUser || ''}>
-                      <option value="">Nenhum usuário selecionado</option>
+                    <label>Usuários Responsáveis:</label>
+                    <select
+                      name="responsibleUsers"
+                      multiple
+                      defaultValue={editingTask?.responsibleUsers || []}
+                    >
                       {allUsers.map(user => (
                         <option key={user.username} value={user.username}>
                           {user.displayName} (@{user.username})
