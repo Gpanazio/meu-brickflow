@@ -24,7 +24,22 @@ const absurdPhrases = [
   "Hoje é um excelente dia para tratar suas tarefas como pokémons - você precisa capturar todas.",
   "Sua intuição hoje será mais precisa que o GPS recalculando rota pela quinta vez.",
   "O sucesso hoje virá disfarçado de uma reunião que poderia ter sido um e-mail.",
-  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado."
+  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado.",
+  "Hoje é um ótimo dia para responder e-mails com enigmas em vez de respostas diretas.",
+  "Use o elevador hoje como se fosse um portal interdimensional — apenas entre confiante.",
+  "A produtividade bate diferente quando você finge que está num reality show de escritórios.",
+  "Lembre-se: todo post-it é um grito de socorro com cola.",
+  "Hoje, tente resolver um problema usando apenas frases motivacionais e uma garrafinha d’água.",
+  "Seu café está te observando — e julgando suas decisões.",
+  "Confie na sua intuição, especialmente se ela vier com gráficos e uma apresentação em PowerPoint.",
+  "Cada clique hoje será interpretado como uma declaração de guerra pelo seu mouse.",
+  "Hoje é um bom dia para se declarar gerente do caos e seguir em frente.",
+  "Se algo der errado hoje, acuse Mercúrio retrógrado e siga com classe.",
+  "Sua senha de Wi-Fi pode estar influenciando seu destino.",
+  "A impressora está em greve e exige um aumento em toner.",
+  "Cada reunião desnecessária cancela uma encarnação futura sua.",
+  "Hoje você vai digitar algo genial... e o Word vai travar.",
+  "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações."
 ];
 
 // Função para gerar números da Mega Sena
