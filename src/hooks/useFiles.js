@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { debugLog } from '../utils/debugLog'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/supabase'
 
 export function useFiles(currentProject, currentSubProject, currentUser) {
   const [files, setFiles] = useState([])
@@ -7,16 +8,13 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
   const [previewFile, setPreviewFile] = useState(null)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
 
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-  const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-
   const saveFileToSupabase = async (fileData) => {
     try {
       await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files`, {
         method: 'POST',
         headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(fileData)
@@ -30,8 +28,8 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?order=created_at.desc`, {
         headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
         }
       })
       if (response.ok) {
@@ -48,8 +46,8 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
       await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?id=eq.${fileId}`, {
         method: 'DELETE',
         headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
         }
       })
     } catch (error) {

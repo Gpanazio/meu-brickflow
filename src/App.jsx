@@ -1,9 +1,11 @@
 import './App.css'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useUsers } from './hooks/useUsers'
 import { useFiles } from './hooks/useFiles'
 import { useBoards } from './hooks/useBoards'
 import { useRealtimeProjects } from './hooks/useRealtimeProjects'
+import ProjectsView from './components/ProjectsView'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/supabase'
 
 export default function App() {
   const [projects, setProjects] = useState([])
@@ -25,12 +27,10 @@ export default function App() {
 
   async function loadUserProjects(userKey) {
     try {
-      const url = import.meta.env.VITE_SUPABASE_URL
-      const key = import.meta.env.VITE_SUPABASE_ANON_KEY
-      const response = await fetch(`${url}/rest/v1/brickflow_data`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
         headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`
         }
       })
 
@@ -59,9 +59,26 @@ export default function App() {
     <div className="app">
       <h1>BrickFlow</h1>
       {isLoggedIn ? (
-        <div>Bem-vindo, {currentUser.displayName}</div>
+        currentView === 'home' ? (
+          <ProjectsView
+            projects={projects}
+            onSelect={(project) => {
+              setCurrentProject(project)
+              setCurrentView('project')
+            }}
+          />
+        ) : (
+          <div>
+            <h2>{currentProject?.name}</h2>
+            <button onClick={() => setCurrentView('home')}>Voltar</button>
+          </div>
+        )
       ) : (
-        <div>{showLoginModal && <button onClick={() => handleLogin('user','1234')}>Login</button>}</div>
+        <div>
+          {showLoginModal && (
+            <button onClick={() => handleLogin('user', '1234')}>Login</button>
+          )}
+        </div>
       )}
     </div>
   )
