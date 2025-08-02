@@ -1462,21 +1462,60 @@ body {
   border-bottom-style: solid;
 }
 
-/* Usuário responsável */
+/* Responsible users button */
 .task-responsible {
-  font-size: 0.85em;
-  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   margin-top: 8px;
-  padding: 4px 8px;
-  background-color: #f8f9fa;
-  border-radius: 12px;
-  display: inline-block;
-  border-left: 3px solid #007bff;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
-.task-responsible:before {
-  content: '';
-  margin-right: 4px;
+.task-responsible:hover {
+  background-color: #f0f0f0;
+  border-radius: 4px;
+}
+
+.task-responsible .avatar-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85em;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+}
+
+.task-responsible:hover .avatar-badge {
+  border-color: #007bff;
+}
+
+.responsible-user-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.responsible-user-detail:last-child {
+  margin-bottom: 0;
+}
+
+.responsible-user-detail .detail-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85em;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
 }
 
 

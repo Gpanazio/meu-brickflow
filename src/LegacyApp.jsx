@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
+import ResponsibleUsersButton from './components/ResponsibleUsersButton';
 
 // Frases absurdas para "Sorte do dia"
 const absurdPhrases = [
@@ -2694,13 +2695,10 @@ function App() {
                               </div>
                               {task.description && <p>{convertUrlsToLinks(task.description)}</p>}
                               {task.responsibleUsers && task.responsibleUsers.length > 0 && (
-                                <div className="task-responsible">
-                                  {task.responsibleUsers.map(user => (
-                                    <div key={user}>
-                                      👤 {getResponsibleUserInfo(user)?.displayName || user}
-                                    </div>
-                                  ))}
-                                </div>
+                                <ResponsibleUsersButton
+                                  users={task.responsibleUsers}
+                                  getUserInfo={getResponsibleUserInfo}
+                                />
                               )}
                               {task.tags?.length > 0 && (
                                 <div className="task-tags">
