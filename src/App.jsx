@@ -23,7 +23,37 @@ export default function App() {
 
   useRealtimeProjects(isLoggedIn, updateProjects)
 
-  function loadUserProjects() {}
+  async function loadUserProjects(userKey) {
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL
+      const key = import.meta.env.VITE_SUPABASE_ANON_KEY
+      const response = await fetch(`${url}/rest/v1/brickflow_data`, {
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.length > 0 && data[0].data) {
+          updateProjects(() => data[0].data)
+          return
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar projetos do Supabase:', error)
+    }
+
+    const saved = localStorage.getItem(`brickflow-projects-${userKey}`)
+    if (saved) {
+      updateProjects(() => JSON.parse(saved))
+    } else {
+      const initialProjects = []
+      updateProjects(() => initialProjects)
+      localStorage.setItem(`brickflow-projects-${userKey}`, JSON.stringify(initialProjects))
+    }
+  }
 
   return (
     <div className="app">
