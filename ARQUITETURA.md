@@ -55,3 +55,8 @@
 - Senha válida por sessão (localStorage)
 - Logout automático ao fechar navegador
 
+### 5. Melhorias Futuras
+- Integrar suporte a usuários e permissões diferentes (ex.: admin, editor, leitor).
+- Persistir dados em um banco remoto (ex.: Supabase) para sincronização em tempo real.
+- Adicionar testes de integração para garantir a comunicação entre os componentes principais.
+

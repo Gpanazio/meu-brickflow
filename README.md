@@ -54,6 +54,12 @@ Este projeto está configurado com:
 - ✅ Cache otimizado
 - ✅ Redirecionamentos SPA
 
+## 💡 Sugestões de Melhorias
+
+- Adicionar testes de ponta a ponta (E2E) para cobrir fluxos críticos do usuário.
+- Configurar uma pipeline de CI/CD (por exemplo, GitHub Actions) para rodar `lint` e `test` a cada commit.
+- Incluir suporte a Docker para padronizar o ambiente de desenvolvimento.
+
 ## 📞 Suporte
 
 Se precisar de ajuda, verifique:
