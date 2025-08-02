@@ -3,7 +3,7 @@ import { debugLog } from '../utils/debugLog'
 
 export function useFiles(currentProject, currentSubProject, currentUser) {
   const [files, setFiles] = useState([])
-  const [isDragging, setIsDragging] = useState(false)
+  const [isDragging] = useState(false)
   const [previewFile, setPreviewFile] = useState(null)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
 
