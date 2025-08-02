@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { debugLog } from '../utils/debugLog'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/supabase'
 
 export function useUsers(loadUserProjects) {
   const [currentUser, setCurrentUser] = useState(null)
@@ -11,21 +10,21 @@ export function useUsers(loadUserProjects) {
 
   const saveUserToSupabase = async (userData) => {
     try {
-      const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
+      const checkResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         }
       })
 
       if (checkResponse.ok) {
         const existingUsers = await checkResponse.json()
         if (existingUsers.length > 0) {
-          await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
             method: 'PATCH',
             headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -44,11 +43,11 @@ export function useUsers(loadUserProjects) {
             pin: userData.pin
           }
 
-          await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_users`, {
             method: 'POST',
             headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify(userDataForSupabase)
@@ -62,10 +61,10 @@ export function useUsers(loadUserProjects) {
 
   const loadUsersFromSupabase = async () => {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_users`, {
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         }
       })
 

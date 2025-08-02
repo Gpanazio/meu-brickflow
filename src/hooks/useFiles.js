@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { debugLog } from '../utils/debugLog'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/supabase'
 
 export function useFiles(currentProject, currentSubProject, currentUser) {
   const [files, setFiles] = useState([])
@@ -10,11 +9,11 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
 
   const saveFileToSupabase = async (fileData) => {
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files`, {
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_files`, {
         method: 'POST',
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(fileData)
@@ -26,10 +25,10 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
 
   const loadFilesFromSupabase = async () => {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?order=created_at.desc`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_files?order=created_at.desc`, {
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         }
       })
       if (response.ok) {
@@ -43,11 +42,11 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
 
   const deleteFileFromSupabase = async (fileId) => {
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?id=eq.${fileId}`, {
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_files?id=eq.${fileId}`, {
         method: 'DELETE',
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         }
       })
     } catch (error) {
