@@ -598,7 +598,7 @@ body {
   margin-bottom: 0.5rem;
 }
 
-.task-header input[type="checkbox"] {
+.task-header [data-slot="checkbox"] {
   margin-top: 0.25rem;
   cursor: pointer;
   transform: scale(1.2);
@@ -1699,6 +1699,23 @@ body {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
   font-weight: 500;
+}
+
+.customize-item .tab-toggle {
+  min-width: 80px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.customize-item .tab-toggle.active {
+  background: var(--brick-blue);
+  color: var(--brick-white);
 }
 
 .customize-item input {

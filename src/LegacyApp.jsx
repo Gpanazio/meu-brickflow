@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
+import { Checkbox } from './components/ui/checkbox';
 
 // Frases absurdas para "Sorte do dia"
 const absurdPhrases = [
@@ -465,6 +466,11 @@ function App() {
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
   // Estado para armazenar a tarefa selecionada ao navegar a partir de "Minhas Tarefas"
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+
+  // Estados para checkboxes sem marcação
+  const [newProjectIsProtected, setNewProjectIsProtected] = useState(false);
+  const [editProjectIsProtected, setEditProjectIsProtected] = useState(false);
+  const [newSubProjectIsProtected, setNewSubProjectIsProtected] = useState(false);
   
   // Estados para dropdown de ações
   const [showDropdown, setShowDropdown] = useState(null);
@@ -516,6 +522,19 @@ function App() {
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showDropdown]);
+
+  // Resetar estados dos checkboxes quando modais abrem ou projeto é editado
+  useEffect(() => {
+    if (showNewProjectModal) setNewProjectIsProtected(false);
+  }, [showNewProjectModal]);
+
+  useEffect(() => {
+    if (showNewSubProjectModal) setNewSubProjectIsProtected(false);
+  }, [showNewSubProjectModal]);
+
+  useEffect(() => {
+    setEditProjectIsProtected(editingProject?.isProtected || false);
+  }, [editingProject]);
 
   // Configuração do Supabase
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -2673,13 +2692,15 @@ function App() {
                               }}
                             >
                               <div className="task-header">
-                                <input 
-                                  type="checkbox" 
+                                <Checkbox
                                   checked={task.completed}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
+                                  onCheckedChange={() => {
                                     handleToggleTask(task.id);
                                   }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                  className="task-checkbox"
                                 />
                                 <h4>{task.title}</h4>
                                 <button 
@@ -2853,13 +2874,15 @@ function App() {
                               }}
                             >
                               <div className="task-header">
-                                <input 
-                                  type="checkbox" 
+                                <Checkbox
                                   checked={task.completed}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
+                                  onCheckedChange={() => {
                                     handleToggleTask(task.id);
                                   }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                  className="task-checkbox"
                                 />
                                 <h4>{task.title}</h4>
                                 <button 
@@ -3067,10 +3090,20 @@ function App() {
                 </select>
               </div>
               <div className="form-group">
-                <label>
-                  <input type="checkbox" name="isProtected" />
+                <label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={newProjectIsProtected}
+                    onCheckedChange={(checked) =>
+                      setNewProjectIsProtected(!!checked)
+                    }
+                  />
                   Proteger com senha
                 </label>
+                <input
+                  type="hidden"
+                  name="isProtected"
+                  value={newProjectIsProtected ? 'on' : ''}
+                />
               </div>
               <div className="form-group">
                 <label>Senha (se protegido):</label>
@@ -3138,14 +3171,20 @@ function App() {
                 </select>
               </div>
               <div className="form-group">
-                <label>
-                  <input 
-                    type="checkbox" 
-                    name="isProtected" 
-                    defaultChecked={editingProject.isProtected}
+                <label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={editProjectIsProtected}
+                    onCheckedChange={(checked) =>
+                      setEditProjectIsProtected(!!checked)
+                    }
                   />
                   Proteger com senha
                 </label>
+                <input
+                  type="hidden"
+                  name="isProtected"
+                  value={editProjectIsProtected ? 'on' : ''}
+                />
               </div>
               <div className="form-group">
                 <label>Senha (se protegido):</label>
@@ -3211,10 +3250,20 @@ function App() {
                 </select>
               </div>
               <div className="form-group">
-                <label>
-                  <input type="checkbox" name="isProtected" />
+                <label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={newSubProjectIsProtected}
+                    onCheckedChange={(checked) =>
+                      setNewSubProjectIsProtected(!!checked)
+                    }
+                  />
                   Proteger com senha
                 </label>
+                <input
+                  type="hidden"
+                  name="isProtected"
+                  value={newSubProjectIsProtected ? 'on' : ''}
+                />
               </div>
               <div className="form-group">
                 <label>Senha (se protegido):</label>
@@ -3462,25 +3511,40 @@ function App() {
               <div className="customize-tabs">
                 {['todo', 'kanban', 'files', 'goals'].map(tab => (
                   <div key={tab} className="customize-item">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={customizingProject.enabledTabs?.includes(tab)}
-                        onChange={() => {
-                          const enabled = customizingProject.enabledTabs?.includes(tab);
-                          const updatedTabs = enabled
-                            ? customizingProject.enabledTabs.filter(t => t !== tab)
-                            : [...(customizingProject.enabledTabs || []), tab];
-                          setCustomizingProject({
-                            ...customizingProject,
-                            enabledTabs: updatedTabs
-                          });
-                        }}
-                      /> {tab === 'todo' ? 'To-Do' : tab === 'kanban' ? 'Kanban' : tab === 'files' ? 'Arquivos' : 'Metas'}:
-                    </label>
+                    <button
+                      type="button"
+                      className={`tab-toggle ${customizingProject.enabledTabs?.includes(tab) ? 'active' : ''}`}
+                      onClick={() => {
+                        const enabled = customizingProject.enabledTabs?.includes(tab);
+                        const updatedTabs = enabled
+                          ? customizingProject.enabledTabs.filter(t => t !== tab)
+                          : [...(customizingProject.enabledTabs || []), tab];
+                        setCustomizingProject({
+                          ...customizingProject,
+                          enabledTabs: updatedTabs
+                        });
+                      }}
+                    >
+                      {tab === 'todo'
+                        ? 'To-Do'
+                        : tab === 'kanban'
+                        ? 'Kanban'
+                        : tab === 'files'
+                        ? 'Arquivos'
+                        : 'Metas'}
+                    </button>
                     <input
                       type="text"
-                      value={customizingProject.customNames?.tabs?.[tab] || (tab === 'todo' ? 'To-Do' : tab === 'kanban' ? 'Kanban' : tab === 'files' ? 'Arquivos' : 'Metas')}
+                      value={
+                        customizingProject.customNames?.tabs?.[tab] ||
+                        (tab === 'todo'
+                          ? 'To-Do'
+                          : tab === 'kanban'
+                          ? 'Kanban'
+                          : tab === 'files'
+                          ? 'Arquivos'
+                          : 'Metas')
+                      }
                       onChange={(e) => {
                         const updated = {
                           ...customizingProject,
