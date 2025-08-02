@@ -5,7 +5,6 @@ import { useFiles } from './hooks/useFiles'
 import { useBoards } from './hooks/useBoards'
 import { useRealtimeProjects } from './hooks/useRealtimeProjects'
 import ProjectsView from './components/ProjectsView'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/supabase'
 
 export default function App() {
   const [projects, setProjects] = useState([])
@@ -27,10 +26,10 @@ export default function App() {
 
   async function loadUserProjects(userKey) {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_data`, {
         headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         }
       })
 
