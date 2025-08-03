@@ -2716,13 +2716,10 @@ function App() {
                               </div>
                               {task.description && <p>{convertUrlsToLinks(task.description)}</p>}
                               {task.responsibleUsers && task.responsibleUsers.length > 0 && (
-                                <div className="task-responsible">
-                                  {task.responsibleUsers.map(user => (
-                                    <div key={user}>
-                                      👤 {getResponsibleUserInfo(user)?.displayName || user}
-                                    </div>
-                                  ))}
-                                </div>
+                                <ResponsibleUsersButton
+                                  users={task.responsibleUsers}
+                                  getUserInfo={getResponsibleUserInfo}
+                                />
                               )}
                               {task.tags?.length > 0 && (
                                 <div className="task-tags">
@@ -2898,13 +2895,10 @@ function App() {
                               </div>
                               {task.description && <p>{convertUrlsToLinks(task.description)}</p>}
                               {task.responsibleUsers && task.responsibleUsers.length > 0 && (
-                                <div className="task-responsible">
-                                  {task.responsibleUsers.map(user => (
-                                    <div key={user}>
-                                      👤 {getResponsibleUserInfo(user)?.displayName || user}
-                                    </div>
-                                  ))}
-                                </div>
+                                <ResponsibleUsersButton
+                                  users={task.responsibleUsers}
+                                  getUserInfo={getResponsibleUserInfo}
+                                />
                               )}
                               {(task.startDate || task.endDate) && (
                                 <div className="task-dates">
@@ -2959,13 +2953,10 @@ function App() {
                           </div>
                           {goal.description && <p>{convertUrlsToLinks(goal.description)}</p>}
                           {goal.responsibleUsers && goal.responsibleUsers.length > 0 && (
-                            <div className="task-responsible">
-                              {goal.responsibleUsers.map(user => (
-                                <div key={user}>
-                                  👤 {getResponsibleUserInfo(user)?.displayName || user}
-                                </div>
-                              ))}
-                            </div>
+                            <ResponsibleUsersButton
+                              users={goal.responsibleUsers}
+                              getUserInfo={getResponsibleUserInfo}
+                            />
                           )}
                           <div className="goal-progress">
                             <div className="progress-bar">
