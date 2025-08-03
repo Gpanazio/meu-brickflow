@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { debugLog } from '../utils/debugLog'
+import { supabase, handleSupabaseError } from '../lib/supabaseClient'
 
 export function useUsers(loadUserProjects) {
   const [currentUser, setCurrentUser] = useState(null)
@@ -9,98 +9,80 @@ export function useUsers(loadUserProjects) {
   const [allUsers, setAllUsers] = useState([])
 
   const saveUserToSupabase = async (userData) => {
-    try {
-      const checkResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        }
-      })
+    const { data: existingUsers, error: checkError } = await supabase
+      .from('brickflow_users')
+      .select('*')
+      .eq('username', userData.username)
 
-      if (checkResponse.ok) {
-        const existingUsers = await checkResponse.json()
-        if (existingUsers.length > 0) {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
-            method: 'PATCH',
-            headers: {
-              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              displayName: userData.displayName,
-              avatar: userData.avatar,
-              color: userData.color,
-              pin: userData.pin
-            })
-          })
-        } else {
-          const userDataForSupabase = {
-            username: userData.username,
-            displayName: userData.displayName,
-            avatar: userData.avatar,
-            color: userData.color,
-            pin: userData.pin
-          }
+    if (checkError) {
+      handleSupabaseError(checkError, 'Verificar usuário')
+      return
+    }
 
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_users`, {
-            method: 'POST',
-            headers: {
-              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(userDataForSupabase)
-          })
-        }
+    if (existingUsers && existingUsers.length > 0) {
+      const { error: updateError } = await supabase
+        .from('brickflow_users')
+        .update({
+          displayName: userData.displayName,
+          avatar: userData.avatar,
+          color: userData.color,
+          pin: userData.pin
+        })
+        .eq('username', userData.username)
+
+      handleSupabaseError(updateError, 'Atualizar usuário')
+    } else {
+      const userDataForSupabase = {
+        username: userData.username,
+        displayName: userData.displayName,
+        avatar: userData.avatar,
+        color: userData.color,
+        pin: userData.pin
       }
-    } catch (error) {
-      debugLog('⚠️ Erro ao salvar usuário no Supabase:', error.message)
+
+      const { error: insertError } = await supabase
+        .from('brickflow_users')
+        .insert(userDataForSupabase)
+
+      handleSupabaseError(insertError, 'Salvar usuário')
     }
   }
 
   const loadUsersFromSupabase = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_users`, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        }
-      })
-
-      if (response.ok) {
-        return response.json()
-      }
-    } catch (error) {
-      debugLog('⚠️ Erro ao carregar usuários do Supabase:', error.message)
+    const { data, error } = await supabase.from('brickflow_users').select('*')
+    if (error) {
+      handleSupabaseError(error, 'Carregar usuários')
+      return []
     }
-    return []
+    return data || []
   }
 
   const handleLogin = async (username, pin) => {
     const userKey = `${username.toLowerCase()}-${pin}`
-    try {
-      const users = await loadUsersFromSupabase()
-      const supabaseUser = users.find(user => user.username === username && user.pin === pin)
+    const { data: supabaseUser, error } = await supabase
+      .from('brickflow_users')
+      .select('*')
+      .eq('username', username)
+      .eq('pin', pin)
+      .maybeSingle()
 
-      if (supabaseUser) {
-        const userData = {
-          userKey,
-          username: supabaseUser.username,
-          displayName: supabaseUser.displayName,
-          avatar: supabaseUser.avatar,
-          color: supabaseUser.color,
-          createdAt: supabaseUser.created_at
-        }
-        setCurrentUser(userData)
-        setIsLoggedIn(true)
-        setShowLoginModal(false)
-        localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(userData))
-        loadUserProjects && loadUserProjects(userKey)
-        return
+    handleSupabaseError(error, 'Verificar usuário')
+
+    if (supabaseUser) {
+      const userData = {
+        userKey,
+        username: supabaseUser.username,
+        displayName: supabaseUser.displayName,
+        avatar: supabaseUser.avatar,
+        color: supabaseUser.color,
+        createdAt: supabaseUser.created_at
       }
-    } catch (error) {
-      debugLog('⚠️ Erro ao verificar usuário no Supabase:', error.message)
+      setCurrentUser(userData)
+      setIsLoggedIn(true)
+      setShowLoginModal(false)
+      localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(userData))
+      loadUserProjects && loadUserProjects(userKey)
+      return
     }
 
     const savedUserData = localStorage.getItem(`brickflow-user-${userKey}`)
