@@ -38,9 +38,10 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
 
   const getCurrentFiles = () => {
     if (!currentSubProject || !files) return []
-    return files.filter(file =>
-      file.subProjectId === currentSubProject.id ||
-      (file.projectId === currentProject?.id && file.subProjectId === currentSubProject.id)
+    return files.filter(
+      file =>
+        file.projectId === currentProject?.id &&
+        file.subProjectId === currentSubProject.id
     )
   }
 
