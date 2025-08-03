@@ -1816,80 +1816,6 @@ function App() {
     setEditingTask(null);
   }, [getCurrentBoardData, currentBoardType, editingTask, updateCurrentBoardData]);
 
-  // Função para alternar conclusão de tarefa (com movimento automático no TO-DO)
-  const handleToggleTask = useCallback((taskId) => {
-    const boardData = getCurrentBoardData();
-    if (!boardData) return;
-
-    if (currentBoardType === 'todo') {
-      // Lógica especial para TO-DO: mover entre listas
-      const currentListIndex = boardData.lists.findIndex(list => 
-        list.tasks.some(task => task.id === taskId)
-      );
-      
-      if (currentListIndex === -1) return;
-
-      const task = boardData.lists[currentListIndex].tasks.find(t => t.id === taskId);
-      if (!task) return;
-
-      // Determinar próxima lista (ciclo: 0 -> 1 -> 2 -> 0)
-      const nextListIndex = (currentListIndex + 1) % 3;
-      
-      // Remover tarefa da lista atual
-      const updatedLists = boardData.lists.map((list, index) => {
-        if (index === currentListIndex) {
-          return {
-            ...list,
-            tasks: list.tasks.filter(t => t.id !== taskId)
-          };
-        }
-        if (index === nextListIndex) {
-          return {
-            ...list,
-            tasks: [...list.tasks, { ...task, completed: nextListIndex === 2 }]
-          };
-        }
-        return list;
-      });
-
-      updateCurrentBoardData({
-        ...boardData,
-        lists: updatedLists
-      });
-    } else {
-      // Lógica normal para outros tipos: apenas alternar completed
-      let updatedData;
-      
-      if (currentBoardType === 'kanban') {
-        updatedData = {
-          ...boardData,
-          lists: boardData.lists.map(list => ({
-            ...list,
-            tasks: list.tasks.map(task => 
-              task.id === taskId 
-                ? { ...task, completed: !task.completed }
-                : task
-            )
-          }))
-        };
-      } else if (currentBoardType === 'timeline') {
-        updatedData = {
-          ...boardData,
-          periods: boardData.periods.map(period => ({
-            ...period,
-            tasks: period.tasks.map(task => 
-              task.id === taskId 
-                ? { ...task, completed: !task.completed }
-                : task
-            )
-          }))
-        };
-      }
-
-      updateCurrentBoardData(updatedData);
-    }
-  }, [getCurrentBoardData, currentBoardType, updateCurrentBoardData]);
-
   // Função para excluir tarefa
   const handleDeleteTask = useCallback((taskId) => {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
@@ -2673,16 +2599,8 @@ function App() {
                               }}
                             >
                               <div className="task-header">
-                                <input 
-                                  type="checkbox" 
-                                  checked={task.completed}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    handleToggleTask(task.id);
-                                  }}
-                                />
                                 <h4>{task.title}</h4>
-                                <button 
+                                <button
                                   className="delete-task-btn"
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -2853,16 +2771,8 @@ function App() {
                               }}
                             >
                               <div className="task-header">
-                                <input 
-                                  type="checkbox" 
-                                  checked={task.completed}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    handleToggleTask(task.id);
-                                  }}
-                                />
                                 <h4>{task.title}</h4>
-                                <button 
+                                <button
                                   className="delete-task-btn"
                                   onClick={(e) => {
                                     e.stopPropagation();
