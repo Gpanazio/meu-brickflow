@@ -71,12 +71,12 @@ function SudokuGame() {
               O trabalho chama, mas o Sudoku é muito mais divertido. Qual é a sua
               escolha?
             </p>
-            <div>
+            <div className="sudoku-overlay-actions">
               <button className="btn-primary" onClick={() => setShowOverlay(false)}>
                 Estou ciente que preciso trabalhar, mas escolho jogar
               </button>
               <button
-                className="btn-primary"
+                className="btn-secondary"
                 onClick={() => {
                   setShowGame(false)
                   setShowOverlay(false)
