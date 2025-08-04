@@ -236,6 +236,7 @@ body {
   padding: 1.5rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   text-align: center;
+  position: relative;
 }
 
 .sudoku-grid {
@@ -265,12 +266,13 @@ body {
 }
 
 .sudoku-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, var(--brick-glass), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--brick-border);
+  backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -278,7 +280,7 @@ body {
   gap: 1rem;
   padding: 1rem;
   text-align: center;
-  z-index: 9999;
+  z-index: 10;
   color: var(--brick-white);
 }
 
