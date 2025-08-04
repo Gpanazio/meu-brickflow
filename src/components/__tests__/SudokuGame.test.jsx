@@ -86,10 +86,11 @@ describe('SudokuGame final overlay', () => {
       screen.getByText('Estou ciente que preciso trabalhar, mas escolho jogar')
     )
 
-    for (let i = 0; i < 50; i++) {
-      fireEvent.change(editable[i], { target: { value: '1' } })
-    }
-    const lastCell = editable[50]
+    // fill all editable cells except the last one
+    editable.slice(0, -1).forEach(cell => {
+      fireEvent.change(cell, { target: { value: '1' } })
+    })
+    const lastCell = editable[editable.length - 1]
     fireEvent.change(lastCell, { target: { value: '9' } })
     expect(lastCell).toHaveValue('')
     expect(
