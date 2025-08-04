@@ -6,13 +6,19 @@ export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState(undefined)
 
   React.useEffect(() => {
+    // Ensure SSR safety by exiting early when `window` is unavailable.
+    if (typeof window === "undefined") return
+
+    const getIsMobile = () =>
+      typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT
+
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
     const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+      setIsMobile(getIsMobile())
     }
     mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange);
+    setIsMobile(getIsMobile())
+    return () => mql.removeEventListener("change", onChange)
   }, [])
 
   return !!isMobile
