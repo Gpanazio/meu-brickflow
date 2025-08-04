@@ -276,15 +276,15 @@ body {
 
 .sudoku-overlay-content {
   max-width: 400px;
-  padding: 1.5rem;
-  background: var(--brick-white);
-  color: #000;
+  padding: 2rem;
+  background: #1a1a1a;
+  color: var(--brick-white);
   border: 1px solid var(--brick-border);
   border-radius: 16px;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .sudoku-overlay-actions {
