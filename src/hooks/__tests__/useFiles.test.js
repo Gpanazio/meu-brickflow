@@ -26,14 +26,23 @@ describe('useFiles', () => {
     const { result } = renderHook(() => useFiles({ id: 1 }, { id: 2 }, {}), { wrapper })
 
     act(() => {
-      result.current.files.push(
+      result.current.setFiles([
         { projectId: 1, subProjectId: 2 },
         { projectId: 3, subProjectId: 2 }
-      )
+      ])
     })
 
-    const currentFiles = result.current.getCurrentFiles()
-    expect(currentFiles).toEqual([{ projectId: 1, subProjectId: 2 }])
+    expect(result.current.getCurrentFiles()).toEqual([
+      { projectId: 1, subProjectId: 2 }
+    ])
+
+    act(() => {
+      result.current.setFiles([
+        { projectId: 3, subProjectId: 2 }
+      ])
+    })
+
+    expect(result.current.getCurrentFiles()).toEqual([])
   })
 
   it('allows updating dragging state', () => {

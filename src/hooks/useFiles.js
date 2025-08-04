@@ -108,6 +108,7 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
 
   return {
     files,
+    setFiles,
     isDragging,
     setIsDragging,
     previewFile,
