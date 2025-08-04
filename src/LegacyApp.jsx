@@ -5,6 +5,7 @@ import { debugLog } from './utils/debugLog';
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
 import { Checkbox } from './components/ui/checkbox';
 import SudokuGame from './components/SudokuGame';
+import { useFiles } from './hooks/useFiles';
 
 // Frases absurdas para "Sorte do dia"
 const absurdPhrases = [
@@ -544,7 +545,11 @@ function App() {
 
   // Estados para arquivos
   const [files, setFiles] = useState([]);
-  const [isDragging, setIsDragging] = useState(false);
+  const { isDragging, setIsDragging } = useFiles(
+    currentProject,
+    currentSubProject,
+    currentUser || {}
+  );
 
   // Estados para usuários
   const [allUsers, setAllUsers] = useState([]);

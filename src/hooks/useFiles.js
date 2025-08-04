@@ -4,7 +4,7 @@ import { supabase, handleSupabaseError } from '../lib/supabaseClient'
 
 export function useFiles(currentProject, currentSubProject, currentUser) {
   const [files, setFiles] = useState([])
-  const [isDragging, _setIsDragging] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   const [previewFile, setPreviewFile] = useState(null)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
 
@@ -109,6 +109,7 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
   return {
     files,
     isDragging,
+    setIsDragging,
     previewFile,
     showPreviewModal,
     setShowPreviewModal,
