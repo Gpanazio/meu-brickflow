@@ -276,9 +276,12 @@ body {
 
 .sudoku-overlay-content {
   max-width: 400px;
+  width: 100%;
   padding: 2rem;
   background: #1a1a1a;
   color: var(--brick-white);
+  font-size: 1rem;
+  line-height: 1.5;
   border: 1px solid var(--brick-border);
   border-radius: 16px;
   text-align: center;
