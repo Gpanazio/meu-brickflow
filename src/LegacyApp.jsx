@@ -1260,6 +1260,7 @@ function App() {
   // Estados para preview
   const [previewFile, setPreviewFile] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Função para obter arquivos do projeto atual
   const getCurrentFiles = () => {
@@ -1286,6 +1287,7 @@ function App() {
     const uploadedFiles = Array.from(event.target.files);
     if (!uploadedFiles.length || !currentSubProject) return;
 
+    setIsUploading(true);
     for (const file of uploadedFiles) {
       try {
         // Converter arquivo para base64
@@ -1317,9 +1319,12 @@ function App() {
         alert(`Erro ao enviar ${file.name}: ${error.message}`);
       }
     }
-
     // Limpar input
     event.target.value = '';
+
+    setIsUploading(false);
+    await loadFilesFromSupabase();
+    window.location.reload();
   };
 
   // Função para preview de arquivo
@@ -2792,7 +2797,13 @@ function App() {
                         </div>
                       </div>
                     )}
-                    
+
+                    {isUploading && (
+                      <div className="upload-overlay">
+                        <div className="spinner"></div>
+                      </div>
+                    )}
+
                     <div className="files-grid">
                       {getCurrentFiles().map(file => (
                         <div key={file.id} className="file-card">
