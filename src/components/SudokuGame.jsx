@@ -1,15 +1,28 @@
 import React, { useState } from 'react'
 
-const emptyBoard = Array.from({ length: 9 }, () => Array(9).fill(''))
+const initialPuzzle = [
+  ['5', '3', '', '', '7', '', '', '', ''],
+  ['6', '', '', '1', '9', '5', '', '', ''],
+  ['', '9', '8', '', '', '', '', '6', ''],
+  ['8', '', '', '', '6', '', '', '', '3'],
+  ['4', '', '', '8', '', '3', '', '', '1'],
+  ['7', '', '', '', '2', '', '', '', '6'],
+  ['', '6', '', '', '', '', '2', '8', ''],
+  ['', '', '', '4', '1', '9', '', '', '5'],
+  ['', '', '', '', '8', '', '', '7', '9']
+]
+
+const fixedCells = initialPuzzle.map(row => row.map(cell => cell !== ''))
 
 function SudokuGame() {
-  const [board, setBoard] = useState(emptyBoard)
+  const [board, setBoard] = useState(initialPuzzle.map(row => [...row]))
   const [showOverlay, setShowOverlay] = useState(true)
   const [showGame, setShowGame] = useState(true)
 
   const handleChange = (row, col, value) => {
     const val = value.replace(/[^1-9]/g, '')
     setBoard(prev => {
+      if (fixedCells[row][col]) return prev
       const newBoard = prev.map(r => [...r])
       newBoard[row][col] = val
       return newBoard
@@ -17,7 +30,7 @@ function SudokuGame() {
   }
 
   const restart = () => {
-    setBoard(emptyBoard)
+    setBoard(initialPuzzle.map(row => [...row]))
   }
 
   const isCellValid = (board, row, col) => {
@@ -69,11 +82,14 @@ function SudokuGame() {
               row.map((cell, c) => (
                 <input
                   key={`${r}-${c}`}
-                  className={`sudoku-cell${isCellValid(board, r, c) ? '' : ' invalid'}`}
+                  className={`sudoku-cell${
+                    fixedCells[r][c] ? ' prefilled' : ''
+                  }${isCellValid(board, r, c) ? '' : ' invalid'}`}
                   value={cell}
                   onChange={e => handleChange(r, c, e.target.value)}
                   maxLength={1}
                   inputMode="numeric"
+                  readOnly={fixedCells[r][c]}
                 />
               ))
             )}

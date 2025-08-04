@@ -33,3 +33,19 @@ describe('SudokuGame overlay', () => {
     expect(screen.getByTestId('work-message')).toBeInTheDocument()
   })
 })
+
+describe('SudokuGame prefilled cells', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('renders preset value as read-only', () => {
+    render(<SudokuGame />)
+    fireEvent.click(
+      screen.getByText('Estou ciente que preciso trabalhar, mas escolho jogar')
+    )
+    const cell = screen.getAllByRole('textbox')[0]
+    expect(cell).toHaveValue('5')
+    expect(cell).toHaveAttribute('readOnly')
+  })
+})

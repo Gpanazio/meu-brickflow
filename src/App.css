@@ -259,6 +259,11 @@ body {
   background: rgba(239, 68, 68, 0.4);
 }
 
+.sudoku-cell.prefilled {
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: bold;
+}
+
 .sudoku-overlay {
   position: fixed;
   top: 0;
