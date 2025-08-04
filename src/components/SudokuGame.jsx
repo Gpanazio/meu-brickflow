@@ -1,0 +1,62 @@
+import React, { useState } from 'react'
+
+const emptyBoard = Array.from({ length: 9 }, () => Array(9).fill(''))
+
+function SudokuGame() {
+  const [board, setBoard] = useState(emptyBoard)
+
+  const handleChange = (row, col, value) => {
+    const val = value.replace(/[^1-9]/g, '')
+    setBoard(prev => {
+      const newBoard = prev.map(r => [...r])
+      newBoard[row][col] = val
+      return newBoard
+    })
+  }
+
+  const restart = () => {
+    setBoard(emptyBoard)
+  }
+
+  const isCellValid = (board, row, col) => {
+    const val = board[row][col]
+    if (!val) return true
+    for (let i = 0; i < 9; i++) {
+      if (i !== row && board[i][col] === val) return false
+      if (i !== col && board[row][i] === val) return false
+    }
+    const startRow = Math.floor(row / 3) * 3
+    const startCol = Math.floor(col / 3) * 3
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const rr = startRow + r
+        const cc = startCol + c
+        if ((rr !== row || cc !== col) && board[rr][cc] === val) return false
+      }
+    }
+    return true
+  }
+
+  return (
+    <div className="sudoku-box" data-testid="sudoku-game">
+      <h3>🧩 Sudoku</h3>
+      <div className="sudoku-grid">
+        {board.map((row, r) =>
+          row.map((cell, c) => (
+            <input
+              key={`${r}-${c}`}
+              className={`sudoku-cell${isCellValid(board, r, c) ? '' : ' invalid'}`}
+              value={cell}
+              onChange={e => handleChange(r, c, e.target.value)}
+              maxLength={1}
+              inputMode="numeric"
+            />
+          ))
+        )}
+      </div>
+      <button className="btn-primary" onClick={restart}>Reiniciar</button>
+    </div>
+  )
+}
+
+export default SudokuGame
