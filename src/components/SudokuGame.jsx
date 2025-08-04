@@ -19,6 +19,7 @@ function SudokuGame() {
   const [showOverlay, setShowOverlay] = useState(false)
   const [showGame, setShowGame] = useState(true)
   const [hasInteracted, setHasInteracted] = useState(false)
+  const [showFinalOverlay, setShowFinalOverlay] = useState(false)
 
   const handleFirstInteraction = e => {
     if (!hasInteracted) {
@@ -29,10 +30,17 @@ function SudokuGame() {
   }
 
   const handleChange = (row, col, value) => {
-    if (!hasInteracted || showOverlay) return
+    if (!hasInteracted || showOverlay || showFinalOverlay) return
     const val = value.replace(/[^1-9]/g, '')
+    if (fixedCells[row][col]) return
+
+    const emptyCells = board.flat().filter(cell => cell === '').length
+    if (emptyCells === 1 && val !== '') {
+      setShowFinalOverlay(true)
+      return
+    }
+
     setBoard(prev => {
-      if (fixedCells[row][col]) return prev
       const newBoard = prev.map(r => [...r])
       newBoard[row][col] = val
       return newBoard
@@ -85,6 +93,17 @@ function SudokuGame() {
                 Obrigado por me lembrar, prefiro trabalhar a jogar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showFinalOverlay && (
+        <div className="sudoku-overlay" data-testid="sudoku-final">
+          <div className="sudoku-overlay-content">
+            <p>
+              Fracassar tão perto do sucesso é uma arte. Parabéns, você é um artista
+              incompreendido! Mas vamos lembrar que aqui não é lugar para joguinhos.
+            </p>
           </div>
         </div>
       )}

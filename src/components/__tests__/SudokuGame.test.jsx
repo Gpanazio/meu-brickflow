@@ -71,3 +71,31 @@ describe('SudokuGame prefilled cells', () => {
     expect(cell).toHaveAttribute('readOnly')
   })
 })
+
+describe('SudokuGame final overlay', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('blocks final move and shows message', () => {
+    render(<SudokuGame />)
+    const cells = screen.getAllByRole('textbox')
+    const editable = cells.filter(c => !c.hasAttribute('readOnly'))
+    fireEvent.mouseDown(editable[0])
+    fireEvent.click(
+      screen.getByText('Estou ciente que preciso trabalhar, mas escolho jogar')
+    )
+
+    for (let i = 0; i < 50; i++) {
+      fireEvent.change(editable[i], { target: { value: '1' } })
+    }
+    const lastCell = editable[50]
+    fireEvent.change(lastCell, { target: { value: '9' } })
+    expect(lastCell).toHaveValue('')
+    expect(
+      screen.getByText(
+        'Fracassar tão perto do sucesso é uma arte. Parabéns, você é um artista incompreendido! Mas vamos lembrar que aqui não é lugar para joguinhos.'
+      )
+    ).toBeInTheDocument()
+  })
+})
