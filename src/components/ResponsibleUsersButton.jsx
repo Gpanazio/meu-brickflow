@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
+import PropTypes from 'prop-types'
 
-export default function ResponsibleUsersButton({ users = [], getUserInfo }) {
-  if (!users || users.length === 0) return null
+export default function ResponsibleUsersButton({ users, getUserInfo }) {
   const [open, setOpen] = useState(false)
+  if (!users || users.length === 0) return null
 
   const toggle = (e) => {
     e.stopPropagation()
@@ -25,4 +26,14 @@ export default function ResponsibleUsersButton({ users = [], getUserInfo }) {
       )}
     </div>
   )
+}
+
+ResponsibleUsersButton.propTypes = {
+  users: PropTypes.arrayOf(PropTypes.string),
+  getUserInfo: PropTypes.func,
+}
+
+ResponsibleUsersButton.defaultProps = {
+  users: [],
+  getUserInfo: undefined,
 }

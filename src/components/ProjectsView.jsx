@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types'
 import ProjectCard from './ProjectCard'
 
 export default function ProjectsView({ projects, onSelect }) {
@@ -12,4 +13,19 @@ export default function ProjectsView({ projects, onSelect }) {
       ))}
     </div>
   )
+}
+
+ProjectsView.propTypes = {
+  projects: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      name: PropTypes.string.isRequired,
+      description: PropTypes.string,
+    })
+  ),
+  onSelect: PropTypes.func.isRequired,
+}
+
+ProjectsView.defaultProps = {
+  projects: [],
 }
