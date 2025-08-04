@@ -1324,7 +1324,7 @@ function App() {
 
     setIsUploading(false);
     await loadFilesFromSupabase();
-    window.location.reload();
+    setCurrentBoardType('files');
   };
 
   // Função para preview de arquivo
