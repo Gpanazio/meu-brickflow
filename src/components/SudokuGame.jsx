@@ -4,6 +4,8 @@ const emptyBoard = Array.from({ length: 9 }, () => Array(9).fill(''))
 
 function SudokuGame() {
   const [board, setBoard] = useState(emptyBoard)
+  const [showOverlay, setShowOverlay] = useState(true)
+  const [showGame, setShowGame] = useState(true)
 
   const handleChange = (row, col, value) => {
     const val = value.replace(/[^1-9]/g, '')
@@ -39,22 +41,50 @@ function SudokuGame() {
 
   return (
     <div className="sudoku-box" data-testid="sudoku-game">
-      <h3>🧩 Sudoku</h3>
-      <div className="sudoku-grid">
-        {board.map((row, r) =>
-          row.map((cell, c) => (
-            <input
-              key={`${r}-${c}`}
-              className={`sudoku-cell${isCellValid(board, r, c) ? '' : ' invalid'}`}
-              value={cell}
-              onChange={e => handleChange(r, c, e.target.value)}
-              maxLength={1}
-              inputMode="numeric"
-            />
-          ))
-        )}
-      </div>
-      <button className="btn-primary" onClick={restart}>Reiniciar</button>
+      {showOverlay && (
+        <div className="sudoku-overlay" data-testid="sudoku-warning">
+          <p>O trabalho chama, mas o Sudoku é muito mais divertido. Qual é a sua escolha?</p>
+          <div>
+            <button className="btn-primary" onClick={() => setShowOverlay(false)}>
+              Estou ciente que preciso trabalhar, mas escolho jogar
+            </button>
+            <button
+              className="btn-primary"
+              onClick={() => {
+                setShowGame(false)
+                setShowOverlay(false)
+              }}
+            >
+              Obrigado por me lembrar, prefiro trabalhar a jogar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showGame ? (
+        <>
+          <h3>🧩 Sudoku</h3>
+          <div className="sudoku-grid">
+            {board.map((row, r) =>
+              row.map((cell, c) => (
+                <input
+                  key={`${r}-${c}`}
+                  className={`sudoku-cell${isCellValid(board, r, c) ? '' : ' invalid'}`}
+                  value={cell}
+                  onChange={e => handleChange(r, c, e.target.value)}
+                  maxLength={1}
+                  inputMode="numeric"
+                />
+              ))
+            )}
+          </div>
+          <button className="btn-primary" onClick={restart}>
+            Reiniciar
+          </button>
+        </>
+      ) : (
+        <div data-testid="work-message">Procrastinação derrotada! De volta ao batente! 💪</div>
+      )}
     </div>
   )
 }
