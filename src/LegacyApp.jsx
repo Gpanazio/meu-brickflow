@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
 import { Checkbox } from './components/ui/checkbox';
+import SudokuGame from './components/SudokuGame';
 
 // Frases absurdas para "Sorte do dia"
 const absurdPhrases = [
@@ -2468,6 +2469,10 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {currentView === 'home' && currentUser?.displayName === 'Fran' && (
+        <SudokuGame />
       )}
 
       {/* Conteúdo Principal */}
