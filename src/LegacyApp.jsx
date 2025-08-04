@@ -3,7 +3,7 @@ import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
-import { Checkbox } from './components/ui/checkbox';
+import { Checkbox } from './components/checkbox';
 
 // Frases absurdas para "Sorte do dia"
 const absurdPhrases = [
