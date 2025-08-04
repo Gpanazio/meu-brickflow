@@ -66,20 +66,25 @@ function SudokuGame() {
     <div className="sudoku-box" data-testid="sudoku-game">
       {showOverlay && (
         <div className="sudoku-overlay" data-testid="sudoku-warning">
-          <p>O trabalho chama, mas o Sudoku é muito mais divertido. Qual é a sua escolha?</p>
-          <div>
-            <button className="btn-primary" onClick={() => setShowOverlay(false)}>
-              Estou ciente que preciso trabalhar, mas escolho jogar
-            </button>
-            <button
-              className="btn-primary"
-              onClick={() => {
-                setShowGame(false)
-                setShowOverlay(false)
-              }}
-            >
-              Obrigado por me lembrar, prefiro trabalhar a jogar
-            </button>
+          <div className="sudoku-overlay-content">
+            <p>
+              O trabalho chama, mas o Sudoku é muito mais divertido. Qual é a sua
+              escolha?
+            </p>
+            <div>
+              <button className="btn-primary" onClick={() => setShowOverlay(false)}>
+                Estou ciente que preciso trabalhar, mas escolho jogar
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  setShowGame(false)
+                  setShowOverlay(false)
+                }}
+              >
+                Obrigado por me lembrar, prefiro trabalhar a jogar
+              </button>
+            </div>
           </div>
         </div>
       )}
