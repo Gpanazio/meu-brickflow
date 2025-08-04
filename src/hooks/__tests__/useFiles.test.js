@@ -35,4 +35,14 @@ describe('useFiles', () => {
     const currentFiles = result.current.getCurrentFiles()
     expect(currentFiles).toEqual([{ projectId: 1, subProjectId: 2 }])
   })
+
+  it('allows updating dragging state', () => {
+    const { result } = renderHook(() => useFiles(null, null, {}), { wrapper })
+
+    act(() => {
+      result.current.setIsDragging(true)
+    })
+
+    expect(result.current.isDragging).toBe(true)
+  })
 })
