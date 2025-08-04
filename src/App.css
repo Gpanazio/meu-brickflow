@@ -1847,39 +1847,3 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.btn-secondary {
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: var(--brick-white);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.btn-primary {
-  padding: 10px 20px;
-  background: var(--brick-blue);
-  border: 1px solid var(--brick-blue);
-  border-radius: 6px;
-  color: var(--brick-white);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-primary:hover {
-  background: #1E3A8A;
-  border-color: #1E3A8A;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
-}
-
