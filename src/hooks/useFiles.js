@@ -83,6 +83,7 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
         debugLog('❌ Erro no upload:', error.message)
       }
     }
+    await loadFilesFromSupabase()
     event.target.value = ''
   }
 
