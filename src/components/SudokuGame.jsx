@@ -16,10 +16,20 @@ const fixedCells = initialPuzzle.map(row => row.map(cell => cell !== ''))
 
 function SudokuGame() {
   const [board, setBoard] = useState(initialPuzzle.map(row => [...row]))
-  const [showOverlay, setShowOverlay] = useState(true)
+  const [showOverlay, setShowOverlay] = useState(false)
   const [showGame, setShowGame] = useState(true)
+  const [hasInteracted, setHasInteracted] = useState(false)
+
+  const handleFirstInteraction = e => {
+    if (!hasInteracted) {
+      e.preventDefault()
+      setShowOverlay(true)
+      setHasInteracted(true)
+    }
+  }
 
   const handleChange = (row, col, value) => {
+    if (!hasInteracted || showOverlay) return
     const val = value.replace(/[^1-9]/g, '')
     setBoard(prev => {
       if (fixedCells[row][col]) return prev
@@ -77,7 +87,7 @@ function SudokuGame() {
       {showGame ? (
         <>
           <h3>🧩 Sudoku</h3>
-          <div className="sudoku-grid">
+          <div className="sudoku-grid" onMouseDown={handleFirstInteraction}>
             {board.map((row, r) =>
               row.map((cell, c) => (
                 <input
