@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabaseClient'
 import { debugLog } from '../utils/debugLog'
 
 export function useRealtimeProjects(isLoggedIn, updateProjects) {
-  const supabaseRef = useRef(null)
   const channelRef = useRef(null)
 
   useEffect(() => {
@@ -14,13 +13,6 @@ export function useRealtimeProjects(isLoggedIn, updateProjects) {
       return
     }
 
-    if (!supabaseRef.current) {
-      const url = import.meta.env.VITE_SUPABASE_URL
-      const key = import.meta.env.VITE_SUPABASE_ANON_KEY
-      supabaseRef.current = createClient(url, key)
-    }
-
-    const supabase = supabaseRef.current
     const channel = supabase
       .channel('public:brickflow_data')
       .on(
