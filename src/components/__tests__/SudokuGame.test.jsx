@@ -99,4 +99,22 @@ describe('SudokuGame final overlay', () => {
       )
     ).toBeInTheDocument()
   })
+
+  it('hides final overlay after restart', () => {
+    render(<SudokuGame />)
+    const cells = screen.getAllByRole('textbox')
+    const editable = cells.filter(c => !c.hasAttribute('readOnly'))
+    fireEvent.mouseDown(editable[0])
+    fireEvent.click(
+      screen.getByText('Estou ciente que preciso trabalhar, mas escolho jogar')
+    )
+    editable.slice(0, -1).forEach(cell => {
+      fireEvent.change(cell, { target: { value: '1' } })
+    })
+    const lastCell = editable[editable.length - 1]
+    fireEvent.change(lastCell, { target: { value: '9' } })
+    expect(screen.getByTestId('sudoku-final')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Reiniciar'))
+    expect(screen.queryByTestId('sudoku-final')).toBeNull()
+  })
 })

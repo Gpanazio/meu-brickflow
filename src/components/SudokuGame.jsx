@@ -45,10 +45,13 @@ function SudokuGame() {
       newBoard[row][col] = val
       return newBoard
     })
-  }
+  } 
 
   const restart = () => {
     setBoard(initialPuzzle.map(row => [...row]))
+    setShowOverlay(false)
+    setHasInteracted(false)
+    setShowFinalOverlay(false)
   }
 
   const isCellValid = (board, row, col) => {
