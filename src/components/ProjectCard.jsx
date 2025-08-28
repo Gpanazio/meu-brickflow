@@ -1,11 +1,24 @@
+import React from 'react'
 import PropTypes from 'prop-types'
 
 export default function ProjectCard({ project, onSelect }) {
+  const handleKeyDown = e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onSelect(project)
+    }
+  }
+
   return (
-    <div className="project-card" onClick={() => onSelect(project)}>
+    <button
+      type="button"
+      className="project-card"
+      onClick={() => onSelect(project)}
+      onKeyDown={handleKeyDown}
+    >
       <h3>{project.name}</h3>
       {project.description && <p>{project.description}</p>}
-    </div>
+    </button>
   )
 }
 
