@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { debugLog } from '../utils/debugLog'
+import { formatFileSize } from '../utils/formatFileSize'
 import { supabase, handleSupabaseError } from '../lib/supabaseClient'
 import {
   AlertDialog,
@@ -55,14 +56,6 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
         file.projectId === currentProject?.id &&
         file.subProjectId === currentSubProject.id
     )
-  }
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
   const handleFileUpload = async (event) => {

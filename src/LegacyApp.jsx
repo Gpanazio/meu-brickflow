@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
+import { formatFileSize } from './utils/formatFileSize';
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
 import { Checkbox } from './components/ui/checkbox';
 import SudokuGame from './components/SudokuGame';
@@ -1277,15 +1278,6 @@ function App() {
       file.subProjectId === currentSubProject.id || 
       (file.projectId === currentProject?.id && file.subProjectId === currentSubProject.id)
     );
-  };
-
-  // Função para formatar tamanho do arquivo
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   // Função para upload de arquivos
