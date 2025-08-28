@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, handleSupabaseError } from '../lib/supabaseClient'
+import { toast } from 'sonner'
 
 export function useUsers(loadUserProjects) {
   const [currentUser, setCurrentUser] = useState(null)
@@ -93,7 +94,7 @@ export function useUsers(loadUserProjects) {
       setShowLoginModal(false)
       loadUserProjects && loadUserProjects(userKey)
     } else {
-      alert('Usuário não encontrado! Clique em "Criar Usuário" para se cadastrar.')
+      toast.error('Usuário não encontrado! Clique em "Criar Usuário" para se cadastrar.')
     }
   }
 
@@ -102,7 +103,7 @@ export function useUsers(loadUserProjects) {
     const users = await loadUsersFromSupabase()
     const existingUser = users.find(u => u.username === userData.username)
     if (existingUser) {
-      alert('Este usuário já existe! Tente fazer login ou escolha outro nome.')
+      toast.error('Este usuário já existe! Tente fazer login ou escolha outro nome.')
       return
     }
 
