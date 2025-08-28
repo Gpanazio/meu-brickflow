@@ -5,6 +5,7 @@ import { useFiles } from './hooks/useFiles'
 import { useBoards } from './hooks/useBoards'
 import { useRealtimeProjects } from './hooks/useRealtimeProjects'
 import ProjectsView from './components/ProjectsView'
+import { supabase, handleSupabaseError } from './lib/supabaseClient'
 
 export default function App() {
   const [projects, setProjects] = useState([])
@@ -26,22 +27,15 @@ export default function App() {
 
   async function loadUserProjects(userKey) {
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brickflow_data`, {
-        headers: {
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.length > 0 && data[0].data) {
-          updateProjects(() => data[0].data)
-          return
-        }
+      const { data, error } = await supabase.from('brickflow_data').select('*')
+      if (error) {
+        handleSupabaseError(error, 'Carregar projetos')
+      } else if (data.length > 0 && data[0].data) {
+        updateProjects(() => data[0].data)
+        return
       }
     } catch (error) {
-      console.error('Erro ao carregar projetos do Supabase:', error)
+      handleSupabaseError(error, 'Carregar projetos')
     }
 
     const saved = localStorage.getItem(`brickflow-projects-${userKey}`)
