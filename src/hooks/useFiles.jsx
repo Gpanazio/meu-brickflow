@@ -2,24 +2,12 @@ import { useState, useEffect } from 'react'
 import { debugLog } from '../utils/debugLog'
 import { formatFileSize } from '../utils/formatFileSize'
 import { supabase, handleSupabaseError } from '../lib/supabaseClient'
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction
-} from '../components/ui/alert-dialog'
 
 export function useFiles(currentProject, currentSubProject, currentUser) {
   const [files, setFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
   const [previewFile, setPreviewFile] = useState(null)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [fileToDelete, setFileToDelete] = useState(null)
 
   const saveFileToSupabase = async (fileData) => {
     const { error } = await supabase.from('brickflow_files').insert(fileData)
@@ -106,40 +94,12 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
     document.body.removeChild(link)
   }
 
-  const handleDeleteFile = (fileId) => {
-    setFileToDelete(fileId)
-    setShowDeleteDialog(true)
-  }
-
-  const confirmDeleteFile = async () => {
-    if (!fileToDelete) return
-    await deleteFileFromSupabase(fileToDelete)
+  const handleDeleteFile = async (fileId) => {
+    const confirmed = window.confirm('Tem certeza que deseja excluir este arquivo?')
+    if (!confirmed) return
+    await deleteFileFromSupabase(fileId)
     await loadFilesFromSupabase()
-    setShowDeleteDialog(false)
-    setFileToDelete(null)
   }
-
-  const handleDialogOpenChange = (open) => {
-    setShowDeleteDialog(open)
-    if (!open) setFileToDelete(null)
-  }
-
-  const DeleteFileDialog = () => (
-    <AlertDialog open={showDeleteDialog} onOpenChange={handleDialogOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Excluir arquivo?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja excluir este arquivo?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={confirmDeleteFile}>Excluir</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
 
   return {
     files,
@@ -153,7 +113,6 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
     handlePreviewFile,
     handleDownloadFile,
     handleDeleteFile,
-    DeleteFileDialog,
     getCurrentFiles,
     formatFileSize
   }
