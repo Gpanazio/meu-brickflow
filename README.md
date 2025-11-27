@@ -8,9 +8,10 @@ Antes de fazer o deploy, crie um arquivo `.env` (ou copie `.env.example`) e conf
 ```
 VITE_SUPABASE_URL=sua_url_aqui
 VITE_SUPABASE_ANON_KEY=sua_chave_aqui
+VITE_DEBUG_LOG=false
 ```
-Essas variáveis são lidas diretamente em `src/App.jsx` via `import.meta.env`.
-Um modelo está disponível em `.env.example`.
+As variáveis são lidas em `src/lib/supabaseClient.js` e dentro do componente principal `LegacyApp`.
+Um modelo atualizado está disponível em `.env.example`. **Não commit o arquivo `.env` com chaves reais.**
 
 ### 2. Deploy no Netlify
 - Faça upload deste repositório no GitHub
@@ -19,7 +20,7 @@ Um modelo está disponível em `.env.example`.
 - Deploy automático!
 
 ### 3. Configurações do Build
-- **Build command:** `npm run build`
+- **Build command:** `pnpm run build`
 - **Publish directory:** `dist`
 - **Node version:** 18
 
@@ -34,16 +35,16 @@ Um modelo está disponível em `.env.example`.
 
 ```bash
 # Instalar dependências
-npm install
+pnpm install
 
 # Executar em desenvolvimento
-npm run dev
+pnpm run dev
 
 # Fazer build para produção
-npm run build
+pnpm run build
 
 # Preview do build
-npm run preview
+pnpm run preview
 ```
 
 ## 🛡️ Segurança
@@ -59,6 +60,7 @@ Este projeto está configurado com:
 - Adicionar testes de ponta a ponta (E2E) para cobrir fluxos críticos do usuário.
 - Configurar uma pipeline de CI/CD (por exemplo, GitHub Actions) para rodar `lint` e `test` a cada commit.
 - Incluir suporte a Docker para padronizar o ambiente de desenvolvimento.
+- Formalizar um guia de contribuição explicando como rodar lint, testes e quais padrões de código seguir.
 
 ## 📞 Suporte
 
