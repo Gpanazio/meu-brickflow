@@ -3,7 +3,6 @@ import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import { formatFileSize } from './utils/formatFileSize';
-// Import das frases
 import { absurdPhrases } from './utils/phrases'; 
 
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
@@ -29,7 +28,7 @@ import {
   Settings, MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
   Trash2, Download, Eye, LayoutGrid, 
   FolderOpen, Calendar, Target, Lock, Sparkles, Dna, RotateCcw,
-  ListTodo, KanbanSquare, FileText, Goal
+  ListTodo, KanbanSquare, FileText, Goal, Loader2
 } from 'lucide-react';
 
 // --- CONFIGURAÇÕES ---
@@ -68,6 +67,7 @@ function LegacyApp() {
   const [currentSubProject, setCurrentSubProject] = useState(null);
   const [currentBoardType, setCurrentBoardType] = useState('kanban');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // Novo estado de upload visual
   
   // --- ESTADOS DE UI ---
   const [dailyPhrase, setDailyPhrase] = useState('');
@@ -75,10 +75,10 @@ function LegacyApp() {
   const [pendingAccessItem, setPendingAccessItem] = useState(null); 
   
   const [modalState, setModalState] = useState({
-    type: null, // 'project' (new/edit), 'subProject', 'password', 'task'
+    type: null,
     isOpen: false,
-    data: null, // Dados para edição
-    mode: 'create' // 'create' ou 'edit'
+    data: null,
+    mode: 'create'
   });
 
   // --- ESTADOS DE DRAG & DROP ---
@@ -88,6 +88,7 @@ function LegacyApp() {
     itemData: null,
     sourceContainerId: null
   });
+  const [dragOverTargetId, setDragOverTargetId] = useState(null); // Para saber sobre qual item estamos
 
   // Configuração Supabase
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -106,6 +107,13 @@ function LegacyApp() {
     currentUser || {}
   );
 
+  // Wrapper para adicionar animação ao upload
+  const handleFileUploadWithFeedback = async (e) => {
+    setIsUploading(true);
+    await originalHandleFileUpload(e);
+    setIsUploading(false);
+  };
+
   // --- EFEITOS ---
   useEffect(() => {
     const savedUser = localStorage.getItem('brickflow-current-user');
@@ -123,63 +131,41 @@ function LegacyApp() {
     setMegaSenaNumbers(generateMegaSenaNumbers());
   }, []);
 
-  // --- SINCRONIZAÇÃO COM SUPABASE ---
-  // Debounce para evitar salvar a cada letra digitada
+  // Sincronização
   const saveTimeoutRef = useRef(null);
-
   useEffect(() => {
     if (projects.length > 0 && isLoggedIn && currentUser) {
-      // Salva localmente imediatamente para UI rápida
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
       
-      // Limpa timeout anterior
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
-      // Define novo timeout para salvar no banco
       saveTimeoutRef.current = setTimeout(async () => {
         setIsSyncing(true);
         try {
-          // 1. Busca o ID do registro do usuário (se existir)
           const searchRes = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?select=id`, {
              headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
           });
           
           if(searchRes.ok) {
              const existing = await searchRes.json();
-             
+             const body = JSON.stringify({ data: projects });
+             const headers = { 
+               'apikey': SUPABASE_KEY, 
+               'Authorization': `Bearer ${SUPABASE_KEY}`,
+               'Content-Type': 'application/json',
+               'Prefer': 'return=minimal'
+             };
+
              if (existing.length > 0) {
-               // UPDATE
-               await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?id=eq.${existing[0].id}`, {
-                 method: 'PATCH',
-                 headers: { 
-                   'apikey': SUPABASE_KEY, 
-                   'Authorization': `Bearer ${SUPABASE_KEY}`,
-                   'Content-Type': 'application/json',
-                   'Prefer': 'return=minimal'
-                 },
-                 body: JSON.stringify({ data: projects })
-               });
+               await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?id=eq.${existing[0].id}`, { method: 'PATCH', headers, body });
              } else {
-               // CREATE
-               await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
-                 method: 'POST',
-                 headers: { 
-                   'apikey': SUPABASE_KEY, 
-                   'Authorization': `Bearer ${SUPABASE_KEY}`,
-                   'Content-Type': 'application/json',
-                   'Prefer': 'return=minimal'
-                 },
-                 body: JSON.stringify({ data: projects }) // Assumindo que a coluna 'data' é JSONB
-               });
+               await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, { method: 'POST', headers, body });
              }
-             debugLog("✅ Dados sincronizados com Supabase");
+             debugLog("✅ Dados sincronizados");
           }
-        } catch (error) {
-          console.error("Erro ao sincronizar:", error);
-        } finally {
-          setIsSyncing(false);
-        }
-      }, 1000); // 1 segundo de delay
+        } catch (error) { console.error("Erro sync:", error); } 
+        finally { setIsSyncing(false); }
+      }, 1000);
     }
   }, [projects, isLoggedIn, currentUser]);
 
@@ -224,7 +210,7 @@ function LegacyApp() {
     goals: { objectives: [] }
   });
 
-  // --- AÇÕES DO USUÁRIO ---
+  // --- HANDLERS ---
   const handleLogout = () => {
     setIsLoggedIn(false);
     localStorage.removeItem('brickflow-current-user');
@@ -236,7 +222,6 @@ function LegacyApp() {
     setCurrentUser(null);
   };
 
-  // --- AÇÕES DE PROJETO (CRUD + SENHA) ---
   const handleAccessProject = (item, type = 'project') => {
     if (dragState.isDragging) return;
     if (item.isProtected) {
@@ -248,7 +233,6 @@ function LegacyApp() {
   };
 
   const enterProject = (item, type) => {
-    // Garante que a view inicial seja uma das tabs habilitadas
     const firstEnabledTab = item.enabledTabs && item.enabledTabs.length > 0 ? item.enabledTabs[0] : 'kanban';
     
     if (type === 'project') {
@@ -271,14 +255,10 @@ function LegacyApp() {
     }
   };
 
-  // HANDLER UNIFICADO PARA CRIAR E EDITAR PROJETOS/SUBPROJETOS
   const handleSaveProject = (formData) => {
     const isEdit = modalState.mode === 'edit';
-    const isSub = modalState.type === 'subProject'; // Contexto atual (criando/editando sub ou proj?)
-    
-    // Captura as tabs selecionadas
+    const isSub = modalState.type === 'subProject';
     const selectedTabs = ALL_TABS.filter(tab => formData[`view_${tab.id}`] === 'on').map(t => t.id);
-    // Se nenhuma selecionada, usa o padrão
     const enabledTabs = selectedTabs.length > 0 ? selectedTabs : ['kanban'];
 
     const projectData = {
@@ -291,42 +271,23 @@ function LegacyApp() {
     };
 
     if (isEdit) {
-        // --- EDIÇÃO ---
         const targetId = modalState.data.id;
-        
         const updatedProjects = projects.map(p => {
-            // Se estamos editando um projeto principal
-            if (p.id === targetId && !isSub) {
-                return { ...p, ...projectData };
-            }
-            
-            // Se estamos editando um subprojeto
+            if (p.id === targetId && !isSub) return { ...p, ...projectData };
             if (p.subProjects && p.subProjects.length > 0) {
-                const updatedSubs = p.subProjects.map(sp => {
-                    if (sp.id === targetId) {
-                        return { ...sp, ...projectData };
-                    }
-                    return sp;
-                });
+                const updatedSubs = p.subProjects.map(sp => sp.id === targetId ? { ...sp, ...projectData } : sp);
                 return { ...p, subProjects: updatedSubs };
             }
-            
             return p;
         });
         
         updateProjectsState(updatedProjects);
-        
-        // Atualiza a referência atual se estivermos dentro dela
-        if (currentProject?.id === targetId) {
-            setCurrentProject(updatedProjects.find(p => p.id === targetId));
-        }
+        if (currentProject?.id === targetId) setCurrentProject(updatedProjects.find(p => p.id === targetId));
         if (currentSubProject?.id === targetId) {
             const parent = updatedProjects.find(p => p.subProjects.some(sp => sp.id === targetId));
             setCurrentSubProject(parent.subProjects.find(sp => sp.id === targetId));
         }
-
     } else {
-        // --- CRIAÇÃO ---
         const newItem = {
             id: generateId(isSub ? 'sub' : 'proj'),
             ...projectData,
@@ -339,31 +300,23 @@ function LegacyApp() {
         };
 
         if (isSub) {
-            // Adicionar Subprojeto ao Projeto Atual
             const updatedProjects = projects.map(p => 
-                p.id === currentProject.id 
-                ? { ...p, subProjects: [...(p.subProjects || []), newItem] } 
-                : p
+                p.id === currentProject.id ? { ...p, subProjects: [...(p.subProjects || []), newItem] } : p
             );
             updateProjectsState(updatedProjects);
             setCurrentProject(updatedProjects.find(p => p.id === currentProject.id));
         } else {
-            // Adicionar Novo Projeto Principal
             updateProjectsState([...projects, newItem]);
         }
     }
-    
     setModalState({ isOpen: false, type: null });
   };
 
   const handleDeleteProject = (item, isSub = false) => {
     if (!confirm(`Tem certeza que deseja excluir "${item.name}"?`)) return;
-    
     if (isSub) {
       const updatedProjects = projects.map(p => 
-        p.id === currentProject.id 
-          ? { ...p, subProjects: p.subProjects.filter(s => s.id !== item.id) } 
-          : p
+        p.id === currentProject.id ? { ...p, subProjects: p.subProjects.filter(s => s.id !== item.id) } : p
       );
       updateProjectsState(updatedProjects);
       setCurrentProject(updatedProjects.find(p => p.id === currentProject.id));
@@ -372,9 +325,10 @@ function LegacyApp() {
     }
   };
 
-  // --- DRAG & DROP GERAL ---
+  // --- DRAG & DROP REFINADO (ORDENAÇÃO) ---
   const handleDragStart = (e, item, type, sourceId = null) => {
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', JSON.stringify({ id: item.id, type, sourceId })); // Fallback
     setDragState({
       isDragging: true,
       itemType: type,
@@ -384,32 +338,27 @@ function LegacyApp() {
   };
 
   const handleDragOver = (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Necessário para drop
   };
 
-  const handleDrop = (e, targetId, type) => {
+  const handleDragEnter = (e, targetId) => {
     e.preventDefault();
+    if (dragState.isDragging && dragState.itemType === 'task') {
+        setDragOverTargetId(targetId);
+    }
+  };
+
+  const handleDrop = (e, targetContainerId, type) => {
+    e.preventDefault();
+    setDragOverTargetId(null);
     if (!dragState.isDragging) return;
 
-    // Drop de Projetos
-    if (type === 'project' && dragState.itemType === 'project') {
-        const draggedIdx = projects.findIndex(p => p.id === dragState.itemData.id);
-        const targetIdx = projects.findIndex(p => p.id === targetId);
-        if (draggedIdx === targetIdx) return;
-
-        const newProjects = [...projects];
-        const [removed] = newProjects.splice(draggedIdx, 1);
-        newProjects.splice(targetIdx, 0, removed);
-        updateProjectsState(newProjects);
-    }
-
-    // Drop de Tarefas
+    // Lógica para Tarefas (Reordenação)
     if (type === 'list' && dragState.itemType === 'task') {
         const sourceListId = dragState.sourceContainerId;
-        const targetListId = targetId;
-        if (sourceListId === targetListId) return;
-
         const task = dragState.itemData;
+        const targetListId = targetContainerId;
+
         const updatedProjects = projects.map(p => {
             if (p.id !== currentProject.id) return p;
             
@@ -417,15 +366,36 @@ function LegacyApp() {
                 const board = { ...entity.boardData };
                 const lists = [...board[currentBoardType].lists];
                 
-                const sIdx = lists.findIndex(l => l.id === sourceListId);
-                if (sIdx === -1) return entity;
-                const sList = { ...lists[sIdx], tasks: lists[sIdx].tasks.filter(t => t.id !== task.id) };
-                lists[sIdx] = sList;
+                // 1. Encontrar e remover da origem
+                const sourceListIdx = lists.findIndex(l => l.id === sourceListId);
+                if (sourceListIdx === -1) return entity;
+                
+                const sourceList = { ...lists[sourceListIdx] };
+                const taskIndex = sourceList.tasks.findIndex(t => t.id === task.id);
+                if (taskIndex === -1) return entity; // Erro de segurança
+                
+                // Remove tarefa
+                sourceList.tasks = sourceList.tasks.filter(t => t.id !== task.id);
+                lists[sourceListIdx] = sourceList;
 
-                const tIdx = lists.findIndex(l => l.id === targetListId);
-                const tList = { ...lists[tIdx], tasks: [...lists[tIdx].tasks, task] };
-                lists[tIdx] = tList;
-
+                // 2. Inserir no destino
+                const targetListIdx = lists.findIndex(l => l.id === targetListId);
+                const targetList = { ...lists[targetListIdx] };
+                
+                // Se soltou EM CIMA de uma tarefa específica (Reordenação)
+                if (dragOverTargetId && dragOverTargetId !== task.id) {
+                    const dropIndex = targetList.tasks.findIndex(t => t.id === dragOverTargetId);
+                    if (dropIndex !== -1) {
+                        targetList.tasks.splice(dropIndex, 0, task);
+                    } else {
+                        targetList.tasks.push(task);
+                    }
+                } else {
+                    // Soltou na lista vazia ou no final
+                    targetList.tasks.push(task);
+                }
+                
+                lists[targetListIdx] = targetList;
                 board[currentBoardType] = { ...board[currentBoardType], lists };
                 return { ...entity, boardData: board };
             };
@@ -437,31 +407,39 @@ function LegacyApp() {
         });
 
         updateProjectsState(updatedProjects);
-        
         const newProj = updatedProjects.find(p => p.id === currentProject.id);
         if (currentView === 'subproject') setCurrentSubProject(newProj.subProjects.find(s => s.id === currentSubProject.id));
         else setCurrentProject(newProj);
     }
 
+    // Lógica para Projetos (Reordenação simples) - Mantido igual
+    if (type === 'project' && dragState.itemType === 'project') {
+        const draggedIdx = projects.findIndex(p => p.id === dragState.itemData.id);
+        const targetIdx = projects.findIndex(p => p.id === targetContainerId);
+        if (draggedIdx !== -1 && targetIdx !== -1 && draggedIdx !== targetIdx) {
+            const newProjects = [...projects];
+            const [removed] = newProjects.splice(draggedIdx, 1);
+            newProjects.splice(targetIdx, 0, removed);
+            updateProjectsState(newProjects);
+        }
+    }
+
     setDragState({ isDragging: false, itemType: null, itemData: null, sourceContainerId: null });
   };
 
-  // --- DROP DE ARQUIVOS ---
   const handleFileDrop = (e) => {
     e.preventDefault();
     setIsFileDragging(false);
     const droppedFiles = e.dataTransfer.files;
     if (droppedFiles && droppedFiles.length > 0) {
-        originalHandleFileUpload({ target: { files: droppedFiles, value: '' } });
+        handleFileUploadWithFeedback({ target: { files: droppedFiles, value: '' } });
     }
   };
 
   const handleTaskAction = (action, data) => {
     const isEdit = modalState.mode === 'edit';
-    
     const updatedProjects = projects.map(p => {
       if (p.id !== currentProject.id) return p;
-
       const updateEntity = (entity) => {
         const board = entity.boardData[currentBoardType];
         if (action === 'save') {
@@ -476,15 +454,11 @@ function LegacyApp() {
         }
         return entity;
       };
-
-      if (currentView === 'subproject') {
-        return { ...p, subProjects: p.subProjects.map(sp => sp.id === currentSubProject.id ? updateEntity(sp) : sp) };
-      }
+      if (currentView === 'subproject') return { ...p, subProjects: p.subProjects.map(sp => sp.id === currentSubProject.id ? updateEntity(sp) : sp) };
       return updateEntity(p);
     });
 
     updateProjectsState(updatedProjects);
-    
     const newProj = updatedProjects.find(p => p.id === currentProject.id);
     if (currentView === 'subproject') setCurrentSubProject(newProj.subProjects.find(s => s.id === currentSubProject.id));
     else setCurrentProject(newProj);
@@ -555,9 +529,8 @@ function LegacyApp() {
           </nav>
         </div>
         
-        {/* Menu do Usuário */}
         <div className="flex items-center gap-4">
-          {isSyncing && <span className="text-xs text-zinc-500 animate-pulse">Salvando...</span>}
+          {isSyncing && <span className="text-xs text-zinc-500 animate-pulse flex items-center gap-1"><RotateCcw className="h-3 w-3 animate-spin"/> Salvando...</span>}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-auto rounded-full gap-2 px-2 hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
@@ -588,7 +561,6 @@ function LegacyApp() {
 
   const renderHome = () => (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Sorte do Dia */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="col-span-2 bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-3 opacity-10"><Sparkles className="w-24 h-24 text-primary" /></div>
@@ -724,8 +696,9 @@ function LegacyApp() {
                     <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
                       {list.tasks?.map(task => (
                         <Card key={task.id} draggable onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
+                              onDragEnter={(e) => handleDragEnter(e, task.id)}
                               onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}
-                              className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 cursor-grab active:cursor-grabbing">
+                              className={`bg-zinc-900 border-zinc-800 hover:border-zinc-600 cursor-grab active:cursor-grabbing ${dragOverTargetId === task.id ? 'border-t-2 border-t-primary' : ''}`}>
                           <CardContent className="p-3">
                             <div className="flex justify-between items-start mb-2">
                               <span className="text-sm font-medium text-zinc-200">{task.title}</span>
@@ -738,7 +711,7 @@ function LegacyApp() {
                           </CardContent>
                         </Card>
                       ))}
-                      <Button variant="ghost" className="w-full border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                      <Button variant="ghost" className="w-full border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300 mt-2"
                         onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
                         <Plus className="h-3 w-3 mr-2" /> Adicionar
                       </Button>
@@ -767,7 +740,7 @@ function LegacyApp() {
                           </Button>
                         </div>
                       ))}
-                      <Button variant="ghost" className="w-full text-xs text-zinc-500 justify-start" onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
+                      <Button variant="ghost" className="w-full text-xs text-zinc-500 justify-start h-10 px-4" onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
                         <Plus className="h-3 w-3 mr-2" /> Adicionar item
                       </Button>
                     </div>
@@ -784,11 +757,11 @@ function LegacyApp() {
                 onDragLeave={(e) => { e.preventDefault(); setIsFileDragging(false); }}
                 onDrop={handleFileDrop}
               >
-                {isFileDragging && (
-                  <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
-                    <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-800 shadow-2xl animate-bounce">
-                      <Upload className="w-12 h-12 text-primary mx-auto mb-2" />
-                      <p className="text-white font-medium">Solte os arquivos aqui</p>
+                {(isFileDragging || isUploading) && (
+                  <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm rounded-xl">
+                    <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-800 shadow-2xl flex flex-col items-center">
+                      {isUploading ? <Loader2 className="w-12 h-12 text-primary animate-spin mb-2" /> : <Upload className="w-12 h-12 text-primary animate-bounce mb-2" />}
+                      <p className="text-white font-medium">{isUploading ? 'Enviando arquivos...' : 'Solte os arquivos aqui'}</p>
                     </div>
                   </div>
                 )}
@@ -800,7 +773,7 @@ function LegacyApp() {
                       type="file" 
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                       multiple 
-                      onChange={originalHandleFileUpload} 
+                      onChange={handleFileUploadWithFeedback} 
                     />
                     <Button className="bg-white text-black hover:bg-zinc-200">
                       <Upload className="mr-2 h-4 w-4" /> Upload
