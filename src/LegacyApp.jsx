@@ -3,6 +3,9 @@ import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import { formatFileSize } from './utils/formatFileSize';
+// IMPORT CORRIGIDO PARA A PASTA UTILS:
+import { absurdPhrases } from './utils/phrases'; 
+
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
 import SudokuGame from './components/SudokuGame';
 import { useFiles } from './hooks/useFiles';
@@ -31,18 +34,6 @@ import {
 // --- CONFIGURAÇÕES ---
 const DEFAULT_TABS = ['todo', 'kanban', 'files', 'goals'];
 const USER_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'];
-
-const absurdPhrases = [
-  "Hoje é um ótimo dia para conversar com suas plantas sobre seus planos de carreira.",
-  "Lembre-se: o sucesso é como uma pizza de abacaxi - controverso, mas alguns adoram.",
-  "Sua produtividade hoje será proporcional ao número de vezes que você piscar com o olho esquerdo.",
-  "O universo conspira a seu favor, especialmente se você usar meias de cores diferentes.",
-  "O segredo do sucesso hoje é fingir que você entende o que está fazendo até realmente entender.",
-  "Sua criatividade hoje fluirá como ketchup numa garrafa nova - devagar, mas com força total.",
-  "Hoje, tente resolver um problema usando apenas frases motivacionais e uma garrafinha d’água.",
-  "Seu café está te observando — e julgando suas decisões.",
-  "Cada reunião desnecessária cancela uma encarnação futura sua."
-];
 
 const generateMegaSenaNumbers = () => {
   const numbers = [];
@@ -116,7 +107,11 @@ function LegacyApp() {
       loadUserProjects(userData.userKey);
     }
     loadAllUsers();
-    setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
+    
+    // DEFINE A FRASE IMPORTADA
+    if (absurdPhrases && absurdPhrases.length > 0) {
+      setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
+    }
     setMegaSenaNumbers(generateMegaSenaNumbers());
   }, []);
 
