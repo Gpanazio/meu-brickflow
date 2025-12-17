@@ -1,33 +1,90 @@
 @import "tailwindcss";
 
+@theme {
+  /* Mapeando as variáveis para cores do Tailwind v4 */
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  
+  /* Animações (opcional, mas bom ter para o shadcn) */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from { height: 0 }
+    to { height: var(--radix-accordion-content-height) }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height) }
+    to { height: 0 }
+  }
+}
+
+/* Definição dos valores das variáveis (HSL puro) */
 @layer base {
   :root {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
+    
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
+    
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
+    
     --primary: 0 72% 51%;
     --primary-foreground: 0 85.7% 97.3%;
+    
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
+    
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
+    
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
+    
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+    
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+    
     --radius: 0.5rem;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border; /* Agora isso funciona porque --color-border foi definido no @theme */
   }
   body {
     @apply bg-background text-foreground;
@@ -35,20 +92,20 @@
   }
 }
 
-/* Utilitários Visuais Brutais */
-.glass-effect {
-  @apply bg-zinc-950/70 backdrop-blur-md border border-zinc-800;
+/* Utilitários Visuais Extras */
+.glass-panel {
+  @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5 shadow-2xl;
 }
 
-.brutal-card {
-  @apply border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 hover:border-zinc-700 transition-all duration-300;
+.hover-glow {
+  @apply transition-all duration-300;
+}
+.hover-glow:hover {
+  box-shadow: 0 0 30px -5px rgba(220, 38, 38, 0.3);
+  border-color: rgba(220, 38, 38, 0.5);
 }
 
-.brutal-shadow {
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 20px -2px rgba(0,0,0,0.5);
-}
-
-/* Remove a aparência padrão de scrollbar e adiciona uma minimalista */
+/* Scrollbar Minimalista */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
