@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   :root {
@@ -10,8 +8,8 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 72% 51%; /* Brick Red Vibrante */
-    --primary-foreground: 0 0% 98%;
+    --primary: 0 72% 51%;
+    --primary-foreground: 0 85.7% 97.3%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
@@ -23,7 +21,7 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
-    --radius: 0.75rem;
+    --radius: 0.5rem;
   }
 }
 
@@ -32,28 +30,37 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* Utilitários para Efeitos de Vidro Moderno (Bento Grid Style) */
-.glass-panel {
-  @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5 shadow-2xl;
+/* Utilitários Visuais Brutais */
+.glass-effect {
+  @apply bg-zinc-950/70 backdrop-blur-md border border-zinc-800;
 }
 
-.hover-glow {
-  @apply transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(220,38,38,0.3)] hover:border-primary/50;
+.brutal-card {
+  @apply border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 hover:border-zinc-700 transition-all duration-300;
 }
 
-/* Scrollbar minimalista */
+.brutal-shadow {
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 20px -2px rgba(0,0,0,0.5);
+}
+
+/* Remove a aparência padrão de scrollbar e adiciona uma minimalista */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #09090b;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-zinc-800 rounded-full hover:bg-zinc-700;
+  background: #27272a;
+  border-radius: 5px;
+  border: 2px solid #09090b;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
 }
