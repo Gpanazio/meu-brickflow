@@ -10,11 +10,11 @@ const __dirname = path.dirname(__filename)
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(), // 👈 O Tailwind precisa estar aqui para funcionar!
+    tailwindcss(), // Essencial para o design Brutal
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "./src"), // Essencial para corrigir o erro 'Rollup failed to resolve'
     },
   },
   build: {
