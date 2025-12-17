@@ -25,7 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { 
   Settings, MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
   Trash2, Download, Eye, LayoutGrid, 
-  FolderOpen, Calendar, Target, Lock, Sparkles, Dna, RotateCcw, User
+  FolderOpen, Calendar, Target, Lock, Sparkles, Dna, RotateCcw
 } from 'lucide-react';
 
 // --- CONFIGURAÇÕES ---
@@ -253,7 +253,7 @@ function LegacyApp() {
     }
   };
 
-  // --- DRAG & DROP GERAL (Projetos e Tarefas) ---
+  // --- DRAG & DROP GERAL ---
   const handleDragStart = (e, item, type, sourceId = null) => {
     e.dataTransfer.effectAllowed = 'move';
     setDragState({
@@ -294,7 +294,6 @@ function LegacyApp() {
         const updatedProjects = projects.map(p => {
             if (p.id !== currentProject.id) return p;
             
-            // Helper para atualizar boards
             const updateBoard = (entity) => {
                 const board = { ...entity.boardData };
                 const lists = [...board[currentBoardType].lists];
@@ -320,7 +319,6 @@ function LegacyApp() {
 
         updateProjectsState(updatedProjects);
         
-        // Atualiza refs
         const newProj = updatedProjects.find(p => p.id === currentProject.id);
         if (currentView === 'subproject') setCurrentSubProject(newProj.subProjects.find(s => s.id === currentSubProject.id));
         else setCurrentProject(newProj);
@@ -424,8 +422,8 @@ function LegacyApp() {
       <div className="container flex h-14 items-center justify-between mx-auto px-4 md:px-8">
         <div className="flex items-center gap-4">
           <div onClick={() => setCurrentView('home')} className="cursor-pointer flex items-center gap-2">
-             <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center font-bold text-white">B</div>
-             <span className="font-bold hidden md:inline-block">BrickFlow</span>
+             {/* LOGO RESTAURADO AQUI */}
+             <img src={logoImage} alt="BrickFlow" className="h-8 w-auto object-contain" />
           </div>
           <Separator orientation="vertical" className="h-6 bg-zinc-800" />
           <nav className="flex items-center gap-2 text-sm">
