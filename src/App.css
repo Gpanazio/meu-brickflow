@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
+/* 1. Definição do Tema (Conecta variáveis CSS ao Tailwind) */
 @theme {
-  /* Mapeando as variáveis para cores do Tailwind v4 */
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
@@ -32,22 +32,9 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
-  
-  /* Animações (opcional, mas bom ter para o shadcn) */
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
-
-  @keyframes accordion-down {
-    from { height: 0 }
-    to { height: var(--radix-accordion-content-height) }
-  }
-  @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height) }
-    to { height: 0 }
-  }
 }
 
-/* Definição dos valores das variáveis (HSL puro) */
+/* 2. Valores das Variáveis (Modo Dark "Brutal") */
 @layer base {
   :root {
     --background: 240 10% 3.9%;
@@ -80,29 +67,33 @@
     
     --radius: 0.5rem;
   }
-}
 
-@layer base {
   * {
-    @apply border-border; /* Agora isso funciona porque --color-border foi definido no @theme */
+    /* CORREÇÃO CRÍTICA: Usando propriedade nativa para evitar erro de build */
+    border-color: hsl(var(--border));
   }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* Utilitários Visuais Extras */
-.glass-panel {
-  @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5 shadow-2xl;
-}
-
-.hover-glow {
-  @apply transition-all duration-300;
-}
-.hover-glow:hover {
-  box-shadow: 0 0 30px -5px rgba(220, 38, 38, 0.3);
-  border-color: rgba(220, 38, 38, 0.5);
+/* 3. Utilitários Visuais Extras */
+@layer utilities {
+  .glass-panel {
+    @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5 shadow-2xl;
+  }
+  
+  .hover-glow {
+    @apply transition-all duration-300;
+  }
+  
+  .hover-glow:hover {
+    box-shadow: 0 0 30px -5px rgba(220, 38, 38, 0.3);
+    border-color: rgba(220, 38, 38, 0.5);
+  }
 }
 
 /* Scrollbar Minimalista */
