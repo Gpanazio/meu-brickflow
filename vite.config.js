@@ -14,7 +14,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"), // Essencial para corrigir o erro 'Rollup failed to resolve'
+      "@": path.resolve(__dirname, "./src"), // Essencial para corrigir imports
     },
   },
   build: {
