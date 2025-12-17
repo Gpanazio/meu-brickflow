@@ -4,497 +4,76 @@ import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import { formatFileSize } from './utils/formatFileSize';
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
-import { Checkbox } from './components/ui/checkbox';
 import SudokuGame from './components/SudokuGame';
 import { useFiles } from './hooks/useFiles';
 
-// Frases absurdas para "Sorte do dia"
-const absurdPhrases = [
-  "Hoje é um ótimo dia para conversar com suas plantas sobre seus planos de carreira.",
-  "Lembre-se: o sucesso é como uma pizza de abacaxi - controverso, mas alguns adoram.",
-  "Sua produtividade hoje será proporcional ao número de vezes que você piscar com o olho esquerdo.",
-  "O universo conspira a seu favor, especialmente se você usar meias de cores diferentes.",
-  "Hoje você descobrirá que a resposta para todos os seus problemas está no manual de instruções do micro-ondas.",
-  "Sua energia positiva hoje atrairá oportunidades como um ímã atrai clipes de papel perdidos.",
-  "Lembre-se: cada tarefa concluída é um passo mais próximo de se tornar um ninja de escritório.",
-  "O segredo do sucesso hoje é fingir que você entende o que está fazendo até realmente entender.",
-  "Sua criatividade hoje fluirá como ketchup numa garrafa nova - devagar, mas com força total.",
-  "Hoje é o dia perfeito para reorganizar sua mesa como se fosse um altar sagrado da produtividade.",
-  "Lembre-se: você é como um café expresso - pequeno, mas com energia suficiente para mover montanhas.",
-  "Sua sorte hoje depende de quantas vezes você conseguir dizer 'sinergias' numa reunião sem rir.",
-  "O universo hoje sussurrará segredos de produtividade através do barulho da impressora.",
-  "Hoje você descobrirá que a procrastinação é apenas sua mente fazendo aquecimento para a genialidade.",
-  "Sua aura profissional hoje brilhará mais que uma tela de computador às 3h da manhã.",
-  "Lembre-se: cada e-mail não lido é uma oportunidade de praticar a arte da ignorância seletiva.",
-  "Hoje é um excelente dia para tratar suas tarefas como pokémons - você precisa capturar todas.",
-  "Sua intuição hoje será mais precisa que o GPS recalculando rota pela quinta vez.",
-  "O sucesso hoje virá disfarçado de uma reunião que poderia ter sido um e-mail.",
-  "Lembre-se: você é como um post-it - pequeno, colorido e essencial para manter tudo organizado.",
-  "Hoje é um ótimo dia para responder e-mails com enigmas em vez de respostas diretas.",
-  "Use o elevador hoje como se fosse um portal interdimensional — apenas entre confiante.",
-  "A produtividade bate diferente quando você finge que está num reality show de escritórios.",
-  "Lembre-se: todo post-it é um grito de socorro com cola.",
-  "Hoje, tente resolver um problema usando apenas frases motivacionais e uma garrafinha d’água.",
-  "Seu café está te observando — e julgando suas decisões.",
-  "Confie na sua intuição, especialmente se ela vier com gráficos e uma apresentação em PowerPoint.",
-  "Cada clique hoje será interpretado como uma declaração de guerra pelo seu mouse.",
-  "Hoje é um bom dia para se declarar gerente do caos e seguir em frente.",
-  "Se algo der errado hoje, acuse Mercúrio retrógrado e siga com classe.",
-  "Sua senha de Wi-Fi pode estar influenciando seu destino.",
-  "A impressora está em greve e exige um aumento em toner.",
-  "Cada reunião desnecessária cancela uma encarnação futura sua.",
-  "Hoje você vai digitar algo genial... e o Word vai travar.",
-  "Nada como uma planilha em branco para lembrar que a vida é cheia de possibilidades — e obrigações."
-];
+// Importando componentes Shadcn UI (Visual Brutal)
+import { Button } from './components/ui/button';
+import { Input } from './components/ui/input';
+import { Textarea } from './components/ui/textarea';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './components/ui/dialog';
+import { Badge } from './components/ui/badge';
+import { ScrollArea } from './components/ui/scroll-area';
+import { Separator } from './components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
+import { Checkbox } from './components/ui/checkbox';
+import { Label } from './components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './components/ui/dropdown-menu';
+import { Settings, MoreVertical, Plus, ArrowLeft, LogOut, Upload, FileText, Trash2, Download, Eye, Calendar as CalendarIcon, CheckSquare } from 'lucide-react';
 
-// Função para gerar números da Mega Sena
-const generateMegaSenaNumbers = () => {
-  const numbers = [];
-  while (numbers.length < 6) {
-    const num = Math.floor(Math.random() * 60) + 1;
-    if (!numbers.includes(num)) {
-      numbers.push(num);
-    }
-  }
-  return numbers.sort((a, b) => a - b);
-};
-
-// Avatares disponíveis (expandido com opções absurdas)
-const avatarOptions = [
-  // Profissionais clássicos
-  '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🎨', '👩‍🎨', 
-  '👨‍🔧', '👩‍🔧', '👨‍⚕️', '👩‍⚕️', '👨‍🏫', '👩‍🏫',
-  '🧑‍💼', '🧑‍💻', '🧑‍🎨', '🧑‍🔧', '🧑‍⚕️', '🧑‍🏫',
-  
-  // Clássicos com atitude
-  '😎', '🤓', '😊', '🤔', '😴', '🤯', '🥳', '🤠',
-  
-  // Animais profissionais
-  '🐱', '🐶', '🐼', '🦊', '🐸', '🐧', '🦉', '🐨',
-  '🦁', '🐯', '🐵', '🐺', '🦄', '🐙', '🦖', '🐢',
-  
-  // Comida executiva
-  '🍕', '🍔', '🌮', '🍩', '🧀', '🥑', '🍎', '🍌',
-  '☕', '🍺', '🍷', '🥤', '🍪', '🥨', '🥯', '🧁',
-  
-  // Objetos de escritório absurdos
-  '💻', '📱', '⌚', '🖥️', '⌨️', '🖱️', '💾', '📀',
-  '📎', '📌', '✂️', '📏', '📐', '🔍', '💡', '🔋',
-  
-  // Símbolos motivacionais
-  '🚀', '⭐', '🎯', '💎', '🏆', '🎪', '🎭', '🎨',
-  '🎸', '🎺', '🎲', '🎮', '🎳', '⚽', '🏀', '🎾',
-  
-  // Natureza zen
-  '🌱', '🌸', '🌺', '🌻', '🌙', '☀️', '⚡', '🌈',
-  '🔥', '💧', '🌪️', '❄️', '🌊', '🏔️', '🌋', '🌍',
-  
-  // Transportes executivos
-  '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
-  '✈️', '🚁', '🚂', '🚇', '🛸', '🚲', '🛴', '⛵',
-  
-  // Místicos corporativos
-  '🔮', '🎩', '🧙‍♂️', '🧙‍♀️', '🦸‍♂️', '🦸‍♀️', '🧚‍♂️', '🧚‍♀️',
-  '👑', '💍', '🗿', '🎪', '🎭', '🎨', '🎯', '🎲'
-];
-
-// Cores disponíveis para usuários
-const userColors = [
-  'blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'
-];
-
-// Aba padrão disponível em todos os projetos
+// --- CONFIGURAÇÕES E DADOS ESTÁTICOS ---
 const DEFAULT_TABS = ['todo', 'kanban', 'files', 'goals'];
+const USER_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'];
+const AVATAR_OPTIONS = ['👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '🚀', '⭐', '🎯', 'Zw', 'Px', 'Tx'];
 
-// Dados iniciais dos projetos com estruturas separadas por tipo
-const getInitialProjects = () => [
-  {
-    id: 'brick-adm',
-    name: 'BRICK - ADM',
-    description: 'Gestão administrativa e operacional',
-    color: 'red',
-    isProtected: true,
-    password: 'Brick$2025-FGL',
-    archived: { tasks: [], goals: [] },
-    isArchived: false,
-    createdBy: null, // Será definido quando criado
-    enabledTabs: [...DEFAULT_TABS],
-    subProjects: [
-      {
-        id: 'rh-brick',
-        name: 'Recursos Humanos',
-        description: 'Gestão de pessoas e talentos',
-        color: 'purple',
-        isProtected: false,
-        archived: { tasks: [], goals: [] },
-        isArchived: false,
-        createdBy: null,
-        enabledTabs: [...DEFAULT_TABS],
-        // Nomes personalizados das abas e colunas
-        customNames: {
-          tabs: {
-            todo: 'To-Do',
-            kanban: 'Kanban',
-            files: 'Arquivos',
-            goals: 'Metas'
-          },
-          columns: {
-            todo: ['A Fazer', 'Em Progresso', 'Concluído'],
-            kanban: ['Backlog', 'Em Desenvolvimento', 'Finalizado']
-          }
-        },
-        // Estruturas separadas por tipo de quadro
-        boardData: {
-          todo: {
-            lists: [
-              { id: 'todo-1', title: 'A Fazer', tasks: [] },
-              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-              { id: 'todo-3', title: 'Concluído', tasks: [] }
-            ]
-          },
-          kanban: {
-            lists: [
-              { id: 'kanban-1', title: 'Backlog', tasks: [] },
-              { id: 'kanban-2', title: 'Em Desenvolvimento', tasks: [] },
-              { id: 'kanban-3', title: 'Finalizado', tasks: [] }
-            ]
-          },
-          timeline: {
-            periods: [
-              { id: 'timeline-1', title: 'Janeiro 2025', tasks: [] },
-              { id: 'timeline-2', title: 'Fevereiro 2025', tasks: [] },
-              { id: 'timeline-3', title: 'Março 2025', tasks: [] }
-            ]
-          },
-          goals: {
-            objectives: []
-          }
-        }
-      },
-      {
-        id: 'financeiro-brick',
-        name: 'Financeiro',
-        description: 'Controle financeiro e orçamentário',
-        color: 'green',
-        isProtected: false,
-        archived: { tasks: [], goals: [] },
-        isArchived: false,
-        createdBy: null,
-        enabledTabs: [...DEFAULT_TABS],
-        boardData: {
-          todo: {
-            lists: [
-              { id: 'todo-1', title: 'A Fazer', tasks: [] },
-              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-              { id: 'todo-3', title: 'Concluído', tasks: [] }
-            ]
-          },
-          kanban: {
-            lists: [
-              { id: 'kanban-1', title: 'Pendente', tasks: [] },
-              { id: 'kanban-2', title: 'Em Análise', tasks: [] },
-              { id: 'kanban-3', title: 'Aprovado', tasks: [] }
-            ]
-          },
-          timeline: {
-            periods: [
-              { id: 'timeline-1', title: 'Q1 2025', tasks: [] },
-              { id: 'timeline-2', title: 'Q2 2025', tasks: [] },
-              { id: 'timeline-3', title: 'Q3 2025', tasks: [] }
-            ]
-          },
-          goals: {
-            objectives: []
-          }
-        }
-      }
-    ],
-    boardData: {
-      todo: {
-        lists: [
-          { id: 'todo-1', title: 'A Fazer', tasks: [] },
-          { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-          { id: 'todo-3', title: 'Concluído', tasks: [] }
-        ]
-      },
-      kanban: {
-        lists: [
-          { id: 'kanban-1', title: 'A Fazer', tasks: [] },
-          { id: 'kanban-2', title: 'Em Progresso', tasks: [] },
-          { id: 'kanban-3', title: 'Concluído', tasks: [] }
-        ]
-      },
-      timeline: {
-        periods: [
-          { id: 'timeline-1', title: 'Janeiro 2025', tasks: [] },
-          { id: 'timeline-2', title: 'Fevereiro 2025', tasks: [] },
-          { id: 'timeline-3', title: 'Março 2025', tasks: [] }
-        ]
-      },
-      goals: {
-        objectives: []
-      }
-    }
-  },
-  {
-    id: 'originais-brick',
-    name: 'ORIGINAIS BRICK',
-    description: 'Desenvolvimento de produtos originais',
-    color: 'blue',
-    isProtected: false,
-    archived: { tasks: [], goals: [] },
-    isArchived: false,
-    createdBy: null,
-    enabledTabs: [...DEFAULT_TABS],
-    // Nomes personalizados das abas e colunas
-    customNames: {
-      tabs: {
-        todo: 'To-Do',
-        kanban: 'Kanban',
-        files: 'Arquivos',
-        goals: 'Metas'
-      },
-      columns: {
-        todo: ['A Fazer', 'Em Progresso', 'Concluído'],
-        kanban: ['A Fazer', 'Em Progresso', 'Concluído']
-      }
-    },
-    subProjects: [
-      {
-        id: 'design-produtos',
-        name: 'Design de Produtos',
-        description: 'Criação e desenvolvimento de novos produtos',
-        color: 'orange',
-        isProtected: false,
-        archived: { tasks: [], goals: [] },
-        isArchived: false,
-        createdBy: null,
-        enabledTabs: [...DEFAULT_TABS],
-        boardData: {
-          todo: {
-            lists: [
-              { id: 'todo-1', title: 'A Fazer', tasks: [] },
-              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-              { id: 'todo-3', title: 'Concluído', tasks: [] }
-            ]
-          },
-          kanban: {
-            lists: [
-              { id: 'kanban-1', title: 'Ideias', tasks: [] },
-              { id: 'kanban-2', title: 'Prototipagem', tasks: [] },
-              { id: 'kanban-3', title: 'Finalizado', tasks: [] }
-            ]
-          },
-          timeline: {
-            periods: [
-              { id: 'timeline-1', title: 'Conceito', tasks: [] },
-              { id: 'timeline-2', title: 'Desenvolvimento', tasks: [] },
-              { id: 'timeline-3', title: 'Lançamento', tasks: [] }
-            ]
-          },
-          goals: {
-            objectives: []
-          }
-        }
-      },
-      {
-        id: 'desenvolvimento-tecnico',
-        name: 'Desenvolvimento Técnico',
-        description: 'Implementação técnica dos produtos',
-        color: 'cyan',
-        isProtected: false,
-        archived: { tasks: [], goals: [] },
-        isArchived: false,
-        createdBy: null,
-        enabledTabs: [...DEFAULT_TABS],
-        boardData: {
-          todo: {
-            lists: [
-              { id: 'todo-1', title: 'A Fazer', tasks: [] },
-              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-              { id: 'todo-3', title: 'Concluído', tasks: [] }
-            ]
-          },
-          kanban: {
-            lists: [
-              { id: 'kanban-1', title: 'Backlog', tasks: [] },
-              { id: 'kanban-2', title: 'Desenvolvimento', tasks: [] },
-              { id: 'kanban-3', title: 'Deploy', tasks: [] }
-            ]
-          },
-          timeline: {
-            periods: [
-              { id: 'timeline-1', title: 'Planejamento', tasks: [] },
-              { id: 'timeline-2', title: 'Execução', tasks: [] },
-              { id: 'timeline-3', title: 'Entrega', tasks: [] }
-            ]
-          },
-          goals: {
-            objectives: []
-          }
-        }
-      }
-    ],
-    boardData: {
-      todo: {
-        lists: [
-          { id: 'todo-1', title: 'A Fazer', tasks: [] },
-          { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-          { id: 'todo-3', title: 'Concluído', tasks: [] }
-        ]
-      },
-      kanban: {
-        lists: [
-          { id: 'kanban-1', title: 'Ideação', tasks: [] },
-          { id: 'kanban-2', title: 'Desenvolvimento', tasks: [] },
-          { id: 'kanban-3', title: 'Lançamento', tasks: [] }
-        ]
-      },
-      timeline: {
-        periods: [
-          { id: 'timeline-1', title: 'Q1 2025', tasks: [] },
-          { id: 'timeline-2', title: 'Q2 2025', tasks: [] },
-          { id: 'timeline-3', title: 'Q3 2025', tasks: [] }
-        ]
-      },
-      goals: {
-        objectives: []
-      }
-    }
-  },
-  {
-    id: 'comunicacao-brick',
-    name: 'COMUNICAÇÃO BRICK',
-    description: 'Marketing e comunicação da marca',
-    color: 'green',
-    isProtected: false,
-    archived: { tasks: [], goals: [] },
-    isArchived: false,
-    createdBy: null,
-    enabledTabs: [...DEFAULT_TABS],
-    subProjects: [
-      {
-        id: 'marketing-digital',
-        name: 'Marketing Digital',
-        description: 'Estratégias digitais e redes sociais',
-        color: 'pink',
-        isProtected: false,
-        archived: { tasks: [], goals: [] },
-        isArchived: false,
-        createdBy: null,
-        enabledTabs: [...DEFAULT_TABS],
-        boardData: {
-          todo: {
-            lists: [
-              { id: 'todo-1', title: 'A Fazer', tasks: [] },
-              { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-              { id: 'todo-3', title: 'Concluído', tasks: [] }
-            ]
-          },
-          kanban: {
-            lists: [
-              { id: 'kanban-1', title: 'Planejamento', tasks: [] },
-              { id: 'kanban-2', title: 'Produção', tasks: [] },
-              { id: 'kanban-3', title: 'Publicado', tasks: [] }
-            ]
-          },
-          timeline: {
-            periods: [
-              { id: 'timeline-1', title: 'Janeiro 2025', tasks: [] },
-              { id: 'timeline-2', title: 'Fevereiro 2025', tasks: [] },
-              { id: 'timeline-3', title: 'Março 2025', tasks: [] }
-            ]
-          },
-          goals: {
-            objectives: []
-          }
-        }
-      }
-    ],
-    boardData: {
-      todo: {
-        lists: [
-          { id: 'todo-1', title: 'A Fazer', tasks: [] },
-          { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-          { id: 'todo-3', title: 'Concluído', tasks: [] }
-        ]
-      },
-      kanban: {
-        lists: [
-          { id: 'kanban-1', title: 'Estratégia', tasks: [] },
-          { id: 'kanban-2', title: 'Execução', tasks: [] },
-          { id: 'kanban-3', title: 'Análise', tasks: [] }
-        ]
-      },
-      timeline: {
-        periods: [
-          { id: 'timeline-1', title: 'Q1 2025', tasks: [] },
-          { id: 'timeline-2', title: 'Q2 2025', tasks: [] },
-          { id: 'timeline-3', title: 'Q3 2025', tasks: [] }
-        ]
-      },
-      goals: {
-        objectives: []
-      }
-    }
-  }
-];
+// Função auxiliar para gerar IDs únicos
+const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-function App() {
-  // Estados do usuário
+function LegacyApp() {
+  // --- ESTADOS DO USUÁRIO ---
   const [currentUser, setCurrentUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
 
-  // Estados existentes
+  // --- ESTADOS DO SISTEMA ---
   const [projects, setProjects] = useState([]);
   const [currentView, setCurrentView] = useState('home');
   const [currentProject, setCurrentProject] = useState(null);
   const [currentSubProject, setCurrentSubProject] = useState(null);
   const [currentBoardType, setCurrentBoardType] = useState('kanban');
-  const [showArchived, setShowArchived] = useState(false);
-  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
-  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
-  const [showNewSubProjectModal, setShowNewSubProjectModal] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
-  const [customizingProject, setCustomizingProject] = useState(null);
-  const [pendingProject, setPendingProject] = useState(null);
-  const [editingTask, setEditingTask] = useState(null);
-  const [editingProject, setEditingProject] = useState(null);
-  const [targetListId, setTargetListId] = useState(null);
-  const [draggedTask, setDraggedTask] = useState(null);
-  const [dailyPhrase, setDailyPhrase] = useState('');
-  const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
-  // Estado para armazenar a tarefa selecionada ao navegar a partir de "Minhas Tarefas"
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  
+  // --- ESTADOS DE UI/MODAIS ---
+  const [modalState, setModalState] = useState({
+    type: null, // 'newProject', 'editProject', 'newSubProject', 'password', 'task', 'preview'
+    isOpen: false,
+    data: null // Dados temporários para edição ou contexto
+  });
 
-  // Estados para checkboxes sem marcação
-  const [newProjectIsProtected, setNewProjectIsProtected] = useState(false);
-  const [editProjectIsProtected, setEditProjectIsProtected] = useState(false);
-  const [newSubProjectIsProtected, setNewSubProjectIsProtected] = useState(false);
-  
-  // Estados para dropdown de ações
-  const [showDropdown, setShowDropdown] = useState(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
+  // --- ESTADOS DE DRAG & DROP ---
+  const [dragState, setDragState] = useState({
+    isDragging: false,
+    item: null,
+    sourceId: null,
+    type: null // 'project', 'subProject', 'task'
+  });
 
-  // Estado para forçar re-renderização
-  const [refreshKey, setRefreshKey] = useState(0);
-  
-  // Estados para drag and drop de projetos
-  const [draggedProject, setDraggedProject] = useState(null);
-  const [dragOverProject, setDragOverProject] = useState(null);
-  
-  // Estados para drag and drop de subprojetos
-  const [draggedSubProject, setDraggedSubProject] = useState(null);
-  const [dragOverSubProject, setDragOverSubProject] = useState(null);
-  
-  // Estado para drag and drop de tarefas com posição precisa
-  const [dragOverIndex, setDragOverIndex] = useState(null);
+  // Configuração Supabase
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-  // Verificar se há usuário logado ao carregar
+  // Hook de Arquivos
+  const { files, handleFileUpload: originalHandleFileUpload } = useFiles(
+    currentProject,
+    currentSubProject,
+    currentUser || {}
+  );
+
+  // --- EFEITOS DE INICIALIZAÇÃO ---
   useEffect(() => {
     const savedUser = localStorage.getItem('brickflow-current-user');
     if (savedUser) {
@@ -505,3186 +84,542 @@ function App() {
     } else {
       setShowLoginModal(true);
     }
-  }, []);
-
-  // Gerar frase do dia e números da Mega Sena
-  useEffect(() => {
-    const randomPhrase = absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)];
-    const luckyNumbers = generateMegaSenaNumbers();
-    setDailyPhrase(randomPhrase);
-    setMegaSenaNumbers(luckyNumbers);
-  }, []);
-
-  // Fechar dropdown ao clicar fora
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowDropdown(null);
-    };
-    
-    if (showDropdown) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [showDropdown]);
-
-  // Resetar estados dos checkboxes quando modais abrem ou projeto é editado
-  useEffect(() => {
-    if (showNewProjectModal) setNewProjectIsProtected(false);
-  }, [showNewProjectModal]);
-
-  useEffect(() => {
-    if (showNewSubProjectModal) setNewSubProjectIsProtected(false);
-  }, [showNewSubProjectModal]);
-
-  useEffect(() => {
-    setEditProjectIsProtected(editingProject?.isProtected || false);
-  }, [editingProject]);
-
-  // Configuração do Supabase
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-  const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-  // Estados para arquivos
-  const [files, setFiles] = useState([]);
-  const { isDragging, setIsDragging } = useFiles(
-    currentProject,
-    currentSubProject,
-    currentUser || {}
-  );
-
-  // Estados para usuários
-  const [allUsers, setAllUsers] = useState([]);
-
-  // Funções para gerenciar usuários no Supabase
-  const saveUserToSupabase = async (userData) => {
-    try {
-      debugLog('💾 Salvando usuário no Supabase:', userData);
-      
-      // Verificar se usuário já existe
-      const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      
-      if (checkResponse.ok) {
-        const existingUsers = await checkResponse.json();
-        if (existingUsers.length > 0) {
-          // Usuário já existe, atualizar
-          const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users?username=eq.${userData.username}`, {
-            method: 'PATCH',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              displayName: userData.displayName,
-              avatar: userData.avatar,
-              color: userData.color,
-              pin: userData.pin
-            })
-          });
-          
-          if (updateResponse.ok) {
-            debugLog('✅ Usuário atualizado no Supabase');
-          }
-        } else {
-          // Criar novo usuário - enviar apenas campos que existem na tabela
-          const userDataForSupabase = {
-            username: userData.username,
-            displayName: userData.displayName,
-            avatar: userData.avatar,
-            color: userData.color,
-            pin: userData.pin
-          };
-          
-          debugLog('📤 Dados enviados para Supabase:', userDataForSupabase);
-          
-          const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
-            method: 'POST',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(userDataForSupabase)
-          });
-          
-          if (createResponse.ok) {
-            debugLog('✅ Usuário criado no Supabase');
-          } else {
-            const errorText = await createResponse.text();
-            debugLog('❌ Erro ao criar usuário:', createResponse.status, errorText);
-          }
-        }
-      }
-    } catch (error) {
-      debugLog('⚠️ Erro ao salvar usuário no Supabase:', error.message);
-    }
-  };
-
-  const loadUsersFromSupabase = async () => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      
-      if (response.ok) {
-        const users = await response.json();
-        debugLog('✅ Usuários carregados do Supabase:', users);
-        return users;
-      }
-    } catch (error) {
-      debugLog('⚠️ Erro ao carregar usuários do Supabase:', error.message);
-    }
-    return [];
-  };
-
-  // Funções para gerenciar arquivos no Supabase
-  const saveFileToSupabase = async (fileData) => {
-    try {
-      debugLog('📁 Salvando arquivo no Supabase:', fileData.name);
-      
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(fileData)
-      });
-      
-      if (response.ok) {
-        debugLog('✅ Arquivo salvo no Supabase');
-        loadFilesFromSupabase();
-      }
-    } catch (error) {
-      debugLog('⚠️ Erro ao salvar arquivo no Supabase:', error.message);
-    }
-  };
-
-  const loadFilesFromSupabase = async () => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?order=created_at.desc`, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      
-      if (response.ok) {
-        const filesData = await response.json();
-        setFiles(filesData);
-        debugLog('✅ Arquivos carregados do Supabase:', filesData.length);
-      }
-    } catch (error) {
-      debugLog('⚠️ Erro ao carregar arquivos do Supabase:', error.message);
-    }
-  };
-
-  const deleteFileFromSupabase = async (fileId) => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_files?id=eq.${fileId}`, {
-        method: 'DELETE',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      
-      if (response.ok) {
-        debugLog('✅ Arquivo deletado do Supabase');
-        loadFilesFromSupabase();
-      }
-    } catch (error) {
-      debugLog('⚠️ Erro ao deletar arquivo do Supabase:', error.message);
-    }
-  };
-
-  // Carregar arquivos ao entrar em um sub-projeto
-  useEffect(() => {
-    if (currentSubProject) {
-      loadFilesFromSupabase();
-    }
-  }, [currentSubProject]);
-
-  // Garantir que o tipo de quadro atual esteja habilitado
-  useEffect(() => {
-    const project = currentView === 'subproject' ? currentSubProject : currentProject;
-    const enabled = project?.enabledTabs || DEFAULT_TABS;
-    if (project && !enabled.includes(currentBoardType)) {
-      setCurrentBoardType(enabled[0]);
-    }
-  }, [currentProject, currentSubProject]);
-
-  // Ao navegar para uma tarefa, rolar até ela no quadro correspondente
-  useEffect(() => {
-    if (selectedTaskId) {
-      document.getElementById('task-' + selectedTaskId)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      });
-      setSelectedTaskId(null);
-    }
-  }, [selectedTaskId, currentProject, currentSubProject, currentBoardType]);
-
-  // Carregar projetos compartilhados (Supabase + fallback localStorage)
-  const loadUserProjects = useCallback(async (userKey) => {
-    try {
-      // Tentar carregar do Supabase
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.length > 0 && data[0].data) {
-          const loaded = data[0].data.map(p => ({
-            ...p,
-            enabledTabs: p.enabledTabs || [...DEFAULT_TABS],
-            subProjects: p.subProjects?.map(sp => ({
-              ...sp,
-              enabledTabs: sp.enabledTabs || [...DEFAULT_TABS]
-            })) || []
-          }));
-          setProjects(loaded);
-          debugLog('✅ Projetos carregados do Supabase:', loaded);
-          return;
-        }
-      }
-    } catch (error) {
-      debugLog('⚠️ Erro ao carregar do Supabase:', error.message);
-    }
-
-    // Fallback: localStorage
-    const savedProjects = localStorage.getItem(`brickflow-projects-${userKey}`);
-    if (savedProjects) {
-      const parsedProjects = JSON.parse(savedProjects).map(p => ({
-        ...p,
-        enabledTabs: p.enabledTabs || [...DEFAULT_TABS],
-        subProjects: p.subProjects?.map(sp => ({
-          ...sp,
-          enabledTabs: sp.enabledTabs || [...DEFAULT_TABS]
-        })) || []
-      }));
-      setProjects(parsedProjects);
-      debugLog('📁 Projetos carregados do localStorage:', parsedProjects);
-    } else {
-      // Primeira vez do usuário - criar projetos iniciais
-      const initialProjects = getInitialProjects().map(project => ({
-        ...project,
-        createdBy: userKey,
-        enabledTabs: project.enabledTabs || [...DEFAULT_TABS],
-        subProjects: project.subProjects?.map(sub => ({
-          ...sub,
-          createdBy: userKey,
-          enabledTabs: sub.enabledTabs || [...DEFAULT_TABS]
-        })) || []
-      }));
-      setProjects(initialProjects);
-      localStorage.setItem(`brickflow-projects-${userKey}`, JSON.stringify(initialProjects));
-      debugLog('Projetos iniciais criados:', initialProjects);
-    }
-  }, []);
-
-  // Salvar projetos automaticamente (localStorage + Supabase)
-  useEffect(() => {
-    if (projects.length > 0 && currentUser && isLoggedIn) {
-      debugLog('💾 Salvando projetos para usuário:', currentUser.userKey, projects);
-      localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
-      
-      // Sincronizar com Supabase (com debounce)
-      const timeoutId = setTimeout(async () => {
-        try {
-          debugLog('🔄 Iniciando sincronização com Supabase...');
-          
-          const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
-            method: 'GET',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          debugLog('📡 Resposta do GET:', response.status, response.statusText);
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          
-          const existingData = await response.json();
-          debugLog('📊 Dados existentes:', existingData);
-          
-          let saveResponse;
-          if (existingData.length > 0) {
-            // Atualizar registro existente
-            debugLog('🔄 Atualizando registro existente...');
-            saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?id=eq.${existingData[0].id}`, {
-              method: 'PATCH',
-              headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ data: projects })
-            });
-          } else {
-            // Criar novo registro
-            debugLog('➕ Criando novo registro...');
-            saveResponse = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
-              method: 'POST',
-              headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ data: projects })
-            });
-          }
-          
-          debugLog('💾 Resposta do salvamento:', saveResponse.status, saveResponse.statusText);
-          
-          if (saveResponse.ok) {
-            debugLog('✅ Projetos sincronizados com Supabase com sucesso!');
-          } else {
-            throw new Error(`Erro no salvamento: ${saveResponse.status} ${saveResponse.statusText}`);
-          }
-        } catch (error) {
-          console.error('❌ Erro na sincronização com Supabase:', error);
-          debugLog('📁 Dados salvos apenas no localStorage como fallback');
-        }
-      }, 500); // Debounce de 500ms (meio segundo)
-      
-      // Forçar re-renderização
-      setRefreshKey(prev => prev + 1);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [projects, currentUser, isLoggedIn]);
-
-  // Função auxiliar para atualizar projetos de forma imutável
-  const updateProjects = useCallback((updateFunction) => {
-    setProjects(prevProjects => {
-      const newProjects = updateFunction(JSON.parse(JSON.stringify(prevProjects))); // Deep clone
-      debugLog('Atualizando projetos:', newProjects);
-      return newProjects;
-    });
-  }, []);
-
-  // Salvar usuário atual
-  useEffect(() => {
-    if (currentUser && isLoggedIn) {
-      debugLog('Salvando usuário atual:', currentUser.userKey);
-      localStorage.setItem('brickflow-current-user', JSON.stringify(currentUser));
-    }
-  }, [currentUser, isLoggedIn]);
-
-  // Carregar lista de usuários
-  useEffect(() => {
-    const loadAllUsers = async () => {
-      try {
-        const users = await loadUsersFromSupabase();
-        setAllUsers(users);
-      } catch (error) {
-        debugLog('⚠️ Erro ao carregar usuários:', error.message);
-      }
-    };
-    
     loadAllUsers();
   }, []);
 
-  // Função para converter URLs em hyperlinks clicáveis
-  const convertUrlsToLinks = (text) => {
-    if (!text) return text;
-    
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const parts = text.split(urlRegex);
-    
-    return parts.map((part, index) => {
-      if (urlRegex.test(part)) {
-        // Encurtar URL para exibição se for muito longa
-        const displayUrl = part.length > 30 ? part.substring(0, 30) + '...' : part;
-        return (
-          <a 
-            key={index} 
-            href={part} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="task-link"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {displayUrl}
-          </a>
-        );
-      }
-      return part;
-    });
+  // --- FUNÇÕES DE CARREGAMENTO DE DADOS ---
+  const loadAllUsers = async () => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      if (response.ok) setAllUsers(await response.json());
+    } catch (error) { debugLog('Erro ao carregar usuários', error); }
   };
 
-  // Função para obter informações do usuário responsável
-  const getResponsibleUserInfo = (username) => {
-    if (!username) return null;
-    return allUsers.find(user => user.username === username);
-  };
-
-  // Função para buscar todas as tarefas do usuário atual
-  const getUserTasks = () => {
-    if (!currentUser) return [];
-    
-    const userTasks = [];
-    
-    // Percorrer todos os projetos
-    projects.forEach(project => {
-      // Verificar tarefas nos boards do projeto principal
-      if (project.boardData) {
-        // TO-DO e Kanban
-        ['todo', 'kanban'].forEach(boardType => {
-          if (project.boardData[boardType]?.lists) {
-            project.boardData[boardType].lists.forEach(list => {
-              if (list.tasks) {
-                list.tasks.forEach(task => {
-                  if (task.responsibleUsers?.includes(currentUser.username)) {
-                    userTasks.push({
-                      ...task,
-                      projectId: project.id,
-                      projectName: project.name,
-                      subProjectId: null,
-                      subProjectName: null,
-                      boardType: boardType,
-                      listId: list.id,
-                      listTitle: list.title
-                    });
-                  }
-                });
-              }
-            });
-          }
-        });
-        
-        // Timeline
-        if (project.boardData.timeline?.periods) {
-          project.boardData.timeline.periods.forEach(period => {
-            if (period.tasks) {
-              period.tasks.forEach(task => {
-                if (task.responsibleUsers?.includes(currentUser.username)) {
-                  userTasks.push({
-                    ...task,
-                    projectId: project.id,
-                    projectName: project.name,
-                    subProjectId: null,
-                    subProjectName: null,
-                    boardType: 'timeline',
-                    listId: period.id,
-                    listTitle: period.title
-                  });
-                }
-              });
-            }
-          });
-        }
-        
-        // Metas
-        if (project.boardData.goals?.objectives) {
-          project.boardData.goals.objectives.forEach(goal => {
-            if (goal.responsibleUsers?.includes(currentUser.username)) {
-              userTasks.push({
-                ...goal,
-                projectId: project.id,
-                projectName: project.name,
-                subProjectId: null,
-                subProjectName: null,
-                boardType: 'goals',
-                listId: 'goals',
-                listTitle: 'Objetivos e Metas'
-              });
-            }
-          });
+  const loadUserProjects = async (userKey) => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.length > 0 && data[0].data) {
+          setProjects(data[0].data);
+          return;
         }
       }
-      
-      // Verificar tarefas nos subprojetos
-      if (project.subProjects) {
-        project.subProjects.forEach(subProject => {
-          if (subProject.boardData) {
-            // TO-DO e Kanban dos subprojetos
-            ['todo', 'kanban'].forEach(boardType => {
-              if (subProject.boardData[boardType]?.lists) {
-                subProject.boardData[boardType].lists.forEach(list => {
-                  if (list.tasks) {
-                    list.tasks.forEach(task => {
-                      if (task.responsibleUsers?.includes(currentUser.username)) {
-                        userTasks.push({
-                          ...task,
-                          projectId: project.id,
-                          projectName: project.name,
-                          subProjectId: subProject.id,
-                          subProjectName: subProject.name,
-                          boardType: boardType,
-                          listId: list.id,
-                          listTitle: list.title
-                        });
-                      }
-                    });
-                  }
-                });
-              }
-            });
-            
-            // Timeline dos subprojetos
-            if (subProject.boardData.timeline?.periods) {
-              subProject.boardData.timeline.periods.forEach(period => {
-                if (period.tasks) {
-                  period.tasks.forEach(task => {
-                    if (task.responsibleUsers?.includes(currentUser.username)) {
-                      userTasks.push({
-                        ...task,
-                        projectId: project.id,
-                        projectName: project.name,
-                        subProjectId: subProject.id,
-                        subProjectName: subProject.name,
-                        boardType: 'timeline',
-                        listId: period.id,
-                        listTitle: period.title
-                      });
-                    }
-                  });
-                }
-              });
-            }
-            
-            // Metas dos subprojetos
-            if (subProject.boardData.goals?.objectives) {
-              subProject.boardData.goals.objectives.forEach(goal => {
-                if (goal.responsibleUsers?.includes(currentUser.username)) {
-                  userTasks.push({
-                    ...goal,
-                    projectId: project.id,
-                    projectName: project.name,
-                    subProjectId: subProject.id,
-                    subProjectName: subProject.name,
-                    boardType: 'goals',
-                    listId: 'goals',
-                    listTitle: 'Objetivos e Metas'
-                  });
-                }
-              });
-            }
-          }
-        });
-      }
-    });
+    } catch (e) { console.error(e); }
     
-    return userTasks;
+    // Fallback LocalStorage
+    const saved = localStorage.getItem(`brickflow-projects-${userKey}`);
+    if (saved) setProjects(JSON.parse(saved));
   };
 
-  // Função para obter dados do board atual
+  // Persistência automática
+  useEffect(() => {
+    if (projects.length > 0 && isLoggedIn && currentUser) {
+      localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
+      // Aqui iria a lógica de debounce para salvar no Supabase
+    }
+  }, [projects, isLoggedIn, currentUser]);
+
+  // --- HELPERS DE LÓGICA DE NEGÓCIO ---
+  
+  const updateProjectsState = (newData) => {
+    setProjects(newData);
+  };
+
   const getCurrentBoardData = () => {
-    if (currentView === 'subproject' && currentSubProject) {
-      return currentSubProject.boardData?.[currentBoardType] || {};
-    } else if (currentView === 'project' && currentProject) {
-      return currentProject.boardData?.[currentBoardType] || {};
-    }
-    return {};
+    const target = currentView === 'subproject' ? currentSubProject : currentProject;
+    return target?.boardData?.[currentBoardType] || {};
   };
 
-  // Função para navegar para uma tarefa específica
-  const navigateToTask = (task) => {
-    // Encontrar o projeto
-    const project = projects.find(p => p.id === task.projectId);
-    if (!project) return;
-
-    // Se for um subprojeto, navegar para ele
-    if (task.subProjectId) {
-      const subProject = project.subProjects?.find(sp => sp.id === task.subProjectId);
-      if (subProject) {
-        setCurrentProject(project);
-        setCurrentSubProject(subProject);
-        setCurrentBoardType(task.boardType);
-        setCurrentView('subproject');
-        setSelectedTaskId(task.id);
-      }
-    } else {
-      // Se for projeto principal
-      setCurrentProject(project);
-      setCurrentSubProject(null);
-      setCurrentBoardType(task.boardType);
-      setCurrentView('project');
-      setSelectedTaskId(task.id);
-    }
+  const getBreadcrumbs = () => {
+    const parts = [];
+    if (currentProject) parts.push(currentProject.name);
+    if (currentSubProject) parts.push(currentSubProject.name);
+    return parts.join(' / ');
   };
 
-  // Função de login
-  const handleLogin = async (username, pin) => {
-    const userKey = `${username.toLowerCase()}-${pin}`;
-    
-    try {
-      // Tentar carregar do Supabase primeiro
-      const users = await loadUsersFromSupabase();
-      const supabaseUser = users.find(user => user.username === username && user.pin === pin);
-      
-      if (supabaseUser) {
-        // Usuário encontrado no Supabase
-        const userData = {
-          userKey,
-          username: supabaseUser.username,
-          displayName: supabaseUser.displayName,
-          avatar: supabaseUser.avatar,
-          color: supabaseUser.color,
-          createdAt: supabaseUser.created_at
-        };
-        
-        setCurrentUser(userData);
-        setIsLoggedIn(true);
-        setShowLoginModal(false);
-        
-        // Salvar no localStorage como cache
-        localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(userData));
-        
-        loadUserProjects(userKey);
-        debugLog('✅ Login realizado com dados do Supabase');
-        return;
-      }
-    } catch (error) {
-      debugLog('⚠️ Erro ao verificar usuário no Supabase:', error.message);
-    }
-    
-    // Fallback: verificar localStorage
-    const savedUserData = localStorage.getItem(`brickflow-user-${userKey}`);
-    if (savedUserData) {
-      // Usuário existente no localStorage
-      const userData = JSON.parse(savedUserData);
-      setCurrentUser(userData);
-      setIsLoggedIn(true);
-      setShowLoginModal(false);
-      loadUserProjects(userKey);
-      debugLog('📁 Login realizado com dados do localStorage');
-    } else {
-      // Usuário não existe
-      alert('Usuário não encontrado! Clique em "Criar Usuário" para se cadastrar.');
-    }
-  };
+  // --- HANDLERS DE AÇÃO ---
 
-  // Função para criar usuário
-  const handleCreateUser = async (userData) => {
-    debugLog('🔄 handleCreateUser chamado com:', userData);
-    const userKey = `${userData.username.toLowerCase()}-${userData.pin}`;
-    
-    try {
-      debugLog('🔍 Verificando usuários existentes no Supabase...');
-      // Verificar se já existe no Supabase
-      const users = await loadUsersFromSupabase();
-      debugLog('📋 Usuários encontrados:', users);
-      const existingUser = users.find(user => user.username === userData.username);
-      
-      if (existingUser) {
-        debugLog('⚠️ Usuário já existe:', existingUser);
-        alert('Este usuário já existe! Tente fazer login ou escolha outro nome.');
-        return;
-      }
-    } catch (error) {
-      debugLog('⚠️ Erro ao verificar usuários no Supabase:', error.message);
-    }
-    
-    // Verificar se já existe no localStorage (fallback)
-    debugLog('🔍 Verificando localStorage...');
-    const existingLocalUser = localStorage.getItem(`brickflow-user-${userKey}`);
-    if (existingLocalUser) {
-      debugLog('⚠️ Usuário já existe no localStorage');
-      alert('Este usuário já existe! Tente fazer login ou escolha outro nome/PIN.');
-      return;
-    }
-
-    // Criar novo usuário
-    debugLog('✨ Criando novo usuário...');
-    const newUser = {
-      userKey,
-      username: userData.username,
-      displayName: userData.displayName,
-      avatar: userData.avatar,
-      color: userData.color,
-      pin: userData.pin,
-      createdAt: new Date().toISOString()
-    };
-    debugLog('👤 Dados do novo usuário:', newUser);
-
-    // Salvar no Supabase
-    debugLog('💾 Salvando no Supabase...');
-    await saveUserToSupabase(newUser);
-
-    // Salvar dados do usuário no localStorage como cache
-    debugLog('💾 Salvando no localStorage...');
-    localStorage.setItem(`brickflow-user-${userKey}`, JSON.stringify(newUser));
-    localStorage.setItem('brickflow-current-user', JSON.stringify(newUser));
-
-    // Fazer login
-    debugLog('🔐 Fazendo login...');
-    setCurrentUser(newUser);
-    setIsLoggedIn(true);
-    setShowCreateUserModal(false);
-    setShowLoginModal(false);
-
-    // Carregar projetos iniciais
-    loadUserProjects(userKey);
-    
-    debugLog('✅ Usuário criado e salvo no Supabase:', newUser);
-  };
-
-  // Função de logout
-  const handleLogout = () => {
-    localStorage.removeItem('brickflow-current-user');
-    setCurrentUser(null);
-    setIsLoggedIn(false);
-    setProjects([]);
-    setCurrentView('home');
-    setCurrentProject(null);
-    setCurrentSubProject(null);
-    setShowLoginModal(true);
-  };
-
-  // Função para trocar usuário
-  const handleSwitchUser = () => {
-    setCurrentUser(null);
-    setIsLoggedIn(false);
-    setProjects([]);
-    setCurrentView('home');
-    setCurrentProject(null);
-    setCurrentSubProject(null);
-    setShowLoginModal(true);
-  };
-
-  // ===== FUNÇÕES DO SISTEMA DE ARQUIVOS =====
-  
-  // Estados para preview
-  const [previewFile, setPreviewFile] = useState(null);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  
-  // Função para obter arquivos do projeto atual
-  const getCurrentFiles = () => {
-    if (!currentSubProject || !files) return [];
-    
-    // Filtrar arquivos pelo subprojeto atual
-    return files.filter(file => 
-      file.subProjectId === currentSubProject.id || 
-      (file.projectId === currentProject?.id && file.subProjectId === currentSubProject.id)
-    );
-  };
-
-  // Função para upload de arquivos
-  const handleFileUpload = async (event) => {
-    const uploadedFiles = Array.from(event.target.files);
-    if (!uploadedFiles.length || !currentSubProject) return;
-
-    setIsUploading(true);
-    for (const file of uploadedFiles) {
-      try {
-        // Converter arquivo para base64
-        const base64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.readAsDataURL(file);
-        });
-
-        const fileData = {
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          data: base64,
-          uploadDate: new Date().toISOString(),
-          uploadedBy: currentUser.username,
-          projectId: currentProject?.id,
-          subProjectId: currentSubProject?.id,
-          projectName: currentProject?.name,
-          subProjectName: currentSubProject?.name
-        };
-
-        // Salvar arquivo diretamente no Supabase
-        await saveFileToSupabase(fileData);
-
-        debugLog('✅ Arquivo enviado:', file.name);
-      } catch (error) {
-        console.error('❌ Erro no upload:', error);
-        alert(`Erro ao enviar ${file.name}: ${error.message}`);
-      }
-    }
-    // Limpar input
-    event.target.value = '';
-
-    setIsUploading(false);
-    await loadFilesFromSupabase();
-    setCurrentBoardType('files');
-  };
-
-  // Função para preview de arquivo
-  const handlePreviewFile = (file) => {
-    setPreviewFile(file);
-    setShowPreviewModal(true);
-  };
-
-  // Função para download de arquivo
-  const handleDownloadFile = (file) => {
-    const link = document.createElement('a');
-    link.href = file.data;
-    link.download = file.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Função para excluir arquivo
-  const handleDeleteFile = async (fileId) => {
-    if (!confirm('Tem certeza que deseja excluir este arquivo?')) return;
-
-    // Excluir do Supabase
-    await deleteFileFromSupabase(fileId);
-  };
-
-  // ===== FIM DAS FUNÇÕES DO SISTEMA DE ARQUIVOS =====
-
-  // Função para verificar permissões
-  const checkPermissions = (item, action) => {
-    if (!currentUser) return false;
-    
-    // Se o usuário criou o item, tem permissão total
-    if (item.createdBy === currentUser.userKey) {
-      return true;
-    }
-    
-    // Se não criou, precisa de senha para ações sensíveis
-    if (action === 'archive' || action === 'delete') {
-      const password = prompt('Digite a senha para esta ação:');
-      return password === 'Brick$Projetos2025';
-    }
-    
-    return true; // Para outras ações, permite
-  };
-
-  // Função para mostrar dropdown de ações
-  const handleGearClick = (e, item, isSubProject = false, parentProjectId = null) => {
-    e.stopPropagation();
-    
-    const rect = e.target.getBoundingClientRect();
-    setDropdownPosition({
-      x: rect.left,
-      y: rect.bottom + 5
-    });
-    
-    setShowDropdown({
-      item,
-      isSubProject,
-      parentProjectId
-    });
-  };
-
-  // Função para arquivar projeto
-  const handleArchiveProject = (projectId, isSubProject = false, parentProjectId = null) => {
-    if (!currentUser) return;
-
-    const item = isSubProject 
-      ? projects.find(p => p.id === parentProjectId)?.subProjects?.find(s => s.id === projectId)
-      : projects.find(p => p.id === projectId);
-
-    if (!item || !checkPermissions(item, 'archive')) {
-      return;
-    }
-
-    updateProjects(prevProjects => {
-      return prevProjects.map(project => {
-        if (isSubProject && project.id === parentProjectId) {
-          return {
-            ...project,
-            subProjects: project.subProjects.map(sub => 
-              sub.id === projectId 
-                ? { ...sub, isArchived: true, archivedAt: new Date().toISOString() }
-                : sub
-            )
-          };
-        } else if (!isSubProject && project.id === projectId) {
-          return { ...project, isArchived: true, archivedAt: new Date().toISOString() };
-        }
-        return project;
-      });
-    });
-
-    // Voltar para home se estava visualizando o item arquivado
-    if (currentView === 'project' && currentProject?.id === projectId) {
-      setCurrentView('home');
-      setCurrentProject(null);
-    }
-    if (currentView === 'subproject' && currentSubProject?.id === projectId) {
-      setCurrentView('project');
-      setCurrentSubProject(null);
-    }
-
-    setShowDropdown(null);
-  };
-
-  // Função para excluir projeto
-  const handleDeleteProject = (projectId, isSubProject = false, parentProjectId = null) => {
-    if (!currentUser) return;
-
-    const item = isSubProject 
-      ? projects.find(p => p.id === parentProjectId)?.subProjects?.find(s => s.id === projectId)
-      : projects.find(p => p.id === projectId);
-
-    if (!item || !checkPermissions(item, 'delete')) {
-      return;
-    }
-
-    if (!confirm('Tem certeza que deseja excluir permanentemente? Esta ação não pode ser desfeita.')) {
-      return;
-    }
-
-    updateProjects(prevProjects => {
-      return prevProjects.map(project => {
-        if (isSubProject && project.id === parentProjectId) {
-          return {
-            ...project,
-            subProjects: project.subProjects.filter(sub => sub.id !== projectId)
-          };
-        }
-        return project;
-      }).filter(project => !(project.id === projectId && !isSubProject));
-    });
-
-    // Voltar para home se estava visualizando o item excluído
-    if (currentView === 'project' && currentProject?.id === projectId) {
-      setCurrentView('home');
-      setCurrentProject(null);
-    }
-    if (currentView === 'subproject' && currentSubProject?.id === projectId) {
-      setCurrentView('project');
-      setCurrentSubProject(null);
-    }
-
-    setShowDropdown(null);
-  };
-
-  // Função para criar novo projeto
-  const handleCreateProject = (projectData) => {
-    if (!currentUser) return;
-
+  const handleCreateProject = (formData) => {
     const newProject = {
-      id: `project-${Date.now()}`,
-      name: projectData.name,
-      description: projectData.description,
-      color: projectData.color,
-      isProtected: projectData.isProtected,
-      password: projectData.password,
-      archived: { tasks: [], goals: [] },
-      isArchived: false,
-      createdBy: currentUser.userKey,
-      createdAt: new Date().toISOString(),
+      id: generateId('proj'),
+      ...formData,
       subProjects: [],
-      boardData: {
-        todo: {
-          lists: [
-            { id: 'todo-1', title: 'A Fazer', tasks: [] },
-            { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-            { id: 'todo-3', title: 'Concluído', tasks: [] }
-          ]
-        },
-        kanban: {
-          lists: [
-            { id: 'kanban-1', title: 'A Fazer', tasks: [] },
-            { id: 'kanban-2', title: 'Em Progresso', tasks: [] },
-            { id: 'kanban-3', title: 'Concluído', tasks: [] }
-          ]
-        },
-        timeline: {
-          periods: [
-            { id: 'timeline-1', title: 'Janeiro 2025', tasks: [] },
-            { id: 'timeline-2', title: 'Fevereiro 2025', tasks: [] },
-            { id: 'timeline-3', title: 'Março 2025', tasks: [] }
-          ]
-        },
-        goals: {
-          objectives: []
-        }
-      }
-    };
-
-    updateProjects(prevProjects => [...prevProjects, newProject]);
-    setShowNewProjectModal(false);
-  };
-
-  // Função para editar projeto
-  const handleEditProject = (projectData) => {
-    if (!currentUser || !editingProject) return;
-
-    updateProjects(prevProjects => 
-      prevProjects.map(project => {
-        if (project.id === editingProject.id) {
-          return {
-            ...project,
-            name: projectData.name,
-            description: projectData.description,
-            color: projectData.color,
-            isProtected: projectData.isProtected,
-            password: projectData.password
-          };
-        }
-        
-        // Se for um subprojeto, procurar dentro dos projetos
-        return {
-          ...project,
-          subProjects: project.subProjects?.map(subProject => {
-            if (subProject.id === editingProject.id) {
-              return {
-                ...subProject,
-                name: projectData.name,
-                description: projectData.description,
-                color: projectData.color,
-                isProtected: projectData.isProtected,
-                password: projectData.password
-              };
-            }
-            return subProject;
-          }) || []
-        };
-      })
-    );
-    
-    setShowEditProjectModal(false);
-    setEditingProject(null);
-  };
-
-  // Função para criar novo sub-projeto
-  const handleCreateSubProject = (subProjectData) => {
-    if (!currentUser || !currentProject) return;
-
-    const newSubProject = {
-      id: `subproject-${Date.now()}`,
-      name: subProjectData.name,
-      description: subProjectData.description,
-      color: subProjectData.color,
-      isProtected: subProjectData.isProtected,
-      password: subProjectData.password,
-      archived: { tasks: [], goals: [] },
-      isArchived: false,
+      createdAt: new Date().toISOString(),
       createdBy: currentUser.userKey,
-      createdAt: new Date().toISOString(),
-      boardData: {
-        todo: {
-          lists: [
-            { id: 'todo-1', title: 'A Fazer', tasks: [] },
-            { id: 'todo-2', title: 'Em Progresso', tasks: [] },
-            { id: 'todo-3', title: 'Concluído', tasks: [] }
-          ]
-        },
-        kanban: {
-          lists: [
-            { id: 'kanban-1', title: 'A Fazer', tasks: [] },
-            { id: 'kanban-2', title: 'Em Progresso', tasks: [] },
-            { id: 'kanban-3', title: 'Concluído', tasks: [] }
-          ]
-        },
-        timeline: {
-          periods: [
-            { id: 'timeline-1', title: 'Janeiro 2025', tasks: [] },
-            { id: 'timeline-2', title: 'Fevereiro 2025', tasks: [] },
-            { id: 'timeline-3', title: 'Março 2025', tasks: [] }
-          ]
-        },
-        goals: {
-          objectives: []
-        }
-      }
+      enabledTabs: [...DEFAULT_TABS],
+      boardData: initializeBoardData()
     };
+    updateProjectsState([...projects, newProject]);
+    setModalState({ isOpen: false, type: null, data: null });
+  };
 
-    updateProjects(prevProjects => {
-      return prevProjects.map(project => {
-        if (project.id === currentProject.id) {
-          const updatedProject = {
-            ...project,
-            subProjects: [...(project.subProjects || []), newSubProject]
-          };
-          // Atualizar currentProject também
-          setCurrentProject(updatedProject);
-          return updatedProject;
+  const initializeBoardData = () => ({
+    todo: { lists: [{ id: 'l1', title: 'A Fazer', tasks: [] }, { id: 'l2', title: 'Fazendo', tasks: [] }, { id: 'l3', title: 'Feito', tasks: [] }] },
+    kanban: { lists: [{ id: 'k1', title: 'Backlog', tasks: [] }, { id: 'k2', title: 'Em Progresso', tasks: [] }, { id: 'k3', title: 'Concluído', tasks: [] }] },
+    timeline: { periods: [{ id: 'p1', title: 'Q1', tasks: [] }] },
+    goals: { objectives: [] }
+  });
+
+  const handleTaskSubmit = (taskData) => {
+    const target = currentView === 'subproject' ? currentSubProject : currentProject;
+    const isEdit = !!modalState.data?.task;
+    
+    // Lógica simplificada de atualização imutável
+    const updatedProjects = projects.map(p => {
+      if (p.id !== (currentProject?.id || target.id)) return p;
+      
+      const updateEntity = (entity) => {
+        const board = entity.boardData[currentBoardType];
+        
+        // Exemplo para Lists (Todo/Kanban)
+        if (board.lists) {
+          if (isEdit) {
+             board.lists = board.lists.map(l => ({
+               ...l,
+               tasks: l.tasks.map(t => t.id === modalState.data.task.id ? { ...t, ...taskData } : t)
+             }));
+          } else {
+            const listId = modalState.data?.listId || board.lists[0].id;
+            board.lists = board.lists.map(l => l.id === listId ? { ...l, tasks: [...l.tasks, { id: generateId('task'), ...taskData }] } : l);
+          }
         }
-        return project;
-      });
+        return entity;
+      };
+
+      if (currentView === 'subproject') {
+        return { ...p, subProjects: p.subProjects.map(sp => sp.id === currentSubProject.id ? updateEntity(sp) : sp) };
+      }
+      return updateEntity(p);
     });
 
-    setShowNewSubProjectModal(false);
-  };
-
-  // Função para acessar projeto
-  const handleAccessProject = (project) => {
-    if (project.isProtected) {
-      setPendingProject(project);
-      setShowPasswordModal(true);
-    } else {
-      setCurrentProject(project);
-      setCurrentView('project');
-    }
-  };
-
-  // Função para verificar senha
-  const handlePasswordSubmit = (password) => {
-    if (pendingProject && password === pendingProject.password) {
-      if (pendingProject.subProjects !== undefined) {
-        // É um projeto
-        setCurrentProject(pendingProject);
-        setCurrentView('project');
-      } else {
-        // É um sub-projeto
-        setCurrentSubProject(pendingProject);
-        setCurrentView('subproject');
-      }
-      setShowPasswordModal(false);
-      setPendingProject(null);
-    } else {
-      alert('Senha incorreta!');
-    }
-  };
-
-  // Função para acessar sub-projeto
-  const handleAccessSubProject = (subProject) => {
-    if (subProject.isProtected) {
-      setPendingProject(subProject);
-      setShowPasswordModal(true);
-    } else {
-      setCurrentSubProject(subProject);
-      setCurrentView('subproject');
-    }
-  };
-
-  // Função para voltar
-  const handleBack = () => {
+    updateProjectsState(updatedProjects);
+    
+    // Atualizar referencias locais para forçar re-render se necessário
     if (currentView === 'subproject') {
-      setCurrentView('project');
-      setCurrentSubProject(null);
+        const proj = updatedProjects.find(p => p.id === currentProject.id);
+        const sub = proj.subProjects.find(s => s.id === currentSubProject.id);
+        setCurrentSubProject(sub);
     } else if (currentView === 'project') {
-      setCurrentView('home');
-      setCurrentProject(null);
+        setCurrentProject(updatedProjects.find(p => p.id === currentProject.id));
     }
+
+    setModalState({ isOpen: false, type: null });
   };
 
-  // Função para obter nomes personalizados
-  const getCustomName = useCallback((type, key, defaultName) => {
-    const project = currentView === 'subproject' ? currentSubProject : currentProject;
-    if (!project?.customNames) return defaultName;
+  // --- RENDERIZADORES DE UI (COMPONENTIZAÇÃO INTERNA) ---
 
-    if (type === 'tab') {
-      if (!project.enabledTabs?.includes(key)) return defaultName;
-      return project.customNames.tabs?.[key] || defaultName;
-    } else if (type === 'column') {
-      const columns = project.customNames.columns?.[currentBoardType];
-      return columns?.[key] || defaultName;
-    }
-    
-    return defaultName;
-  }, [currentProject, currentSubProject, currentView, currentBoardType]);
+  // 1. Renderização da Tela Inicial (Grid de Projetos)
+  const renderHome = () => (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-white">Dashboard</h2>
+          <p className="text-zinc-400">Gerencie seus projetos e metas estratégicas.</p>
+        </div>
+        <Button 
+          onClick={() => setModalState({ type: 'newProject', isOpen: true })} 
+          className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)]"
+        >
+          <Plus className="mr-2 h-4 w-4" /> Novo Projeto
+        </Button>
+      </div>
 
-  // Função para atualizar dados do quadro
-  const updateCurrentBoardData = useCallback((newData) => {
-    if (!currentSubProject || !currentProject) return;
-
-    debugLog('Atualizando board data:', newData);
-
-    updateProjects(prevProjects => {
-      return prevProjects.map(project => {
-        if (project.id === currentProject.id) {
-          return {
-            ...project,
-            subProjects: project.subProjects.map(sub => {
-              if (sub.id === currentSubProject.id) {
-                return {
-                  ...sub,
-                  boardData: {
-                    ...sub.boardData,
-                    [currentBoardType]: newData
-                  }
-                };
-              }
-              return sub;
-            })
-          };
-        }
-        return project;
-      });
-    });
-
-    // Atualizar estado local do sub-projeto
-    setCurrentSubProject(prev => ({
-      ...prev,
-      boardData: {
-        ...prev.boardData,
-        [currentBoardType]: newData
-      }
-    }));
-
-    // Forçar re-renderização
-    setRefreshKey(prev => prev + 1);
-  }, [currentSubProject, currentProject, currentBoardType, updateProjects]);
-
-  // Função para adicionar tarefa
-  const handleAddTask = useCallback((listId, taskData) => {
-    const boardData = getCurrentBoardData();
-    if (!boardData) return;
-
-    const newTask = {
-      id: `task-${Date.now()}`,
-      title: taskData.title,
-      description: taskData.description || '',
-      tags: taskData.tags || [],
-      priority: taskData.priority || 'medium',
-      startDate: taskData.startDate || '',
-      endDate: taskData.endDate || '',
-      responsibleUsers: taskData.responsibleUsers || [],
-      completed: false,
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser?.userKey
-    };
-
-    let updatedData;
-    
-    if (currentBoardType === 'todo' || currentBoardType === 'kanban') {
-      updatedData = {
-        ...boardData,
-        lists: boardData.lists.map(list => 
-          list.id === listId 
-            ? { ...list, tasks: [...list.tasks, newTask] }
-            : list
-        )
-      };
-    } else if (currentBoardType === 'timeline') {
-      updatedData = {
-        ...boardData,
-        periods: boardData.periods.map(period => 
-          period.id === listId 
-            ? { ...period, tasks: [...period.tasks, newTask] }
-            : period
-        )
-      };
-    } else if (currentBoardType === 'goals') {
-      const newGoal = {
-        id: `goal-${Date.now()}`,
-        title: taskData.title,
-        description: taskData.description || '',
-        progress: 0,
-        keyResults: [],
-        responsibleUsers: taskData.responsibleUsers || [],
-        createdAt: new Date().toISOString(),
-        createdBy: currentUser?.userKey
-      };
+      {/* Grid de Projetos */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {projects.filter(p => !p.isArchived).map(project => (
+          <Card 
+            key={project.id}
+            onClick={() => { setCurrentProject(project); setCurrentView('project'); }}
+            className="glass-panel hover-glow cursor-pointer group relative overflow-hidden border-zinc-800 bg-zinc-900/50"
+          >
+            {/* Faixa de cor decorativa */}
+            <div className={`absolute top-0 left-0 w-1 h-full bg-${project.color}-500 opacity-80 group-hover:opacity-100 transition-opacity`} />
+            
+            <CardHeader className="pl-6">
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-xl text-zinc-100 group-hover:text-primary transition-colors">
+                  {project.name}
+                </CardTitle>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-white">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); /* Edit logic */ }}>Editar</DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-500" onClick={(e) => { e.stopPropagation(); /* Delete logic */ }}>Excluir</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <CardDescription className="line-clamp-2 text-zinc-400">
+                {project.description || "Sem descrição definida."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 text-xs text-zinc-500">
+                <Badge variant="outline" className="bg-zinc-950/50 border-zinc-800">
+                  {project.subProjects?.length || 0} Sub-projetos
+                </Badge>
+                {project.isProtected && <Badge variant="secondary" className="bg-yellow-900/20 text-yellow-500 border-yellow-900/50">Protegido</Badge>}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {projects.length === 0 && (
+          <div className="col-span-full py-20 text-center text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
+            <p>Nenhum projeto encontrado. Crie o primeiro para começar.</p>
+          </div>
+        )}
+      </div>
       
-      updatedData = {
-        ...boardData,
-        objectives: [...boardData.objectives, newGoal]
-      };
-    }
+      {/* Minhas Tarefas (Resumo) */}
+      <div className="mt-12">
+        <h3 className="text-xl font-semibold mb-4 text-zinc-200">Minhas Tarefas Recentes</h3>
+        <Card className="bg-zinc-900/30 border-zinc-800">
+           <CardContent className="p-0">
+             {/* Lista de tarefas simulada ou real usando getUserTasks() */}
+             <div className="p-6 text-center text-zinc-500">
+                <CheckSquare className="mx-auto h-8 w-8 mb-2 opacity-20" />
+                <p>Você está em dia com suas tarefas.</p>
+             </div>
+           </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 
-    updateCurrentBoardData(updatedData);
-    setShowTaskModal(false);
-    setTargetListId(null);
-  }, [getCurrentBoardData, currentBoardType, currentUser, updateCurrentBoardData]);
+  // 2. Renderização da Visão do Projeto (Subprojetos)
+  const renderProjectView = () => (
+    <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+      <div className="flex items-center gap-4 border-b border-zinc-800 pb-6">
+        <Button variant="ghost" size="icon" onClick={() => setCurrentView('home')}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold text-white">{currentProject.name}</h1>
+          <p className="text-zinc-400">{currentProject.description}</p>
+        </div>
+        <div className="ml-auto flex gap-2">
+           <Button variant="outline" className="border-zinc-700 bg-zinc-900/50" onClick={() => { setCurrentSubProject(null); setCurrentBoardType('kanban'); setCurrentView('subproject'); }}>
+             Acessar Quadro Principal
+           </Button>
+           <Button onClick={() => setModalState({ type: 'newSubProject', isOpen: true })}>
+             <Plus className="mr-2 h-4 w-4" /> Sub-projeto
+           </Button>
+        </div>
+      </div>
 
-  // Função para editar tarefa
-  const handleEditTask = useCallback((taskData) => {
-    const boardData = getCurrentBoardData();
-    if (!boardData || !editingTask) return;
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {currentProject.subProjects?.filter(s => !s.isArchived).map(sub => (
+          <Card 
+            key={sub.id}
+            onClick={() => { setCurrentSubProject(sub); setCurrentView('subproject'); }}
+            className="group cursor-pointer bg-zinc-900/40 border-zinc-800 hover:border-primary/40 transition-all hover:-translate-y-1"
+          >
+            <CardHeader>
+              <CardTitle className="text-lg">{sub.name}</CardTitle>
+              <CardDescription>{sub.description}</CardDescription>
+            </CardHeader>
+            <CardFooter>
+               <Badge variant="secondary" className="text-xs bg-zinc-800 text-zinc-400">
+                 {/* Stats logic could go here */}
+                 Acessar Área
+               </Badge>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
 
-    let updatedData;
-    
-    if (currentBoardType === 'todo' || currentBoardType === 'kanban') {
-      updatedData = {
-        ...boardData,
-        lists: boardData.lists.map(list => ({
-          ...list,
-          tasks: list.tasks.map(task => 
-            task.id === editingTask.id 
-              ? { ...task, ...taskData, updatedAt: new Date().toISOString() }
-              : task
-          )
-        }))
-      };
-    } else if (currentBoardType === 'timeline') {
-      updatedData = {
-        ...boardData,
-        periods: boardData.periods.map(period => ({
-          ...period,
-          tasks: period.tasks.map(task => 
-            task.id === editingTask.id 
-              ? { ...task, ...taskData, updatedAt: new Date().toISOString() }
-              : task
-          )
-        }))
-      };
-    } else if (currentBoardType === 'goals') {
-      updatedData = {
-        ...boardData,
-        objectives: boardData.objectives.map(goal => 
-          goal.id === editingTask.id 
-            ? { ...goal, ...taskData, updatedAt: new Date().toISOString() }
-            : goal
-        )
-      };
-    }
+  // 3. Renderização do Quadro (Kanban/Todo/Files)
+  const renderBoard = () => {
+    const data = getCurrentBoardData();
+    const entityName = currentSubProject ? currentSubProject.name : currentProject.name;
 
-    updateCurrentBoardData(updatedData);
-    setShowTaskModal(false);
-    setEditingTask(null);
-  }, [getCurrentBoardData, currentBoardType, editingTask, updateCurrentBoardData]);
+    return (
+      <div className="h-[calc(100vh-140px)] flex flex-col animate-in fade-in duration-300">
+        {/* Header do Quadro */}
+        <div className="flex items-center justify-between mb-4 px-1">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setCurrentView(currentSubProject ? 'project' : 'home')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <span className="text-zinc-500 font-normal text-lg">{currentSubProject ? currentProject.name + ' /' : ''}</span>
+              {entityName}
+            </h2>
+          </div>
+          
+          <Tabs value={currentBoardType} onValueChange={setCurrentBoardType} className="w-auto">
+            <TabsList className="bg-zinc-900 border border-zinc-800">
+              <TabsTrigger value="todo">Lista</TabsTrigger>
+              <TabsTrigger value="kanban">Kanban</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
+              <TabsTrigger value="files">Arquivos</TabsTrigger>
+              <TabsTrigger value="goals">Metas</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
-  // Função para alternar conclusão de tarefa (com movimento automático no TO-DO)
-  const handleToggleTask = useCallback((taskId) => {
-    const boardData = getCurrentBoardData();
-    if (!boardData) return;
+        <Separator className="bg-zinc-800 mb-6" />
 
-    if (currentBoardType === 'todo') {
-      // Lógica especial para TO-DO: mover entre listas
-      const currentListIndex = boardData.lists.findIndex(list => 
-        list.tasks.some(task => task.id === taskId)
-      );
-      
-      if (currentListIndex === -1) return;
+        {/* Conteúdo do Quadro */}
+        <ScrollArea className="flex-1 bg-zinc-950/30 rounded-xl border border-zinc-800/50 p-4">
+          
+          {/* Exibição KANBAN */}
+          {currentBoardType === 'kanban' && (
+            <div className="flex gap-6 h-full min-w-max pb-4">
+              {data.lists?.map(list => (
+                <div key={list.id} className="w-80 flex flex-col gap-3">
+                  <div className="flex justify-between items-center px-2">
+                    <span className="font-semibold text-zinc-300">{list.title}</span>
+                    <Badge variant="outline" className="text-zinc-500 border-zinc-700">{list.tasks?.length || 0}</Badge>
+                  </div>
+                  <div className="flex-1 bg-zinc-900/20 rounded-lg p-2 flex flex-col gap-2 min-h-[200px] border border-dashed border-zinc-800/50">
+                    {list.tasks?.map(task => (
+                      <Card 
+                        key={task.id} 
+                        className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 cursor-grab active:cursor-grabbing shadow-sm"
+                        onClick={() => setModalState({ type: 'task', isOpen: true, data: { task, listId: list.id } })}
+                      >
+                        <CardContent className="p-3 space-y-2">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-sm font-medium leading-snug text-zinc-200">{task.title}</span>
+                            {task.priority === 'high' && <div className="h-2 w-2 rounded-full bg-red-500 shrink-0 mt-1" />}
+                          </div>
+                          {task.responsibleUsers?.length > 0 && (
+                            <ResponsibleUsersButton users={task.responsibleUsers} />
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                    <Button 
+                      variant="ghost" 
+                      className="w-full text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border border-transparent hover:border-zinc-800 border-dashed"
+                      onClick={() => setModalState({ type: 'task', isOpen: true, data: { listId: list.id } })}
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> Adicionar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-      const task = boardData.lists[currentListIndex].tasks.find(t => t.id === taskId);
-      if (!task) return;
+          {/* Exibição ARQUIVOS */}
+          {currentBoardType === 'files' && (
+            <div className="space-y-4">
+              <div className="flex justify-between">
+                <h3 className="text-lg font-medium">Arquivos do Projeto</h3>
+                <label>
+                  <Button asChild>
+                    <span><Upload className="mr-2 h-4 w-4" /> Upload</span>
+                  </Button>
+                  <Input type="file" className="hidden" multiple onChange={originalHandleFileUpload} />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {files?.filter(f => f.subProjectId === (currentSubProject?.id || null)).map(file => (
+                  <Card key={file.id} className="group bg-zinc-900 border-zinc-800 hover:bg-zinc-800/80 transition-colors">
+                    <CardContent className="p-4 flex flex-col items-center text-center gap-3">
+                      <div className="h-12 w-12 rounded-lg bg-zinc-950 flex items-center justify-center text-2xl">
+                        {file.type?.includes('image') ? '🖼️' : '📄'}
+                      </div>
+                      <div className="w-full overflow-hidden">
+                        <p className="text-sm font-medium truncate w-full" title={file.name}>{file.name}</p>
+                        <p className="text-xs text-zinc-500">{formatFileSize(file.size)}</p>
+                      </div>
+                      <div className="flex gap-1 w-full mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button size="icon" variant="ghost" className="h-7 w-7"><Eye className="h-3 w-3" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7"><Download className="h-3 w-3" /></Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
 
-      // Determinar próxima lista (ciclo: 0 -> 1 -> 2 -> 0)
-      const nextListIndex = (currentListIndex + 1) % 3;
-      
-      // Remover tarefa da lista atual
-      const updatedLists = boardData.lists.map((list, index) => {
-        if (index === currentListIndex) {
-          return {
-            ...list,
-            tasks: list.tasks.filter(t => t.id !== taskId)
-          };
-        }
-        if (index === nextListIndex) {
-          return {
-            ...list,
-            tasks: [...list.tasks, { ...task, completed: nextListIndex === 2 }]
-          };
-        }
-        return list;
-      });
-
-      updateCurrentBoardData({
-        ...boardData,
-        lists: updatedLists
-      });
-    } else {
-      // Lógica normal para outros tipos: apenas alternar completed
-      let updatedData;
-      
-      if (currentBoardType === 'kanban') {
-        updatedData = {
-          ...boardData,
-          lists: boardData.lists.map(list => ({
-            ...list,
-            tasks: list.tasks.map(task => 
-              task.id === taskId 
-                ? { ...task, completed: !task.completed }
-                : task
-            )
-          }))
-        };
-      } else if (currentBoardType === 'timeline') {
-        updatedData = {
-          ...boardData,
-          periods: boardData.periods.map(period => ({
-            ...period,
-            tasks: period.tasks.map(task => 
-              task.id === taskId 
-                ? { ...task, completed: !task.completed }
-                : task
-            )
-          }))
-        };
-      }
-
-      updateCurrentBoardData(updatedData);
-    }
-  }, [getCurrentBoardData, currentBoardType, updateCurrentBoardData]);
-
-  // Função para excluir tarefa
-  const handleDeleteTask = useCallback((taskId) => {
-    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
-
-    const boardData = getCurrentBoardData();
-    if (!boardData) return;
-
-    let updatedData;
-    
-    if (currentBoardType === 'todo' || currentBoardType === 'kanban') {
-      updatedData = {
-        ...boardData,
-        lists: boardData.lists.map(list => ({
-          ...list,
-          tasks: list.tasks.filter(task => task.id !== taskId)
-        }))
-      };
-    } else if (currentBoardType === 'timeline') {
-      updatedData = {
-        ...boardData,
-        periods: boardData.periods.map(period => ({
-          ...period,
-          tasks: period.tasks.filter(task => task.id !== taskId)
-        }))
-      };
-    } else if (currentBoardType === 'goals') {
-      updatedData = {
-        ...boardData,
-        objectives: boardData.objectives.filter(goal => goal.id !== taskId)
-      };
-    }
-
-    updateCurrentBoardData(updatedData);
-  }, [getCurrentBoardData, currentBoardType, updateCurrentBoardData]);
-
-  // NOVAS FUNÇÕES DE DRAG AND DROP MELHORADAS (Substitui as antigas)
-  const handleDragStart = (e, task, listId) => {
-    // Armazena informações completas sobre a origem do card
-    setDraggedTask({ task, sourceListId: listId });
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragEnter = (e, targetIndex) => {
-    // Quando o mouse entra em cima de outro card, guarda sua posição
-    e.preventDefault();
-    setDragOverIndex(targetIndex);
-  };
-
-  const handleDragOver = (e) => {
-    // Previne o comportamento padrão para permitir o 'drop'
-    e.preventDefault();
-  };
-
-  const handleDragLeave = (e) => {
-    // Limpa o índice quando o mouse sai de cima de um card
-    e.preventDefault();
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = useCallback((e, targetListId) => {
-    e.preventDefault();
-    if (!draggedTask) return;
-
-    const boardData = getCurrentBoardData();
-    if (!boardData) return;
-
-    const sourceListIndex = boardData.lists.findIndex(list => list.id === draggedTask.sourceListId);
-    const targetListIndex = boardData.lists.findIndex(list => list.id === targetListId);
-
-    if (sourceListIndex === -1 || targetListIndex === -1) return;
-
-    // Clonar as listas para não modificar o estado diretamente
-    const newLists = JSON.parse(JSON.stringify(boardData.lists));
-    
-    // Encontrar e remover o card da lista de origem
-    const sourceList = newLists[sourceListIndex];
-    const taskIndex = sourceList.tasks.findIndex(t => t.id === draggedTask.task.id);
-    const [movedTask] = sourceList.tasks.splice(taskIndex, 1);
-
-    // Adicionar o card na lista de destino na posição correta
-    const targetList = newLists[targetListIndex];
-    
-    if (dragOverIndex !== null) {
-      // Se soltou sobre outro card, insere antes dele
-      targetList.tasks.splice(dragOverIndex, 0, movedTask);
-    } else {
-      // Se soltou na área da lista, insere no final
-      targetList.tasks.push(movedTask);
-    }
-
-    // Atualizar o estado com as novas listas
-    updateCurrentBoardData({
-      ...boardData,
-      lists: newLists
-    });
-
-    // Limpar estados
-    setDraggedTask(null);
-    setDragOverIndex(null);
-  }, [draggedTask, getCurrentBoardData, updateCurrentBoardData, dragOverIndex]);
-
-  const handleDropOnList = (e, targetListId) => {
-    // Função para quando o drop é na área geral da lista, não sobre um card
-    e.preventDefault();
-    setDragOverIndex(null); // Garante que será adicionado ao final
-    handleDrop(e, targetListId);
-  };
-
-  // Funções para drag and drop de projetos
-  const handleProjectDragStart = (e, project) => {
-    setDraggedProject(project);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', project.id);
-  };
-
-  const handleProjectDragOver = (e, project) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverProject(project.id);
-  };
-
-  const handleProjectDragLeave = () => {
-    setDragOverProject(null);
-  };
-
-  const handleProjectDrop = (e, targetProject) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!draggedProject || draggedProject.id === targetProject.id) {
-      setDraggedProject(null);
-      setDragOverProject(null);
-      return;
-    }
-
-    // Usar activeProjects para calcular índices corretos
-    const activeProjects = projects.filter(project => !project.isArchived);
-    const draggedIndex = activeProjects.findIndex(p => p.id === draggedProject.id);
-    const targetIndex = activeProjects.findIndex(p => p.id === targetProject.id);
-
-    if (draggedIndex === -1 || targetIndex === -1) return;
-
-    // Reordenar apenas os projetos ativos
-    const newActiveProjects = [...activeProjects];
-    const [movedProject] = newActiveProjects.splice(draggedIndex, 1);
-    newActiveProjects.splice(targetIndex, 0, movedProject);
-
-    // Reconstruir array completo mantendo projetos arquivados no final
-    const archivedProjects = projects.filter(project => project.isArchived);
-    const newProjects = [...newActiveProjects, ...archivedProjects];
-
-    // Atualizar projetos usando a função correta
-    updateProjects(() => newProjects);
-    
-    // Limpar estados de drag
-    setDraggedProject(null);
-    setDragOverProject(null);
-  };
-
-  // Funções para drag and drop de subprojetos
-  const handleSubProjectDragStart = (e, subProject) => {
-    setDraggedSubProject(subProject);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', subProject.id);
-  };
-
-  const handleSubProjectDragOver = (e, subProject) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverSubProject(subProject.id);
-  };
-
-  const handleSubProjectDragLeave = () => {
-    setDragOverSubProject(null);
-  };
-
-  const handleSubProjectDrop = (e, targetSubProject) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!draggedSubProject || draggedSubProject.id === targetSubProject.id) {
-      setDraggedSubProject(null);
-      setDragOverSubProject(null);
-      return;
-    }
-
-    // Encontrar o projeto pai atual
-    if (!currentProject) return;
-
-    // Usar activeSubProjects para calcular índices corretos
-    const activeSubProjects = currentProject.subProjects?.filter(sub => !sub.isArchived) || [];
-    const draggedIndex = activeSubProjects.findIndex(s => s.id === draggedSubProject.id);
-    const targetIndex = activeSubProjects.findIndex(s => s.id === targetSubProject.id);
-
-    if (draggedIndex === -1 || targetIndex === -1) return;
-
-    // Reordenar apenas os subprojetos ativos
-    const newActiveSubProjects = [...activeSubProjects];
-    const [movedSubProject] = newActiveSubProjects.splice(draggedIndex, 1);
-    newActiveSubProjects.splice(targetIndex, 0, movedSubProject);
-
-    // Reconstruir array completo mantendo subprojetos arquivados no final
-    const archivedSubProjects = currentProject.subProjects?.filter(sub => sub.isArchived) || [];
-    const newSubProjects = [...newActiveSubProjects, ...archivedSubProjects];
-
-    // Atualizar projetos
-    updateProjects(prevProjects => 
-      prevProjects.map(project => {
-        if (project.id === currentProject.id) {
-          const updatedProject = {
-            ...project,
-            subProjects: newSubProjects
-          };
-          // Atualizar currentProject também
-          setCurrentProject(updatedProject);
-          return updatedProject;
-        }
-        return project;
-      })
+          {/* Fallback para outras views */}
+          {['todo', 'timeline', 'goals'].includes(currentBoardType) && (
+             <div className="flex flex-col items-center justify-center h-64 text-zinc-500">
+               <p>Visualização {currentBoardType} sendo migrada para o novo design system.</p>
+             </div>
+          )}
+        </ScrollArea>
+      </div>
     );
-    
-    // Limpar estados de drag
-    setDraggedSubProject(null);
-    setDragOverSubProject(null);
   };
 
-  // Função para calcular estatísticas
-  const getProjectStats = (project) => {
-    let totalSubProjects = project.subProjects?.length || 0;
-    let totalTasks = 0;
-
-    // Contar tarefas em todos os tipos de quadro do projeto principal
-    if (project.boardData) {
-      Object.values(project.boardData).forEach(boardType => {
-        if (boardType.lists) {
-          boardType.lists.forEach(list => {
-            totalTasks += list.tasks?.length || 0;
-          });
-        }
-        if (boardType.periods) {
-          boardType.periods.forEach(period => {
-            totalTasks += period.tasks?.length || 0;
-          });
-        }
-        if (boardType.objectives) {
-          totalTasks += boardType.objectives.length || 0;
-        }
-      });
-    }
-
-    // Contar tarefas dos sub-projetos
-    project.subProjects?.forEach(subProject => {
-      if (subProject.boardData) {
-        Object.values(subProject.boardData).forEach(boardType => {
-          if (boardType.lists) {
-            boardType.lists.forEach(list => {
-              totalTasks += list.tasks?.length || 0;
-            });
-          }
-          if (boardType.periods) {
-            boardType.periods.forEach(period => {
-              totalTasks += period.tasks?.length || 0;
-            });
-          }
-          if (boardType.objectives) {
-            totalTasks += boardType.objectives.length || 0;
-          }
-        });
-      }
-    });
-
-    return { totalSubProjects, totalTasks };
-  };
-
-  // Função para calcular estatísticas do sub-projeto
-  const getSubProjectStats = (subProject) => {
-    let totalTasks = 0;
-
-    if (subProject.boardData) {
-      Object.values(subProject.boardData).forEach(boardType => {
-        if (boardType.lists) {
-          boardType.lists.forEach(list => {
-            totalTasks += list.tasks?.length || 0;
-          });
-        }
-        if (boardType.periods) {
-          boardType.periods.forEach(period => {
-            totalTasks += period.tasks?.length || 0;
-          });
-        }
-        if (boardType.objectives) {
-          totalTasks += boardType.objectives.length || 0;
-        }
-      });
-    }
-
-    return { totalTasks };
-  };
-
-  // Filtrar projetos não arquivados
-  const activeProjects = projects.filter(project => !project.isArchived);
-  const activeSubProjects = currentProject?.subProjects?.filter(sub => !sub.isArchived) || [];
+  // --- RENDER PRINCIPAL DO APP ---
 
   if (!isLoggedIn) {
     return (
-      <div className="app">
-        {/* Modal de Login */}
-        {showLoginModal && (
-          <div className="modal-overlay">
-            <div className="modal">
-              <h2>🧱 Entrar no BrickFlow</h2>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                handleLogin(formData.get('username'), formData.get('pin'));
-              }}>
-                <div className="form-group">
-                  <label>Nome/Código:</label>
-                  <input 
-                    type="text" 
-                    name="username" 
-                    placeholder="Ex: JOAO, MARIA_ADM" 
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label>PIN (4 dígitos):</label>
-                  <input 
-                    type="password" 
-                    name="pin" 
-                    placeholder="1234" 
-                    maxLength="4"
-                    pattern="[0-9]{4}"
-                    required 
-                  />
-                </div>
-                <div className="modal-actions">
-                  <button type="submit" className="btn-primary">Entrar</button>
-                  <button 
-                    type="button" 
-                    className="btn-secondary"
-                    onClick={() => {
-                      setShowLoginModal(false);
-                      setShowCreateUserModal(true);
-                    }}
-                  >
-                    Criar Usuário
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Modal de Criar Usuário */}
-        {showCreateUserModal && (
-          <div className="modal-overlay">
-            <div className="modal create-user-modal">
-              <h2>🧱 Criar Usuário BrickFlow</h2>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const pin = formData.get('pin');
-                const confirmPin = formData.get('confirmPin');
-                
-                if (pin !== confirmPin) {
-                  alert('PINs não coincidem!');
-                  return;
-                }
-                
-                const selectedAvatar = document.querySelector('input[name="avatar"]:checked')?.value;
-                const selectedColor = document.querySelector('input[name="color"]:checked')?.value;
-                
-                if (!selectedAvatar || !selectedColor) {
-                  alert('Selecione um avatar e uma cor!');
-                  return;
-                }
-                
-                handleCreateUser({
-                  username: formData.get('username'),
-                  displayName: formData.get('displayName'),
-                  pin: pin,
-                  avatar: selectedAvatar,
-                  color: selectedColor
-                });
-              }}>
-                <div className="form-group">
-                  <label>Nome de Usuário (código):</label>
-                  <input 
-                    type="text" 
-                    name="username" 
-                    placeholder="Ex: JOAO, MARIA_ADM" 
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Nome de Exibição:</label>
-                  <input 
-                    type="text" 
-                    name="displayName" 
-                    placeholder="Ex: João Silva, Maria Admin" 
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label>PIN (4 dígitos):</label>
-                  <input 
-                    type="password" 
-                    name="pin" 
-                    placeholder="1234" 
-                    maxLength="4"
-                    pattern="[0-9]{4}"
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Confirmar PIN:</label>
-                  <input 
-                    type="password" 
-                    name="confirmPin" 
-                    placeholder="1234" 
-                    maxLength="4"
-                    pattern="[0-9]{4}"
-                    required 
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Escolha seu Avatar:</label>
-                  <div className="avatar-grid">
-                    {avatarOptions.map((avatar, index) => (
-                      <label key={index} className="avatar-option">
-                        <input 
-                          type="radio" 
-                          name="avatar" 
-                          value={avatar}
-                          required
-                        />
-                        <span className="avatar-display">{avatar}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="form-group">
-                  <label>Escolha sua Cor:</label>
-                  <div className="color-grid">
-                    {userColors.map((color, index) => (
-                      <label key={index} className="color-option">
-                        <input 
-                          type="radio" 
-                          name="color" 
-                          value={color}
-                          required
-                        />
-                        <span className={`color-display color-${color}`}></span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="modal-actions">
-                  <button type="submit" className="btn-primary">Criar Usuário</button>
-                  <button 
-                    type="button" 
-                    className="btn-secondary"
-                    onClick={() => {
-                      setShowCreateUserModal(false);
-                      setShowLoginModal(true);
-                    }}
-                  >
-                    Voltar ao Login
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+      <div className="min-h-screen w-full flex items-center justify-center bg-black bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
+        <Card className="w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-md shadow-2xl">
+          <CardHeader className="text-center pb-2">
+            <img src={logoImage} alt="BrickFlow" className="h-12 mx-auto mb-4 object-contain" />
+            <CardTitle className="text-2xl">Bem-vindo de volta</CardTitle>
+            <CardDescription>Acesse o sistema operacional da sua equipe.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              // Lógica de login simulada
+              const mockUser = allUsers.find(u => u.username === formData.get('username') && u.pin === formData.get('pin'));
+              if (mockUser) {
+                 const user = { ...mockUser, userKey: `${mockUser.username}-${mockUser.pin}` };
+                 setCurrentUser(user);
+                 setIsLoggedIn(true);
+                 localStorage.setItem('brickflow-current-user', JSON.stringify(user));
+                 loadUserProjects(user.userKey);
+              } else {
+                 alert("Credenciais inválidas");
+              }
+            }}>
+              <div className="space-y-2">
+                <Label htmlFor="username">Usuário</Label>
+                <Input id="username" name="username" placeholder="Ex: JOAO" required className="bg-zinc-950 border-zinc-700" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pin">PIN</Label>
+                <Input id="pin" name="pin" type="password" placeholder="••••" maxLength={4} required className="bg-zinc-950 border-zinc-700" />
+              </div>
+              <Button type="submit" className="w-full mt-4 bg-primary hover:bg-primary/90">Entrar</Button>
+            </form>
+          </CardContent>
+          <CardFooter className="justify-center border-t border-zinc-800 pt-4">
+            <Button variant="link" className="text-zinc-400" onClick={() => setShowCreateUserModal(true)}>
+              Primeiro acesso? Criar conta
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="app" key={refreshKey}>
-      {/* Header Principal */}
-      <header className="main-header">
-        <div className="header-content">
-          <div className="header-left">
-            {currentView !== 'home' && (
-              <button className="back-btn" onClick={handleBack}>
-                ← Voltar
-              </button>
-            )}
-            <img src={logoImage} alt="BrickFlow" className="logo" />
-            {currentView === 'project' && currentProject && (
-              <h1>{currentProject.name}</h1>
-            )}
-            {currentView === 'subproject' && currentSubProject && (
-              <h1>{currentSubProject.name}</h1>
-            )}
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-red-500/20">
+      
+      {/* HEADER GLOBAL */}
+      <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center justify-between mx-auto px-4 md:px-8">
+          <div className="flex items-center gap-4">
+            <img src={logoImage} alt="Logo" className="h-8 w-auto" />
+            <Separator orientation="vertical" className="h-6 bg-zinc-700" />
+            <nav className="flex items-center gap-4 text-sm font-medium text-zinc-400">
+              <span className={currentView === 'home' ? "text-white" : "hover:text-white cursor-pointer"} onClick={() => setCurrentView('home')}>Home</span>
+              {currentProject && <span>/ {currentProject.name}</span>}
+            </nav>
           </div>
           
-          <div className="header-right">
-            <div className="user-info">
-              <span className="user-avatar">{currentUser?.avatar}</span>
-              <span className="user-name">Olá, {currentUser?.displayName}!</span>
-              <button className="user-action-btn" onClick={handleSwitchUser} title="Trocar usuário">
-                🔄
-              </button>
-              <button className="user-action-btn" onClick={handleLogout} title="Sair">
-                🚪
-              </button>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-zinc-900 rounded-full border border-zinc-800">
+              <Avatar className="h-6 w-6">
+                <AvatarFallback>{currentUser?.avatar || 'U'}</AvatarFallback>
+              </Avatar>
+              <span className="text-xs font-medium">{currentUser?.displayName}</span>
             </div>
-            
-            {currentView === 'home' && (
-              <button 
-                className="btn-primary"
-                onClick={() => setShowNewProjectModal(true)}
-              >
-                + Novo Projeto
-              </button>
-            )}
-            
-            {currentView === 'project' && (
-              <button 
-                className="btn-primary"
-                onClick={() => setShowNewSubProjectModal(true)}
-              >
-                + Novo Sub-projeto
-              </button>
-            )}
+            <Button variant="ghost" size="icon" onClick={() => { setIsLoggedIn(false); localStorage.removeItem('brickflow-current-user'); }}>
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
 
-      {/* Sorte do Dia + Mega Sena */}
-      {currentView === 'home' && (
-        <div className="daily-luck">
-          <div className="luck-content">
-            <div className="luck-phrase">
-              <h3>🍀 Sorte do Dia</h3>
-              <p>"{dailyPhrase}"</p>
-            </div>
-            <div className="mega-sena">
-              <h4>🎰 Sugestão Mega Sena</h4>
-              <div className="mega-numbers">
-                {megaSenaNumbers.map((number, index) => (
-                  <span key={index} className="mega-number">{number.toString().padStart(2, '0')}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {currentView === 'home' && currentUser?.displayName === 'Fran' && (
-        <SudokuGame />
-      )}
-
-      {/* Conteúdo Principal */}
-      <main className="main-content">
-        {currentView === 'home' && (
-          <>
-            {/* Box Minhas Tarefas */}
-            {currentUser && (
-              <div className="my-tasks-box">
-                <h2>📋 Minhas Tarefas</h2>
-                <div className="my-tasks-content">
-                  {getUserTasks().length === 0 ? (
-                    <p className="no-tasks">Nenhuma tarefa atribuída a você no momento.</p>
-                  ) : (
-                    <div className="my-tasks-list">
-                      {getUserTasks().slice(0, 5).map((task, index) => (
-                        <div 
-                          key={`${task.projectId}-${task.subProjectId}-${task.id}-${index}`}
-                          className="my-task-item"
-                          onClick={() => navigateToTask(task)}
-                        >
-                          <div className="task-info">
-                            <h4>{task.title}</h4>
-                            <p className="task-location">
-                              📁 {task.projectName}
-                              {task.subProjectName && ` > ${task.subProjectName}`}
-                              {' • '}
-                              {task.boardType === 'todo' && '📋 TO-DO'}
-                              {task.boardType === 'kanban' && '📊 Kanban'}
-                              {task.boardType === 'timeline' && '📅 Timeline'}
-                              {task.boardType === 'goals' && '🎯 Metas'}
-                              {' • '}
-                              {task.listTitle}
-                            </p>
-                            {task.description && (
-                              <p className="task-description">{convertUrlsToLinks(task.description)}</p>
-                            )}
-                          </div>
-                          <div className="task-priority">
-                            {task.priority === 'high' && '🔴'}
-                            {task.priority === 'medium' && '🟡'}
-                            {task.priority === 'low' && '🟢'}
-                          </div>
-                        </div>
-                      ))}
-                      {getUserTasks().length > 5 && (
-                        <p className="more-tasks">
-                          E mais {getUserTasks().length - 5} tarefa(s)...
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            <div className="projects-grid">
-            {activeProjects.map(project => {
-              const stats = getProjectStats(project);
-              const isDragging = draggedProject?.id === project.id;
-              const isDragOver = dragOverProject === project.id;
-              
-              return (
-                <div 
-                  key={project.id} 
-                  className={`project-card color-${project.color} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
-                  draggable={true}
-                  onDragStart={(e) => handleProjectDragStart(e, project)}
-                  onDragOver={(e) => handleProjectDragOver(e, project)}
-                  onDragLeave={handleProjectDragLeave}
-                  onDrop={(e) => handleProjectDrop(e, project)}
-                  onClick={() => {
-                    // Só acessa o projeto se não estiver arrastando
-                    if (!draggedProject) {
-                      handleAccessProject(project);
-                    }
-                  }}
-                >
-                  <div className="project-header">
-                    <h3>{project.name}</h3>
-                    <div className="project-actions">
-                      <button 
-                        className="action-btn gear-btn"
-                        onClick={(e) => handleGearClick(e, project, false)}
-                      >
-                        ⚙️
-                      </button>
-                    </div>
-                  </div>
-                  <p>{project.description}</p>
-                  <div className="project-stats">
-                    <span>{stats.totalSubProjects} sub-projetos</span>
-                    <span>{stats.totalTasks} tarefas</span>
-                  </div>
-                  {project.isProtected && (
-                    <div className="protected-badge">🔒 Protegido</div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          </>
-        )}
-
-        {currentView === 'project' && currentProject && (
-          <div className="project-view">
-            <div className="project-description">
-              <p>{currentProject.description}</p>
-            </div>
-            
-            {activeSubProjects.length > 0 ? (
-              <div className="subprojects-grid">
-                {activeSubProjects.map(subProject => {
-                  const stats = getSubProjectStats(subProject);
-                  const isDragging = draggedSubProject?.id === subProject.id;
-                  const isDragOver = dragOverSubProject === subProject.id;
-                  
-                  return (
-                    <div 
-                      key={subProject.id} 
-                      className={`project-card color-${subProject.color} ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
-                      draggable={true}
-                      onDragStart={(e) => handleSubProjectDragStart(e, subProject)}
-                      onDragOver={(e) => handleSubProjectDragOver(e, subProject)}
-                      onDragLeave={handleSubProjectDragLeave}
-                      onDrop={(e) => handleSubProjectDrop(e, subProject)}
-                      onClick={() => {
-                        // Só acessa o subprojeto se não estiver arrastando
-                        if (!draggedSubProject) {
-                          handleAccessSubProject(subProject);
-                        }
-                      }}
-                    >
-                      <div className="project-header">
-                        <h3>{subProject.name}</h3>
-                        <div className="project-actions">
-                          <button 
-                            className="action-btn gear-btn"
-                            onClick={(e) => handleGearClick(e, subProject, true, currentProject.id)}
-                          >
-                            ⚙️
-                          </button>
-                        </div>
-                      </div>
-                      <p>{subProject.description}</p>
-                      <div className="project-stats">
-                        <span>{stats.totalTasks} tarefas</span>
-                      </div>
-                      {subProject.isProtected && (
-                        <div className="protected-badge">🔒 Protegido</div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <h3>Nenhum sub-projeto ainda</h3>
-                <p>Clique em "Novo Sub-projeto" para começar!</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {currentView === 'subproject' && currentSubProject && (
-          <div className="subproject-view">
-            {/* Seletor de Tipo de Quadro */}
-            <div className="board-type-selector">
-              {(currentSubProject.enabledTabs || DEFAULT_TABS).map(tab => (
-                <button
-                  key={tab}
-                  className={`board-type-btn ${currentBoardType === tab ? 'active' : ''}`}
-                  onClick={() => setCurrentBoardType(tab)}
-                >
-                  {tab === 'todo' && '📋'}
-                  {tab === 'kanban' && '📊'}
-                  {tab === 'files' && '📁'}
-                  {tab === 'goals' && '📈'}
-                  {' '} {getCustomName('tab', tab, tab === 'todo' ? 'To-Do' : tab === 'kanban' ? 'Kanban' : tab === 'files' ? 'Arquivos' : 'Metas')}
-                </button>
-              ))}
-              <button
-                className={`board-type-btn ${showArchived ? 'active' : ''}`}
-                onClick={() => setShowArchived(!showArchived)}
-              >
-                🗄️ Arquivados
-              </button>
-            </div>
-
-            {/* Conteúdo do Quadro */}
-            {!showArchived && (
-              <div className="board-content">
-                {(currentBoardType === 'todo' || currentBoardType === 'kanban') && (
-                  <div className="lists-container">
-                    {getCurrentBoardData()?.lists?.map(list => (
-                      <div 
-                        key={list.id} 
-                        className="list"
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDropOnList(e, list.id)}
-                      >
-                        <div className="list-header">
-                          <h3>{getCustomName('column', getCurrentBoardData()?.lists?.indexOf(list), list.title)}</h3>
-                          <span className="task-count">{list.tasks?.length || 0}</span>
-                          <button 
-                            className="btn-add-task"
-                            onClick={() => {
-                              setTargetListId(list.id);
-                              setShowTaskModal(true);
-                            }}
-                          >
-                            + Adicionar
-                          </button>
-                        </div>
-                        <div className="tasks-container">
-                          {list.tasks?.map((task, index) => (
-                            <div
-                              key={task.id}
-                              id={`task-${task.id}`}
-                              className={`task-card ${task.completed ? 'completed' : ''}`}
-                              draggable={currentBoardType === 'kanban' || currentBoardType === 'todo'}
-                              onDragStart={(e) => handleDragStart(e, task, list.id)}
-                              onDragEnter={(e) => handleDragEnter(e, index)}
-                              onClick={() => {
-                                setEditingTask(task);
-                                setShowTaskModal(true);
-                              }}
-                            >
-                              <div className="task-header">
-                                <Checkbox
-                                  checked={task.completed}
-                                  onCheckedChange={() => {
-                                    handleToggleTask(task.id);
-                                  }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                  }}
-                                  className="task-checkbox"
-                                />
-                                <h4>{task.title}</h4>
-                                <button 
-                                  className="delete-task-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteTask(task.id);
-                                  }}
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                              {task.description && <p>{convertUrlsToLinks(task.description)}</p>}
-                              {task.responsibleUsers && task.responsibleUsers.length > 0 && (
-                                <ResponsibleUsersButton
-                                  users={task.responsibleUsers}
-                                  getUserInfo={getResponsibleUserInfo}
-                                />
-                              )}
-                              {task.tags?.length > 0 && (
-                                <div className="task-tags">
-                                  {task.tags.map((tag, index) => (
-                                    <span key={index} className="task-tag">{tag}</span>
-                                  ))}
-                                </div>
-                              )}
-                              {task.priority && (
-                                <div className={`priority-indicator priority-${task.priority}`}>
-                                  {task.priority === 'high' && '🔴'}
-                                  {task.priority === 'medium' && '🟡'}
-                                  {task.priority === 'low' && '🟢'}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {currentBoardType === 'files' && (
-                  <div 
-                    className={`files-container ${isDragging ? 'dragging' : ''}`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      setIsDragging(false);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragging(false);
-                      const droppedFiles = Array.from(e.dataTransfer.files);
-                      if (droppedFiles.length > 0) {
-                        // Simular evento de upload
-                        const fakeEvent = {
-                          target: { files: droppedFiles, value: '' }
-                        };
-                        handleFileUpload(fakeEvent);
-                      }
-                    }}
-                  >
-                    <div className="files-header">
-                      <h3>Arquivos do Projeto</h3>
-                      <input 
-                        type="file"
-                        id="file-upload"
-                        multiple
-                        style={{ display: 'none' }}
-                        onChange={handleFileUpload}
-                      />
-                      <button 
-                        className="btn-add-task"
-                        onClick={() => document.getElementById('file-upload').click()}
-                      >
-                        📎 Upload de Arquivo
-                      </button>
-                    </div>
-                    
-                    {isDragging && (
-                      <div className="drag-overlay">
-                        <div className="drag-message">
-                          <h3>📁 Solte os arquivos aqui</h3>
-                          <p>Arraste e solte para fazer upload</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {isUploading && (
-                      <div className="upload-overlay">
-                        <div className="spinner"></div>
-                      </div>
-                    )}
-
-                    <div className="files-grid">
-                      {getCurrentFiles().map(file => (
-                        <div key={file.id} className="file-card">
-                          <div className="file-icon">
-                            {file.type?.startsWith('image/') ? '🖼️' : 
-                             file.type?.startsWith('video/') ? '🎥' : 
-                             file.type?.startsWith('audio/') ? '🎵' : 
-                             file.type?.includes('pdf') ? '📄' : '📎'}
-                          </div>
-                          <div className="file-info">
-                            <h4>{file.name}</h4>
-                            <p>{formatFileSize(file.size)}</p>
-                            <small>Por: {file.uploadedBy}</small>
-                            <small>{new Date(file.uploadDate).toLocaleDateString()}</small>
-                          </div>
-                          <div className="file-actions">
-                            <button 
-                              className="file-action-btn"
-                              onClick={() => handlePreviewFile(file)}
-                              title="Visualizar"
-                            >
-                              👁️
-                            </button>
-                            <button 
-                              className="file-action-btn"
-                              onClick={() => handleDownloadFile(file)}
-                              title="Download"
-                            >
-                              💾
-                            </button>
-                            <button 
-                              className="file-action-btn delete"
-                              onClick={() => handleDeleteFile(file.id)}
-                              title="Excluir"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      {getCurrentFiles().length === 0 && (
-                        <div className="empty-files">
-                          <p>📁 Nenhum arquivo ainda</p>
-                          <p>Clique em "Upload de Arquivo" ou arraste arquivos aqui</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {currentBoardType === 'timeline' && (
-                  <div className="timeline-container">
-                    {getCurrentBoardData()?.periods?.map(period => (
-                      <div key={period.id} className="timeline-period">
-                        <div className="period-header">
-                          <h3>{period.title}</h3>
-                          <span className="task-count">{period.tasks?.length || 0}</span>
-                          <button 
-                            className="btn-add-task"
-                            onClick={() => {
-                              setTargetListId(period.id);
-                              setShowTaskModal(true);
-                            }}
-                          >
-                            + Adicionar Tarefa
-                          </button>
-                        </div>
-                        <div className="period-tasks">
-                          {period.tasks?.map(task => (
-                            <div
-                              key={task.id}
-                              id={`task-${task.id}`}
-                              className={`task-card ${task.completed ? 'completed' : ''}`}
-                              onClick={() => {
-                                setEditingTask(task);
-                                setShowTaskModal(true);
-                              }}
-                            >
-                              <div className="task-header">
-                                <Checkbox
-                                  checked={task.completed}
-                                  onCheckedChange={() => {
-                                    handleToggleTask(task.id);
-                                  }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                  }}
-                                  className="task-checkbox"
-                                />
-                                <h4>{task.title}</h4>
-                                <button 
-                                  className="delete-task-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteTask(task.id);
-                                  }}
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                              {task.description && <p>{convertUrlsToLinks(task.description)}</p>}
-                              {task.responsibleUsers && task.responsibleUsers.length > 0 && (
-                                <ResponsibleUsersButton
-                                  users={task.responsibleUsers}
-                                  getUserInfo={getResponsibleUserInfo}
-                                />
-                              )}
-                              {(task.startDate || task.endDate) && (
-                                <div className="task-dates">
-                                  {task.startDate && <span>Início: {task.startDate}</span>}
-                                  {task.endDate && <span>Fim: {task.endDate}</span>}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {currentBoardType === 'goals' && (
-                  <div className="goals-container">
-                    <div className="goals-header">
-                      <h3>Objetivos e Metas</h3>
-                      <button 
-                        className="btn-add-task"
-                        onClick={() => {
-                          setTargetListId('goals');
-                          setShowTaskModal(true);
-                        }}
-                      >
-                        + Nova Meta
-                      </button>
-                    </div>
-                    <div className="goals-list">
-                      {getCurrentBoardData()?.objectives?.map(goal => (
-                        <div
-                          key={goal.id}
-                          id={`task-${goal.id}`}
-                          className="goal-card"
-                          onClick={() => {
-                            setEditingTask(goal);
-                            setShowTaskModal(true);
-                          }}
-                        >
-                          <div className="goal-header">
-                            <h4>{goal.title}</h4>
-                            <button 
-                              className="delete-task-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteTask(goal.id);
-                              }}
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                          {goal.description && <p>{convertUrlsToLinks(goal.description)}</p>}
-                          {goal.responsibleUsers && goal.responsibleUsers.length > 0 && (
-                            <ResponsibleUsersButton
-                              users={goal.responsibleUsers}
-                              getUserInfo={getResponsibleUserInfo}
-                            />
-                          )}
-                          <div className="goal-progress">
-                            <div className="progress-bar">
-                              <div 
-                                className="progress-fill" 
-                                style={{ width: `${goal.progress || 0}%` }}
-                              ></div>
-                            </div>
-                            <span>{goal.progress || 0}%</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {showArchived && (
-              <div className="archived-content">
-                <h3>Itens Arquivados</h3>
-                <p>Funcionalidade de arquivamento em desenvolvimento...</p>
-              </div>
-            )}
-          </div>
-        )}
+      {/* ÁREA PRINCIPAL */}
+      <main className="flex-1 container mx-auto p-4 md:p-8 pt-6">
+        {currentView === 'home' && renderHome()}
+        {currentView === 'project' && renderProjectView()}
+        {currentView === 'subproject' && renderBoard()}
       </main>
 
-      {/* Dropdown de Ações */}
-      {showDropdown && (
-        <div 
-          className="actions-dropdown"
-          style={{
-            position: 'fixed',
-            left: dropdownPosition.x,
-            top: dropdownPosition.y,
-            zIndex: 1000
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button 
-            className="dropdown-item"
-            onClick={() => {
-              setEditingProject(showDropdown.item);
-              setShowEditProjectModal(true);
-              setShowDropdown(null);
-            }}
-          >
-            ✏️ Modificar
-          </button>
-          <button
-            className="dropdown-item"
-            onClick={() => {
-              setCustomizingProject({
-                ...showDropdown.item,
-                enabledTabs: showDropdown.item.enabledTabs || [...DEFAULT_TABS]
-              });
-              setShowCustomizeModal(true);
-              setShowDropdown(null);
-            }}
-          >
-            🎨 Personalizar Nomes
-          </button>
-          <button 
-            className="dropdown-item"
-            onClick={() => handleArchiveProject(
-              showDropdown.item.id, 
-              showDropdown.isSubProject, 
-              showDropdown.parentProjectId
-            )}
-          >
-            📦 Arquivar
-          </button>
-          <button 
-            className="dropdown-item delete"
-            onClick={() => handleDeleteProject(
-              showDropdown.item.id, 
-              showDropdown.isSubProject, 
-              showDropdown.parentProjectId
-            )}
-          >
-            🗑️ Excluir
-          </button>
-        </div>
-      )}
+      {/* MODAL DE CRIAÇÃO DE PROJETO (Exemplo de uso do Dialog do Shadcn) */}
+      <Dialog open={modalState.type === 'newProject' && modalState.isOpen} onOpenChange={(open) => !open && setModalState({ ...modalState, isOpen: false })}>
+        <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-800">
+          <DialogHeader>
+            <DialogTitle>Criar Novo Projeto</DialogTitle>
+            <DialogDescription>Configure os detalhes do projeto principal.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            handleCreateProject(Object.fromEntries(formData));
+          }} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input name="name" required className="bg-zinc-950 border-zinc-700" />
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Textarea name="description" className="bg-zinc-950 border-zinc-700" />
+            </div>
+            <div className="space-y-2">
+              <Label>Cor de Identificação</Label>
+              <Select name="color" defaultValue="blue">
+                <SelectTrigger className="bg-zinc-950 border-zinc-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-800">
+                  {USER_COLORS.map(c => <SelectItem key={c} value={c}>{c.toUpperCase()}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Criar Projeto</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {/* Modais */}
-      {showNewProjectModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>Novo Projeto</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target);
-              const isProtected = formData.get('isProtected') === 'on';
-              handleCreateProject({
-                name: formData.get('name'),
-                description: formData.get('description'),
-                color: formData.get('color'),
-                isProtected: isProtected,
-                password: isProtected ? formData.get('password') : ''
-              });
-            }}>
-              <div className="form-group">
-                <label>Nome do Projeto:</label>
-                <input type="text" name="name" required />
-              </div>
-              <div className="form-group">
-                <label>Descrição:</label>
-                <textarea name="description" rows="3"></textarea>
-              </div>
-              <div className="form-group">
-                <label>Cor:</label>
-                <select name="color" required>
-                  <option value="red">Vermelho</option>
-                  <option value="blue">Azul</option>
-                  <option value="green">Verde</option>
-                  <option value="purple">Roxo</option>
-                  <option value="orange">Laranja</option>
-                  <option value="cyan">Ciano</option>
-                  <option value="pink">Rosa</option>
-                  <option value="yellow">Amarelo</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="flex items-center gap-2">
-                  <Checkbox
-                    checked={newProjectIsProtected}
-                    onCheckedChange={(checked) =>
-                      setNewProjectIsProtected(!!checked)
-                    }
-                  />
-                  Proteger com senha
-                </label>
-                <input
-                  type="hidden"
-                  name="isProtected"
-                  value={newProjectIsProtected ? 'on' : ''}
-                />
-              </div>
-              <div className="form-group">
-                <label>Senha (se protegido):</label>
-                <input type="password" name="password" />
-              </div>
-              <div className="modal-actions">
-                <button type="submit" className="btn-primary">Criar</button>
-                <button 
-                  type="button" 
-                  className="btn-secondary"
-                  onClick={() => setShowNewProjectModal(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showEditProjectModal && editingProject && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>Editar Projeto</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target);
-              const isProtected = formData.get('isProtected') === 'on';
-              handleEditProject({
-                name: formData.get('name'),
-                description: formData.get('description'),
-                color: formData.get('color'),
-                isProtected: isProtected,
-                password: isProtected ? formData.get('password') : ''
-              });
-            }}>
-              <div className="form-group">
-                <label>Nome do Projeto:</label>
-                <input 
-                  type="text" 
-                  name="name" 
-                  defaultValue={editingProject.name}
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label>Descrição:</label>
-                <textarea 
-                  name="description" 
-                  rows="3"
-                  defaultValue={editingProject.description}
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <label>Cor:</label>
-                <select name="color" defaultValue={editingProject.color} required>
-                  <option value="red">Vermelho</option>
-                  <option value="blue">Azul</option>
-                  <option value="green">Verde</option>
-                  <option value="purple">Roxo</option>
-                  <option value="orange">Laranja</option>
-                  <option value="cyan">Ciano</option>
-                  <option value="pink">Rosa</option>
-                  <option value="yellow">Amarelo</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="flex items-center gap-2">
-                  <Checkbox
-                    checked={editProjectIsProtected}
-                    onCheckedChange={(checked) =>
-                      setEditProjectIsProtected(!!checked)
-                    }
-                  />
-                  Proteger com senha
-                </label>
-                <input
-                  type="hidden"
-                  name="isProtected"
-                  value={editProjectIsProtected ? 'on' : ''}
-                />
-              </div>
-              <div className="form-group">
-                <label>Senha (se protegido):</label>
-                <input 
-                  type="password" 
-                  name="password" 
-                  defaultValue={editingProject.password || ''}
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="submit" className="btn-primary">Salvar</button>
-                <button 
-                  type="button" 
-                  className="btn-secondary"
-                  onClick={() => {
-                    setShowEditProjectModal(false);
-                    setEditingProject(null);
-                  }}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showNewSubProjectModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>Novo Sub-projeto</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target);
-              const isProtected = formData.get('isProtected') === 'on';
-              handleCreateSubProject({
-                name: formData.get('name'),
-                description: formData.get('description'),
-                color: formData.get('color'),
-                isProtected: isProtected,
-                password: isProtected ? formData.get('password') : ''
-              });
-            }}>
-              <div className="form-group">
-                <label>Nome do Sub-projeto:</label>
-                <input type="text" name="name" required />
-              </div>
-              <div className="form-group">
-                <label>Descrição:</label>
-                <textarea name="description" rows="3"></textarea>
-              </div>
-              <div className="form-group">
-                <label>Cor:</label>
-                <select name="color" required>
-                  <option value="red">Vermelho</option>
-                  <option value="blue">Azul</option>
-                  <option value="green">Verde</option>
-                  <option value="purple">Roxo</option>
-                  <option value="orange">Laranja</option>
-                  <option value="cyan">Ciano</option>
-                  <option value="pink">Rosa</option>
-                  <option value="yellow">Amarelo</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="flex items-center gap-2">
-                  <Checkbox
-                    checked={newSubProjectIsProtected}
-                    onCheckedChange={(checked) =>
-                      setNewSubProjectIsProtected(!!checked)
-                    }
-                  />
-                  Proteger com senha
-                </label>
-                <input
-                  type="hidden"
-                  name="isProtected"
-                  value={newSubProjectIsProtected ? 'on' : ''}
-                />
-              </div>
-              <div className="form-group">
-                <label>Senha (se protegido):</label>
-                <input type="password" name="password" />
-              </div>
-              <div className="modal-actions">
-                <button type="submit" className="btn-primary">Criar</button>
-                <button 
-                  type="button" 
-                  className="btn-secondary"
-                  onClick={() => setShowNewSubProjectModal(false)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showPasswordModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>🔒 Projeto Protegido</h2>
-            <p>Este projeto requer senha para acesso.</p>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target);
-              handlePasswordSubmit(formData.get('password'));
-            }}>
-              <div className="form-group">
-                <label>Senha:</label>
-                <input type="password" name="password" required autoFocus />
-              </div>
-              <div className="modal-actions">
-                <button type="submit" className="btn-primary">Acessar</button>
-                <button 
-                  type="button" 
-                  className="btn-secondary"
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setPendingProject(null);
-                  }}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showTaskModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>{editingTask ? 'Editar' : 'Nova'} {currentBoardType === 'goals' ? 'Meta' : 'Tarefa'}</h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target);
-              const taskData = {
-                title: formData.get('title'),
-                description: formData.get('description'),
-                tags: formData.get('tags') ? formData.get('tags').split(',').map(tag => tag.trim()) : [],
-                priority: formData.get('priority'),
-                startDate: formData.get('startDate'),
-                endDate: formData.get('endDate'),
-                progress: parseInt(formData.get('progress')) || 0,
-                responsibleUsers: formData.getAll('responsibleUsers')
-              };
-              
-              if (editingTask) {
-                handleEditTask(taskData);
-              } else {
-                handleAddTask(targetListId, taskData);
-              }
-            }}>
-              <div className="form-group">
-                <label>{currentBoardType === 'goals' ? 'Objetivo:' : 'Título:'}</label>
-                <input 
-                  type="text" 
-                  name="title" 
-                  defaultValue={editingTask?.title || ''}
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label>Descrição:</label>
-                <textarea 
-                  name="description" 
-                  rows="3"
-                  defaultValue={editingTask?.description || ''}
-                ></textarea>
-              </div>
-              
-              {currentBoardType !== 'goals' && (
-                <>
-                  <div className="form-group">
-                    <label>Tags (separadas por vírgula):</label>
-                    <input 
-                      type="text" 
-                      name="tags" 
-                      defaultValue={editingTask?.tags?.join(', ') || ''}
-                      placeholder="Ex: urgente, importante"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Prioridade:</label>
-                    <select name="priority" defaultValue={editingTask?.priority || 'medium'}>
-                      <option value="low">Baixa</option>
-                      <option value="medium">Média</option>
-                      <option value="high">Alta</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Usuários Responsáveis:</label>
-                    <select
-                      name="responsibleUsers"
-                      multiple
-                      defaultValue={editingTask?.responsibleUsers || []}
-                    >
-                      {allUsers.map(user => (
-                        <option key={user.username} value={user.username}>
-                          {user.displayName} (@{user.username})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
-              
-              {currentBoardType === 'timeline' && (
-                <>
-                  <div className="form-group">
-                    <label>Data de Início:</label>
-                    <input 
-                      type="date" 
-                      name="startDate" 
-                      defaultValue={editingTask?.startDate || ''}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Data de Fim:</label>
-                    <input 
-                      type="date" 
-                      name="endDate" 
-                      defaultValue={editingTask?.endDate || ''}
-                    />
-                  </div>
-                </>
-              )}
-              
-              {currentBoardType === 'goals' && (
-                <div className="form-group">
-                  <label>Progresso (%):</label>
-                  <input 
-                    type="number" 
-                    name="progress" 
-                    min="0" 
-                    max="100" 
-                    defaultValue={editingTask?.progress || 0}
-                  />
+      {/* MODAL DE TAREFA (Simplificado) */}
+      <Dialog open={modalState.type === 'task' && modalState.isOpen} onOpenChange={(open) => !open && setModalState({ ...modalState, isOpen: false })}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{modalState.data?.task ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            handleTaskSubmit(Object.fromEntries(new FormData(e.target)));
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Título</Label>
+              <Input name="title" defaultValue={modalState.data?.task?.title} required className="bg-zinc-950" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label>Prioridade</Label>
+                    <Select name="priority" defaultValue={modalState.data?.task?.priority || 'medium'}>
+                        <SelectTrigger className="bg-zinc-950"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-zinc-900">
+                            <SelectItem value="low">Baixa</SelectItem>
+                            <SelectItem value="medium">Média</SelectItem>
+                            <SelectItem value="high">Alta</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
-              )}
-              
-              <div className="modal-actions">
-                <button type="submit" className="btn-primary">
-                  {editingTask ? 'Salvar' : 'Criar'}
-                </button>
-                <button 
-                  type="button" 
-                  className="btn-secondary"
-                  onClick={() => {
-                    setShowTaskModal(false);
-                    setEditingTask(null);
-                    setTargetListId(null);
-                  }}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Preview de Arquivo */}
-      {showPreviewModal && previewFile && (
-        <div className="preview-modal" onClick={() => setShowPreviewModal(false)}>
-          <div className="preview-content" onClick={(e) => e.stopPropagation()}>
-            <div className="preview-header">
-              <h3>{previewFile.name}</h3>
-              <button 
-                className="preview-close"
-                onClick={() => setShowPreviewModal(false)}
-              >
-                ✕ Fechar
-              </button>
-            </div>
-            <div className="preview-body">
-              {previewFile.type?.startsWith('image/') && (
-                <img src={previewFile.data} alt={previewFile.name} />
-              )}
-              {previewFile.type?.startsWith('video/') && (
-                <video controls>
-                  <source src={previewFile.data} type={previewFile.type} />
-                  Seu navegador não suporta vídeo.
-                </video>
-              )}
-              {previewFile.type?.startsWith('audio/') && (
-                <audio controls>
-                  <source src={previewFile.data} type={previewFile.type} />
-                  Seu navegador não suporta áudio.
-                </audio>
-              )}
-              {previewFile.type?.includes('pdf') && (
-                <iframe src={previewFile.data} title={previewFile.name}></iframe>
-              )}
-              {!previewFile.type?.startsWith('image/') && 
-               !previewFile.type?.startsWith('video/') && 
-               !previewFile.type?.startsWith('audio/') && 
-               !previewFile.type?.includes('pdf') && (
-                <div className="preview-fallback">
-                  <p>Preview não disponível para este tipo de arquivo.</p>
-                  <button 
-                    className="preview-download"
-                    onClick={() => handleDownloadFile(previewFile)}
-                  >
-                    📥 Download do Arquivo
-                  </button>
+                <div className="space-y-2">
+                    <Label>Prazo</Label>
+                    <Input type="date" name="endDate" defaultValue={modalState.data?.task?.endDate} className="bg-zinc-950" />
                 </div>
-              )}
             </div>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button type="submit">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {/* Modal de Personalização de Nomes */}
-      {showCustomizeModal && customizingProject && (
-        <div className="modal-overlay">
-          <div className="modal customize-modal">
-            <h2>🎨 Personalizar Nomes - {customizingProject.name}</h2>
-            
-            <div className="customize-section">
-              <h3>📋 Nomes das Abas</h3>
-              <div className="customize-tabs">
-                {['todo', 'kanban', 'files', 'goals'].map(tab => (
-                  <div key={tab} className="customize-item">
-                    <button
-                      type="button"
-                      className={`tab-toggle ${customizingProject.enabledTabs?.includes(tab) ? 'active' : ''}`}
-                      onClick={() => {
-                        const enabled = customizingProject.enabledTabs?.includes(tab);
-                        const updatedTabs = enabled
-                          ? customizingProject.enabledTabs.filter(t => t !== tab)
-                          : [...(customizingProject.enabledTabs || []), tab];
-                        setCustomizingProject({
-                          ...customizingProject,
-                          enabledTabs: updatedTabs
-                        });
-                      }}
-                    >
-                      {tab === 'todo'
-                        ? 'To-Do'
-                        : tab === 'kanban'
-                        ? 'Kanban'
-                        : tab === 'files'
-                        ? 'Arquivos'
-                        : 'Metas'}
-                    </button>
-                    <input
-                      type="text"
-                      value={
-                        customizingProject.customNames?.tabs?.[tab] ||
-                        (tab === 'todo'
-                          ? 'To-Do'
-                          : tab === 'kanban'
-                          ? 'Kanban'
-                          : tab === 'files'
-                          ? 'Arquivos'
-                          : 'Metas')
-                      }
-                      onChange={(e) => {
-                        const updated = {
-                          ...customizingProject,
-                          customNames: {
-                            ...customizingProject.customNames,
-                            tabs: {
-                              ...customizingProject.customNames?.tabs,
-                              [tab]: e.target.value
-                            }
-                          }
-                        };
-                        setCustomizingProject(updated);
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="customize-section">
-              <h3>📊 Colunas do To-Do</h3>
-              <div className="customize-columns">
-                {(customizingProject.customNames?.columns?.todo || ['A Fazer', 'Em Progresso', 'Concluído']).map((column, index) => (
-                  <div key={index} className="customize-item">
-                    <label>Coluna {index + 1}:</label>
-                    <input 
-                      type="text" 
-                      value={column}
-                      onChange={(e) => {
-                        const newColumns = [...(customizingProject.customNames?.columns?.todo || ['A Fazer', 'Em Progresso', 'Concluído'])];
-                        newColumns[index] = e.target.value;
-                        const updated = {
-                          ...customizingProject,
-                          customNames: {
-                            ...customizingProject.customNames,
-                            columns: {
-                              ...customizingProject.customNames?.columns,
-                              todo: newColumns
-                            }
-                          }
-                        };
-                        setCustomizingProject(updated);
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="customize-section">
-              <h3>📈 Colunas do Kanban</h3>
-              <div className="customize-columns">
-                {(customizingProject.customNames?.columns?.kanban || ['A Fazer', 'Em Progresso', 'Concluído']).map((column, index) => (
-                  <div key={index} className="customize-item">
-                    <label>Coluna {index + 1}:</label>
-                    <input 
-                      type="text" 
-                      value={column}
-                      onChange={(e) => {
-                        const newColumns = [...(customizingProject.customNames?.columns?.kanban || ['A Fazer', 'Em Progresso', 'Concluído'])];
-                        newColumns[index] = e.target.value;
-                        const updated = {
-                          ...customizingProject,
-                          customNames: {
-                            ...customizingProject.customNames,
-                            columns: {
-                              ...customizingProject.customNames?.columns,
-                              kanban: newColumns
-                            }
-                          }
-                        };
-                        setCustomizingProject(updated);
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button 
-                className="btn-secondary"
-                onClick={() => {
-                  setShowCustomizeModal(false);
-                  setCustomizingProject(null);
-                }}
-              >
-                Cancelar
-              </button>
-              <button 
-                className="btn-primary"
-                onClick={() => {
-                  // Salvar as personalizações
-                  const updatedProjects = projects.map(project => {
-                    if (project.id === customizingProject.id) {
-                      return customizingProject;
-                    }
-                    if (project.subProjects) {
-                      const updatedSubProjects = project.subProjects.map(subProject => {
-                        if (subProject.id === customizingProject.id) {
-                          return customizingProject;
-                        }
-                        return subProject;
-                      });
-                      return { ...project, subProjects: updatedSubProjects };
-                    }
-                    return project;
-                  });
-
-                  updateProjects(() => updatedProjects);
-
-                  if (currentSubProject?.id === customizingProject.id) {
-                    setCurrentSubProject(customizingProject);
-                    if (!customizingProject.enabledTabs.includes(currentBoardType)) {
-                      setCurrentBoardType(customizingProject.enabledTabs[0]);
-                    }
-                  } else if (currentProject?.id === customizingProject.id) {
-                    setCurrentProject(customizingProject);
-                    if (!customizingProject.enabledTabs.includes(currentBoardType)) {
-                      setCurrentBoardType(customizingProject.enabledTabs[0]);
-                    }
-                  }
-
-                  setRefreshKey(prev => prev + 1);
-                  setShowCustomizeModal(false);
-                  setCustomizingProject(null);
-                }}
-              >
-                Salvar Personalizações
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-export default App;
+
+export default LegacyApp;
