@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import { formatFileSize } from './utils/formatFileSize';
-// IMPORT CORRIGIDO PARA A PASTA UTILS:
+// Import das frases
 import { absurdPhrases } from './utils/phrases'; 
 
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
@@ -28,11 +28,18 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { 
   Settings, MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
   Trash2, Download, Eye, LayoutGrid, 
-  FolderOpen, Calendar, Target, Lock, Sparkles, Dna, RotateCcw
+  FolderOpen, Calendar, Target, Lock, Sparkles, Dna, RotateCcw,
+  ListTodo, KanbanSquare, FileText, Goal
 } from 'lucide-react';
 
 // --- CONFIGURAÇÕES ---
-const DEFAULT_TABS = ['todo', 'kanban', 'files', 'goals'];
+const ALL_TABS = [
+  { id: 'todo', label: 'Lista', icon: ListTodo },
+  { id: 'kanban', label: 'Kanban', icon: KanbanSquare },
+  { id: 'files', label: 'Arquivos', icon: FileText },
+  { id: 'goals', label: 'Metas', icon: Goal }
+];
+
 const USER_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'];
 
 const generateMegaSenaNumbers = () => {
@@ -60,6 +67,7 @@ function LegacyApp() {
   const [currentProject, setCurrentProject] = useState(null);
   const [currentSubProject, setCurrentSubProject] = useState(null);
   const [currentBoardType, setCurrentBoardType] = useState('kanban');
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // --- ESTADOS DE UI ---
   const [dailyPhrase, setDailyPhrase] = useState('');
@@ -67,9 +75,10 @@ function LegacyApp() {
   const [pendingAccessItem, setPendingAccessItem] = useState(null); 
   
   const [modalState, setModalState] = useState({
-    type: null, 
+    type: null, // 'project' (new/edit), 'subProject', 'password', 'task'
     isOpen: false,
-    data: null
+    data: null, // Dados para edição
+    mode: 'create' // 'create' ou 'edit'
   });
 
   // --- ESTADOS DE DRAG & DROP ---
@@ -108,16 +117,69 @@ function LegacyApp() {
     }
     loadAllUsers();
     
-    // DEFINE A FRASE IMPORTADA
     if (absurdPhrases && absurdPhrases.length > 0) {
       setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
     }
     setMegaSenaNumbers(generateMegaSenaNumbers());
   }, []);
 
+  // --- SINCRONIZAÇÃO COM SUPABASE ---
+  // Debounce para evitar salvar a cada letra digitada
+  const saveTimeoutRef = useRef(null);
+
   useEffect(() => {
     if (projects.length > 0 && isLoggedIn && currentUser) {
+      // Salva localmente imediatamente para UI rápida
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
+      
+      // Limpa timeout anterior
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+      // Define novo timeout para salvar no banco
+      saveTimeoutRef.current = setTimeout(async () => {
+        setIsSyncing(true);
+        try {
+          // 1. Busca o ID do registro do usuário (se existir)
+          const searchRes = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?select=id`, {
+             headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+          });
+          
+          if(searchRes.ok) {
+             const existing = await searchRes.json();
+             
+             if (existing.length > 0) {
+               // UPDATE
+               await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?id=eq.${existing[0].id}`, {
+                 method: 'PATCH',
+                 headers: { 
+                   'apikey': SUPABASE_KEY, 
+                   'Authorization': `Bearer ${SUPABASE_KEY}`,
+                   'Content-Type': 'application/json',
+                   'Prefer': 'return=minimal'
+                 },
+                 body: JSON.stringify({ data: projects })
+               });
+             } else {
+               // CREATE
+               await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
+                 method: 'POST',
+                 headers: { 
+                   'apikey': SUPABASE_KEY, 
+                   'Authorization': `Bearer ${SUPABASE_KEY}`,
+                   'Content-Type': 'application/json',
+                   'Prefer': 'return=minimal'
+                 },
+                 body: JSON.stringify({ data: projects }) // Assumindo que a coluna 'data' é JSONB
+               });
+             }
+             debugLog("✅ Dados sincronizados com Supabase");
+          }
+        } catch (error) {
+          console.error("Erro ao sincronizar:", error);
+        } finally {
+          setIsSyncing(false);
+        }
+      }, 1000); // 1 segundo de delay
     }
   }, [projects, isLoggedIn, currentUser]);
 
@@ -174,9 +236,9 @@ function LegacyApp() {
     setCurrentUser(null);
   };
 
-  // --- AÇÕES DE PROJETO ---
+  // --- AÇÕES DE PROJETO (CRUD + SENHA) ---
   const handleAccessProject = (item, type = 'project') => {
-    if (dragState.isDragging) return; // Evita clique durante drag
+    if (dragState.isDragging) return;
     if (item.isProtected) {
       setPendingAccessItem({ ...item, itemType: type });
       setModalState({ type: 'password', isOpen: true });
@@ -186,12 +248,16 @@ function LegacyApp() {
   };
 
   const enterProject = (item, type) => {
+    // Garante que a view inicial seja uma das tabs habilitadas
+    const firstEnabledTab = item.enabledTabs && item.enabledTabs.length > 0 ? item.enabledTabs[0] : 'kanban';
+    
     if (type === 'project') {
       setCurrentProject(item);
       setCurrentView('project');
     } else {
       setCurrentSubProject(item);
       setCurrentView('subproject');
+      setCurrentBoardType(firstEnabledTab);
     }
   };
 
@@ -205,30 +271,88 @@ function LegacyApp() {
     }
   };
 
-  const handleCreateProject = (formData) => {
-    const isSub = modalState.type === 'newSubProject';
-    const newItem = {
-      id: generateId(isSub ? 'sub' : 'proj'),
-      ...formData,
-      isProtected: formData.isProtected === 'on',
-      subProjects: [],
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser.userKey,
-      enabledTabs: [...DEFAULT_TABS],
-      boardData: initializeBoardData()
+  // HANDLER UNIFICADO PARA CRIAR E EDITAR PROJETOS/SUBPROJETOS
+  const handleSaveProject = (formData) => {
+    const isEdit = modalState.mode === 'edit';
+    const isSub = modalState.type === 'subProject'; // Contexto atual (criando/editando sub ou proj?)
+    
+    // Captura as tabs selecionadas
+    const selectedTabs = ALL_TABS.filter(tab => formData[`view_${tab.id}`] === 'on').map(t => t.id);
+    // Se nenhuma selecionada, usa o padrão
+    const enabledTabs = selectedTabs.length > 0 ? selectedTabs : ['kanban'];
+
+    const projectData = {
+        name: formData.name,
+        description: formData.description,
+        color: formData.color,
+        isProtected: formData.isProtected === 'on',
+        password: formData.isProtected === 'on' ? formData.password : '',
+        enabledTabs: enabledTabs
     };
 
-    if (isSub) {
-      const updatedProjects = projects.map(p => 
-        p.id === currentProject.id 
-          ? { ...p, subProjects: [...(p.subProjects || []), newItem] } 
-          : p
-      );
-      updateProjectsState(updatedProjects);
-      setCurrentProject(updatedProjects.find(p => p.id === currentProject.id)); 
+    if (isEdit) {
+        // --- EDIÇÃO ---
+        const targetId = modalState.data.id;
+        
+        const updatedProjects = projects.map(p => {
+            // Se estamos editando um projeto principal
+            if (p.id === targetId && !isSub) {
+                return { ...p, ...projectData };
+            }
+            
+            // Se estamos editando um subprojeto
+            if (p.subProjects && p.subProjects.length > 0) {
+                const updatedSubs = p.subProjects.map(sp => {
+                    if (sp.id === targetId) {
+                        return { ...sp, ...projectData };
+                    }
+                    return sp;
+                });
+                return { ...p, subProjects: updatedSubs };
+            }
+            
+            return p;
+        });
+        
+        updateProjectsState(updatedProjects);
+        
+        // Atualiza a referência atual se estivermos dentro dela
+        if (currentProject?.id === targetId) {
+            setCurrentProject(updatedProjects.find(p => p.id === targetId));
+        }
+        if (currentSubProject?.id === targetId) {
+            const parent = updatedProjects.find(p => p.subProjects.some(sp => sp.id === targetId));
+            setCurrentSubProject(parent.subProjects.find(sp => sp.id === targetId));
+        }
+
     } else {
-      updateProjectsState([...projects, newItem]);
+        // --- CRIAÇÃO ---
+        const newItem = {
+            id: generateId(isSub ? 'sub' : 'proj'),
+            ...projectData,
+            subProjects: [],
+            createdAt: new Date().toISOString(),
+            createdBy: currentUser.userKey,
+            boardData: initializeBoardData(),
+            archived: { tasks: [], goals: [] },
+            isArchived: false,
+        };
+
+        if (isSub) {
+            // Adicionar Subprojeto ao Projeto Atual
+            const updatedProjects = projects.map(p => 
+                p.id === currentProject.id 
+                ? { ...p, subProjects: [...(p.subProjects || []), newItem] } 
+                : p
+            );
+            updateProjectsState(updatedProjects);
+            setCurrentProject(updatedProjects.find(p => p.id === currentProject.id));
+        } else {
+            // Adicionar Novo Projeto Principal
+            updateProjectsState([...projects, newItem]);
+        }
     }
+    
     setModalState({ isOpen: false, type: null });
   };
 
@@ -333,7 +457,7 @@ function LegacyApp() {
   };
 
   const handleTaskAction = (action, data) => {
-    const isEdit = !!modalState.data?.task;
+    const isEdit = modalState.mode === 'edit';
     
     const updatedProjects = projects.map(p => {
       if (p.id !== currentProject.id) return p;
@@ -342,7 +466,7 @@ function LegacyApp() {
         const board = entity.boardData[currentBoardType];
         if (action === 'save') {
           if (isEdit) {
-             board.lists = board.lists.map(l => ({ ...l, tasks: l.tasks.map(t => t.id === modalState.data.task.id ? { ...t, ...data } : t) }));
+             board.lists = board.lists.map(l => ({ ...l, tasks: l.tasks.map(t => t.id === modalState.data.id ? { ...t, ...data } : t) }));
           } else {
             const listId = modalState.data?.listId || board.lists[0].id;
             board.lists = board.lists.map(l => l.id === listId ? { ...l, tasks: [...l.tasks, { id: generateId('task'), ...data }] } : l);
@@ -417,7 +541,6 @@ function LegacyApp() {
       <div className="container flex h-14 items-center justify-between mx-auto px-4 md:px-8">
         <div className="flex items-center gap-4">
           <div onClick={() => setCurrentView('home')} className="cursor-pointer flex items-center gap-2">
-             {/* LOGO RESTAURADO AQUI */}
              <img src={logoImage} alt="BrickFlow" className="h-8 w-auto object-contain" />
           </div>
           <Separator orientation="vertical" className="h-6 bg-zinc-800" />
@@ -432,8 +555,9 @@ function LegacyApp() {
           </nav>
         </div>
         
-        {/* Menu do Usuário Corrigido */}
+        {/* Menu do Usuário */}
         <div className="flex items-center gap-4">
+          {isSyncing && <span className="text-xs text-zinc-500 animate-pulse">Salvando...</span>}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-auto rounded-full gap-2 px-2 hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
@@ -487,7 +611,7 @@ function LegacyApp() {
 
       <div className="flex justify-between items-end border-b border-zinc-800 pb-2">
         <h2 className="text-3xl font-bold">Projetos</h2>
-        <Button onClick={() => setModalState({ type: 'newProject', isOpen: true })} className="bg-white text-black hover:bg-zinc-200"><Plus className="mr-2 h-4 w-4" /> Novo Projeto</Button>
+        <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white text-black hover:bg-zinc-200"><Plus className="mr-2 h-4 w-4" /> Novo Projeto</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -508,7 +632,7 @@ function LegacyApp() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800">
-                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'editProject', isOpen: true, data: project }); }}>Editar</DropdownMenuItem>
+                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }}>Editar</DropdownMenuItem>
                     <DropdownMenuItem className="text-red-500" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>Excluir</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -535,7 +659,7 @@ function LegacyApp() {
         </div>
         <div className="ml-auto flex gap-2">
            <Button variant="outline" onClick={() => { setCurrentSubProject(null); setCurrentBoardType('kanban'); setCurrentView('subproject'); }}>Quadro Principal</Button>
-           <Button onClick={() => setModalState({ type: 'newSubProject', isOpen: true })}><Plus className="mr-2 h-4 w-4" /> Nova Área</Button>
+           <Button onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })}><Plus className="mr-2 h-4 w-4" /> Nova Área</Button>
         </div>
       </div>
       <Separator className="bg-zinc-800" />
@@ -548,6 +672,7 @@ function LegacyApp() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800">
+                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub }); }}>Editar</DropdownMenuItem>
                     <DropdownMenuItem className="text-red-500" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -563,7 +688,9 @@ function LegacyApp() {
 
   const renderBoard = () => {
     const data = getCurrentBoardData();
-    const entityName = currentSubProject ? currentSubProject.name : currentProject.name;
+    const currentEntity = currentSubProject || currentProject;
+    const entityName = currentEntity.name;
+    const enabledTabs = currentEntity.enabledTabs || DEFAULT_TABS;
 
     return (
       <div className="flex flex-col h-[calc(100vh-8rem)]">
@@ -574,10 +701,10 @@ function LegacyApp() {
           </div>
           <Tabs value={currentBoardType} onValueChange={setCurrentBoardType}>
             <TabsList className="bg-zinc-900 border border-zinc-800">
-              <TabsTrigger value="kanban">Kanban</TabsTrigger>
-              <TabsTrigger value="todo">Lista</TabsTrigger>
-              <TabsTrigger value="files">Arquivos</TabsTrigger>
-              <TabsTrigger value="goals">Metas</TabsTrigger>
+              {enabledTabs.includes('kanban') && <TabsTrigger value="kanban">Kanban</TabsTrigger>}
+              {enabledTabs.includes('todo') && <TabsTrigger value="todo">Lista</TabsTrigger>}
+              {enabledTabs.includes('files') && <TabsTrigger value="files">Arquivos</TabsTrigger>}
+              {enabledTabs.includes('goals') && <TabsTrigger value="goals">Metas</TabsTrigger>}
             </TabsList>
           </Tabs>
         </div>
@@ -597,7 +724,7 @@ function LegacyApp() {
                     <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
                       {list.tasks?.map(task => (
                         <Card key={task.id} draggable onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
-                              onClick={() => setModalState({ type: 'task', isOpen: true, data: { task, listId: list.id } })}
+                              onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}
                               className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 cursor-grab active:cursor-grabbing">
                           <CardContent className="p-3">
                             <div className="flex justify-between items-start mb-2">
@@ -612,7 +739,7 @@ function LegacyApp() {
                         </Card>
                       ))}
                       <Button variant="ghost" className="w-full border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                        onClick={() => setModalState({ type: 'task', isOpen: true, data: { listId: list.id } })}>
+                        onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
                         <Plus className="h-3 w-3 mr-2" /> Adicionar
                       </Button>
                     </div>
@@ -631,7 +758,7 @@ function LegacyApp() {
                       {list.tasks?.map(task => (
                         <div key={task.id} className="p-3 flex items-center gap-4 hover:bg-zinc-800/50 transition-colors">
                           <Checkbox checked={list.title === 'Concluído'} className="border-zinc-700" />
-                          <div className="flex-1 cursor-pointer" onClick={() => setModalState({ type: 'task', isOpen: true, data: { task, listId: list.id } })}>
+                          <div className="flex-1 cursor-pointer" onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}>
                             <p className="text-sm font-medium text-zinc-200">{task.title}</p>
                           </div>
                           <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-600 hover:text-red-500" 
@@ -640,7 +767,7 @@ function LegacyApp() {
                           </Button>
                         </div>
                       ))}
-                      <Button variant="ghost" className="w-full text-xs text-zinc-500 justify-start" onClick={() => setModalState({ type: 'task', isOpen: true, data: { listId: list.id } })}>
+                      <Button variant="ghost" className="w-full text-xs text-zinc-500 justify-start" onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
                         <Plus className="h-3 w-3 mr-2" /> Adicionar item
                       </Button>
                     </div>
@@ -649,7 +776,7 @@ function LegacyApp() {
               </div>
             )}
 
-            {/* FILES (Corrigido Upload e Drag&Drop) */}
+            {/* FILES */}
             {currentBoardType === 'files' && (
               <div 
                 className={`space-y-6 min-h-[400px] relative rounded-xl transition-colors ${isFileDragging ? 'bg-zinc-900/50 border-2 border-dashed border-primary/50' : ''}`}
@@ -717,13 +844,13 @@ function LegacyApp() {
 
       {/* MODAL GLOBAL */}
       <Dialog open={modalState.isOpen} onOpenChange={(open) => !open && setModalState({ ...modalState, isOpen: false })}>
-        <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-zinc-100">
+        <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-zinc-100 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {modalState.type === 'newProject' && 'Novo Projeto'}
-              {modalState.type === 'newSubProject' && 'Nova Área'}
+              {modalState.type === 'project' && (modalState.mode === 'create' ? 'Novo Projeto' : 'Editar Projeto')}
+              {modalState.type === 'subProject' && (modalState.mode === 'create' ? 'Nova Área' : 'Editar Área')}
               {modalState.type === 'password' && 'Acesso Restrito'}
-              {modalState.type === 'task' && (modalState.data?.task ? 'Editar Tarefa' : 'Nova Tarefa')}
+              {modalState.type === 'task' && (modalState.mode === 'edit' ? 'Editar Tarefa' : 'Nova Tarefa')}
             </DialogTitle>
           </DialogHeader>
           
@@ -739,28 +866,65 @@ function LegacyApp() {
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = Object.fromEntries(new FormData(e.target));
-              if (modalState.type === 'newProject' || modalState.type === 'newSubProject') handleCreateProject(formData);
+              if (modalState.type === 'project' || modalState.type === 'subProject') handleSaveProject(formData);
               if (modalState.type === 'task') handleTaskAction('save', formData);
             }} className="space-y-4 py-4">
               
-              {(modalState.type === 'newProject' || modalState.type === 'newSubProject') && (
+              {(modalState.type === 'project' || modalState.type === 'subProject') && (
                 <>
-                  <div className="space-y-2"><Label>Nome</Label><Input name="name" required className="bg-zinc-900 border-zinc-800" /></div>
-                  <div className="space-y-2"><Label>Descrição</Label><Textarea name="description" className="bg-zinc-900 border-zinc-800" /></div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Cor</Label><Select name="color" defaultValue="blue"><SelectTrigger className="bg-zinc-900 border-zinc-800"><SelectValue /></SelectTrigger><SelectContent className="bg-zinc-900 border-zinc-800">{USER_COLORS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="flex items-end pb-2 gap-2"><Checkbox id="prot" name="isProtected" /><Label htmlFor="prot">Proteger com Senha</Label></div>
+                  <div className="space-y-2">
+                    <Label>Nome</Label>
+                    <Input name="name" defaultValue={modalState.data?.name} required className="bg-zinc-900 border-zinc-800" />
                   </div>
-                  <div className="space-y-2"><Label>Senha (Opcional)</Label><Input name="password" type="password" className="bg-zinc-900 border-zinc-800" /></div>
+                  <div className="space-y-2">
+                    <Label>Descrição</Label>
+                    <Textarea name="description" defaultValue={modalState.data?.description} className="bg-zinc-900 border-zinc-800" />
+                  </div>
+                  <div className="space-y-3 pt-2">
+                    <Label>Visualizações Habilitadas</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {ALL_TABS.map(tab => (
+                        <div key={tab.id} className="flex items-center space-x-2 border border-zinc-800 p-2 rounded-md bg-zinc-900/50">
+                          <Checkbox 
+                            id={`view_${tab.id}`} 
+                            name={`view_${tab.id}`} 
+                            defaultChecked={!modalState.data || (modalState.data.enabledTabs && modalState.data.enabledTabs.includes(tab.id))}
+                          />
+                          <Label htmlFor={`view_${tab.id}`} className="flex items-center gap-2 cursor-pointer">
+                            <tab.icon className="h-4 w-4 text-zinc-400" /> {tab.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-2">
+                      <Label>Cor</Label>
+                      <Select name="color" defaultValue={modalState.data?.color || "blue"}>
+                        <SelectTrigger className="bg-zinc-900 border-zinc-800"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-800">
+                          {USER_COLORS.map(c => <SelectItem key={c} value={c}>{c.toUpperCase()}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-end pb-2 gap-2">
+                      <Checkbox id="prot" name="isProtected" defaultChecked={modalState.data?.isProtected} />
+                      <Label htmlFor="prot">Proteger com Senha</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Senha (Opcional)</Label>
+                    <Input name="password" type="password" defaultValue={modalState.data?.password} className="bg-zinc-900 border-zinc-800" />
+                  </div>
                 </>
               )}
 
               {modalState.type === 'task' && (
                 <>
-                  <div className="space-y-2"><Label>Título</Label><Input name="title" defaultValue={modalState.data?.task?.title} required className="bg-zinc-900 border-zinc-800" /></div>
+                  <div className="space-y-2"><Label>Título</Label><Input name="title" defaultValue={modalState.data?.title} required className="bg-zinc-900 border-zinc-800" /></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Prioridade</Label><Select name="priority" defaultValue={modalState.data?.task?.priority || 'medium'}><SelectTrigger className="bg-zinc-900 border-zinc-800"><SelectValue /></SelectTrigger><SelectContent className="bg-zinc-900 border-zinc-800"><SelectItem value="low">Baixa</SelectItem><SelectItem value="medium">Média</SelectItem><SelectItem value="high">Alta</SelectItem></SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Prazo</Label><Input type="date" name="endDate" defaultValue={modalState.data?.task?.endDate} className="bg-zinc-900 border-zinc-800" /></div>
+                    <div className="space-y-2"><Label>Prioridade</Label><Select name="priority" defaultValue={modalState.data?.priority || 'medium'}><SelectTrigger className="bg-zinc-900 border-zinc-800"><SelectValue /></SelectTrigger><SelectContent className="bg-zinc-900 border-zinc-800"><SelectItem value="low">Baixa</SelectItem><SelectItem value="medium">Média</SelectItem><SelectItem value="high">Alta</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-2"><Label>Prazo</Label><Input type="date" name="endDate" defaultValue={modalState.data?.endDate} className="bg-zinc-900 border-zinc-800" /></div>
                   </div>
                 </>
               )}
