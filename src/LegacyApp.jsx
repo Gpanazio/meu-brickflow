@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import { formatFileSize } from './utils/formatFileSize';
-import { absurdPhrases } from './utils/phrases'; 
+import { absurdPhrases } from './utils/phrases';
+import { supabase } from './lib/supabaseClient'; // [CORREÇÃO] Usando o cliente oficial
 
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
 import SudokuGame from './components/SudokuGame';
@@ -19,7 +20,7 @@ import { Badge } from './components/ui/badge';
 import { ScrollArea } from './components/ui/scroll-area';
 import { Separator } from './components/ui/separator';
 import { Avatar, AvatarFallback } from './components/ui/avatar';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Checkbox } from './components/ui/checkbox';
 import { Label } from './components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
@@ -67,7 +68,7 @@ function LegacyApp() {
   const [currentSubProject, setCurrentSubProject] = useState(null);
   const [currentBoardType, setCurrentBoardType] = useState('kanban');
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false); // Novo estado de upload visual
+  const [isUploading, setIsUploading] = useState(false);
   
   // --- ESTADOS DE UI ---
   const [dailyPhrase, setDailyPhrase] = useState('');
@@ -88,11 +89,7 @@ function LegacyApp() {
     itemData: null,
     sourceContainerId: null
   });
-  const [dragOverTargetId, setDragOverTargetId] = useState(null); // Para saber sobre qual item estamos
-
-  // Configuração Supabase
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-  const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const [dragOverTargetId, setDragOverTargetId] = useState(null);
 
   // Hook de Arquivos
   const { 
@@ -107,7 +104,6 @@ function LegacyApp() {
     currentUser || {}
   );
 
-  // Wrapper para adicionar animação ao upload
   const handleFileUploadWithFeedback = async (e) => {
     setIsUploading(true);
     await originalHandleFileUpload(e);
@@ -131,10 +127,11 @@ function LegacyApp() {
     setMegaSenaNumbers(generateMegaSenaNumbers());
   }, []);
 
-  // Sincronização
+  // --- SINCRONIZAÇÃO COM SUPABASE (CORRIGIDA) ---
   const saveTimeoutRef = useRef(null);
   useEffect(() => {
     if (projects.length > 0 && isLoggedIn && currentUser) {
+      // Salva localmente
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
       
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -142,56 +139,58 @@ function LegacyApp() {
       saveTimeoutRef.current = setTimeout(async () => {
         setIsSyncing(true);
         try {
-          const searchRes = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?select=id`, {
-             headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-          });
+          // [CORREÇÃO] Usando cliente Supabase oficial
+          const { data: existing, error: searchError } = await supabase
+            .from('brickflow_data')
+            .select('id')
+            .limit(1);
           
-          if(searchRes.ok) {
-             const existing = await searchRes.json();
-             const body = JSON.stringify({ data: projects });
-             const headers = { 
-               'apikey': SUPABASE_KEY, 
-               'Authorization': `Bearer ${SUPABASE_KEY}`,
-               'Content-Type': 'application/json',
-               'Prefer': 'return=minimal'
-             };
+          if (!searchError) {
+             const dataPayload = { data: projects };
 
-             if (existing.length > 0) {
-               await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data?id=eq.${existing[0].id}`, { method: 'PATCH', headers, body });
+             if (existing && existing.length > 0) {
+               // UPDATE
+               await supabase
+                 .from('brickflow_data')
+                 .update(dataPayload)
+                 .eq('id', existing[0].id);
              } else {
-               await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, { method: 'POST', headers, body });
+               // INSERT
+               await supabase
+                 .from('brickflow_data')
+                 .insert(dataPayload);
              }
-             debugLog("✅ Dados sincronizados");
+             debugLog("✅ Dados sincronizados com Supabase");
+          } else {
+            console.error("Erro na busca do Supabase:", searchError);
           }
-        } catch (error) { console.error("Erro sync:", error); } 
-        finally { setIsSyncing(false); }
+        } catch (error) { 
+          console.error("Erro fatal ao sincronizar:", error); 
+        } finally { 
+          setIsSyncing(false); 
+        }
       }, 1000);
     }
   }, [projects, isLoggedIn, currentUser]);
 
-  // --- HELPERS ---
+  // --- HELPERS (CORRIGIDOS PARA USAR CLIENTE SUPABASE) ---
   const loadAllUsers = async () => {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_users`, {
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-      });
-      if (response.ok) setAllUsers(await response.json());
+      const { data, error } = await supabase.from('brickflow_users').select('*');
+      if (!error && data) setAllUsers(data);
     } catch (error) { debugLog('Erro users', error); }
   };
 
   const loadUserProjects = async (userKey) => {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/brickflow_data`, {
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.length > 0 && data[0].data) {
-          setProjects(data[0].data);
-          return;
-        }
+      const { data, error } = await supabase.from('brickflow_data').select('*');
+      if (!error && data && data.length > 0 && data[0].data) {
+        setProjects(data[0].data);
+        return;
       }
     } catch (e) { console.error(e); }
+    
+    // Fallback LocalStorage
     const saved = localStorage.getItem(`brickflow-projects-${userKey}`);
     if (saved) setProjects(JSON.parse(saved));
   };
@@ -210,7 +209,7 @@ function LegacyApp() {
     goals: { objectives: [] }
   });
 
-  // --- HANDLERS ---
+  // --- AÇÕES ---
   const handleLogout = () => {
     setIsLoggedIn(false);
     localStorage.removeItem('brickflow-current-user');
@@ -234,7 +233,6 @@ function LegacyApp() {
 
   const enterProject = (item, type) => {
     const firstEnabledTab = item.enabledTabs && item.enabledTabs.length > 0 ? item.enabledTabs[0] : 'kanban';
-    
     if (type === 'project') {
       setCurrentProject(item);
       setCurrentView('project');
@@ -258,6 +256,8 @@ function LegacyApp() {
   const handleSaveProject = (formData) => {
     const isEdit = modalState.mode === 'edit';
     const isSub = modalState.type === 'subProject';
+    
+    // Captura as visualizações selecionadas
     const selectedTabs = ALL_TABS.filter(tab => formData[`view_${tab.id}`] === 'on').map(t => t.id);
     const enabledTabs = selectedTabs.length > 0 ? selectedTabs : ['kanban'];
 
@@ -271,9 +271,12 @@ function LegacyApp() {
     };
 
     if (isEdit) {
+        // [CORREÇÃO] Garante que usamos o ID correto para edição
         const targetId = modalState.data.id;
+        
         const updatedProjects = projects.map(p => {
             if (p.id === targetId && !isSub) return { ...p, ...projectData };
+            
             if (p.subProjects && p.subProjects.length > 0) {
                 const updatedSubs = p.subProjects.map(sp => sp.id === targetId ? { ...sp, ...projectData } : sp);
                 return { ...p, subProjects: updatedSubs };
@@ -282,6 +285,8 @@ function LegacyApp() {
         });
         
         updateProjectsState(updatedProjects);
+        
+        // Atualiza a referência visual imediata
         if (currentProject?.id === targetId) setCurrentProject(updatedProjects.find(p => p.id === targetId));
         if (currentSubProject?.id === targetId) {
             const parent = updatedProjects.find(p => p.subProjects.some(sp => sp.id === targetId));
@@ -325,21 +330,14 @@ function LegacyApp() {
     }
   };
 
-  // --- DRAG & DROP REFINADO (ORDENAÇÃO) ---
+  // --- DRAG & DROP ---
   const handleDragStart = (e, item, type, sourceId = null) => {
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', JSON.stringify({ id: item.id, type, sourceId })); // Fallback
-    setDragState({
-      isDragging: true,
-      itemType: type,
-      itemData: item,
-      sourceContainerId: sourceId
-    });
+    e.dataTransfer.setData('text/plain', JSON.stringify({ id: item.id, type, sourceId }));
+    setDragState({ isDragging: true, itemType: type, itemData: item, sourceContainerId: sourceId });
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault(); // Necessário para drop
-  };
+  const handleDragOver = (e) => e.preventDefault();
 
   const handleDragEnter = (e, targetId) => {
     e.preventDefault();
@@ -353,7 +351,6 @@ function LegacyApp() {
     setDragOverTargetId(null);
     if (!dragState.isDragging) return;
 
-    // Lógica para Tarefas (Reordenação)
     if (type === 'list' && dragState.itemType === 'task') {
         const sourceListId = dragState.sourceContainerId;
         const task = dragState.itemData;
@@ -366,36 +363,24 @@ function LegacyApp() {
                 const board = { ...entity.boardData };
                 const lists = [...board[currentBoardType].lists];
                 
-                // 1. Encontrar e remover da origem
-                const sourceListIdx = lists.findIndex(l => l.id === sourceListId);
-                if (sourceListIdx === -1) return entity;
-                
-                const sourceList = { ...lists[sourceListIdx] };
-                const taskIndex = sourceList.tasks.findIndex(t => t.id === task.id);
-                if (taskIndex === -1) return entity; // Erro de segurança
-                
-                // Remove tarefa
+                const sIdx = lists.findIndex(l => l.id === sourceListId);
+                if (sIdx === -1) return entity;
+                const sourceList = { ...lists[sIdx] };
                 sourceList.tasks = sourceList.tasks.filter(t => t.id !== task.id);
-                lists[sourceListIdx] = sourceList;
+                lists[sIdx] = sourceList;
 
-                // 2. Inserir no destino
-                const targetListIdx = lists.findIndex(l => l.id === targetListId);
-                const targetList = { ...lists[targetListIdx] };
+                const tIdx = lists.findIndex(l => l.id === targetListId);
+                const targetList = { ...lists[tIdx] };
                 
-                // Se soltou EM CIMA de uma tarefa específica (Reordenação)
                 if (dragOverTargetId && dragOverTargetId !== task.id) {
                     const dropIndex = targetList.tasks.findIndex(t => t.id === dragOverTargetId);
-                    if (dropIndex !== -1) {
-                        targetList.tasks.splice(dropIndex, 0, task);
-                    } else {
-                        targetList.tasks.push(task);
-                    }
+                    if (dropIndex !== -1) targetList.tasks.splice(dropIndex, 0, task);
+                    else targetList.tasks.push(task);
                 } else {
-                    // Soltou na lista vazia ou no final
                     targetList.tasks.push(task);
                 }
                 
-                lists[targetListIdx] = targetList;
+                lists[tIdx] = targetList;
                 board[currentBoardType] = { ...board[currentBoardType], lists };
                 return { ...entity, boardData: board };
             };
@@ -412,7 +397,6 @@ function LegacyApp() {
         else setCurrentProject(newProj);
     }
 
-    // Lógica para Projetos (Reordenação simples) - Mantido igual
     if (type === 'project' && dragState.itemType === 'project') {
         const draggedIdx = projects.findIndex(p => p.id === dragState.itemData.id);
         const targetIdx = projects.findIndex(p => p.id === targetContainerId);
@@ -462,7 +446,6 @@ function LegacyApp() {
     const newProj = updatedProjects.find(p => p.id === currentProject.id);
     if (currentView === 'subproject') setCurrentSubProject(newProj.subProjects.find(s => s.id === currentSubProject.id));
     else setCurrentProject(newProj);
-
     if(action === 'save') setModalState({ isOpen: false, type: null });
   };
 
@@ -494,14 +477,8 @@ function LegacyApp() {
                   loadUserProjects(userData.userKey);
                 } else { alert("Credenciais inválidas"); }
             }} className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-zinc-300">Usuário</Label>
-                <Input name="username" placeholder="Ex: JOAO" className="bg-zinc-950 border-zinc-800" required />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-zinc-300">PIN</Label>
-                <Input name="pin" type="password" placeholder="••••" maxLength={4} className="bg-zinc-950 border-zinc-800 text-center tracking-widest" required />
-              </div>
+              <div className="space-y-2"><Label className="text-zinc-300">Usuário</Label><Input name="username" placeholder="Ex: JOAO" className="bg-zinc-950 border-zinc-800" required /></div>
+              <div className="space-y-2"><Label className="text-zinc-300">PIN</Label><Input name="pin" type="password" placeholder="••••" maxLength={4} className="bg-zinc-950 border-zinc-800 text-center tracking-widest" required /></div>
               <Button type="submit" className="w-full bg-primary hover:bg-red-600 text-white font-medium">Entrar no Sistema</Button>
             </form>
           </CardContent>
@@ -546,12 +523,8 @@ function LegacyApp() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-zinc-800" />
-              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer">
-                <RotateCcw className="mr-2 h-4 w-4" /> Trocar Usuário
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:text-red-400 focus:bg-red-950/20 cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" /> Sair
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer"><RotateCcw className="mr-2 h-4 w-4" /> Trocar Usuário</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:text-red-400 focus:bg-red-950/20 cursor-pointer"><LogOut className="mr-2 h-4 w-4" /> Sair</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
