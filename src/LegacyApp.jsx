@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import { formatFileSize } from './utils/formatFileSize';
 import { absurdPhrases } from './utils/phrases';
-import { supabase } from './lib/supabaseClient'; // [CORREÇÃO] Usando o cliente oficial
+import { supabase } from './lib/supabaseClient';
 
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
 import SudokuGame from './components/SudokuGame';
@@ -20,7 +20,7 @@ import { Badge } from './components/ui/badge';
 import { ScrollArea } from './components/ui/scroll-area';
 import { Separator } from './components/ui/separator';
 import { Avatar, AvatarFallback } from './components/ui/avatar';
-import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
 import { Checkbox } from './components/ui/checkbox';
 import { Label } from './components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
@@ -29,15 +29,15 @@ import {
   Settings, MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
   Trash2, Download, Eye, LayoutGrid, 
   FolderOpen, Calendar, Target, Lock, Sparkles, Dna, RotateCcw,
-  ListTodo, KanbanSquare, FileText, Goal, Loader2
+  ListTodo, KanbanSquare, FileText, Goal
 } from 'lucide-react';
 
 // --- CONFIGURAÇÕES ---
 const ALL_TABS = [
-  { id: 'todo', label: 'Lista', icon: ListTodo },
-  { id: 'kanban', label: 'Kanban', icon: KanbanSquare },
-  { id: 'files', label: 'Arquivos', icon: FileText },
-  { id: 'goals', label: 'Metas', icon: Goal }
+  { id: 'todo', label: 'LISTA', icon: ListTodo },
+  { id: 'kanban', label: 'KANBAN', icon: KanbanSquare },
+  { id: 'files', label: 'ARQUIVOS', icon: FileText },
+  { id: 'goals', label: 'METAS', icon: Goal }
 ];
 
 const USER_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'];
@@ -55,13 +55,19 @@ const generateMegaSenaNumbers = () => {
 
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+// COMPONENTE: MONOLITO LOADING
+const MonolithLoader = ({ text }) => (
+  <div className="flex flex-col items-center justify-center gap-4 animate-in fade-in zoom-in duration-300">
+    <div className="w-8 h-16 bg-black border border-zinc-800 shadow-[0_0_15px_rgba(255,255,255,0.1)] animate-monolith-pulse"></div>
+    <span className="text-xs font-mono uppercase tracking-widest text-zinc-500">{text}</span>
+  </div>
+);
+
 function LegacyApp() {
-  // --- ESTADOS DO USUÁRIO ---
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   
-  // --- ESTADOS DE DADOS ---
   const [projects, setProjects] = useState([]);
   const [currentView, setCurrentView] = useState('home');
   const [currentProject, setCurrentProject] = useState(null);
@@ -70,7 +76,6 @@ function LegacyApp() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
-  // --- ESTADOS DE UI ---
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
   const [pendingAccessItem, setPendingAccessItem] = useState(null); 
@@ -82,7 +87,6 @@ function LegacyApp() {
     mode: 'create'
   });
 
-  // --- ESTADOS DE DRAG & DROP ---
   const [dragState, setDragState] = useState({
     isDragging: false,
     itemType: null, 
@@ -91,7 +95,9 @@ function LegacyApp() {
   });
   const [dragOverTargetId, setDragOverTargetId] = useState(null);
 
-  // Hook de Arquivos
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
   const { 
     files, 
     handleFileUpload: originalHandleFileUpload,
@@ -110,7 +116,6 @@ function LegacyApp() {
     setIsUploading(false);
   };
 
-  // --- EFEITOS ---
   useEffect(() => {
     const savedUser = localStorage.getItem('brickflow-current-user');
     if (savedUser) {
@@ -127,11 +132,9 @@ function LegacyApp() {
     setMegaSenaNumbers(generateMegaSenaNumbers());
   }, []);
 
-  // --- SINCRONIZAÇÃO COM SUPABASE (CORRIGIDA) ---
   const saveTimeoutRef = useRef(null);
   useEffect(() => {
     if (projects.length > 0 && isLoggedIn && currentUser) {
-      // Salva localmente
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
       
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -139,7 +142,6 @@ function LegacyApp() {
       saveTimeoutRef.current = setTimeout(async () => {
         setIsSyncing(true);
         try {
-          // [CORREÇÃO] Usando cliente Supabase oficial
           const { data: existing, error: searchError } = await supabase
             .from('brickflow_data')
             .select('id')
@@ -149,20 +151,16 @@ function LegacyApp() {
              const dataPayload = { data: projects };
 
              if (existing && existing.length > 0) {
-               // UPDATE
                await supabase
                  .from('brickflow_data')
                  .update(dataPayload)
                  .eq('id', existing[0].id);
              } else {
-               // INSERT
                await supabase
                  .from('brickflow_data')
                  .insert(dataPayload);
              }
              debugLog("✅ Dados sincronizados com Supabase");
-          } else {
-            console.error("Erro na busca do Supabase:", searchError);
           }
         } catch (error) { 
           console.error("Erro fatal ao sincronizar:", error); 
@@ -173,7 +171,6 @@ function LegacyApp() {
     }
   }, [projects, isLoggedIn, currentUser]);
 
-  // --- HELPERS (CORRIGIDOS PARA USAR CLIENTE SUPABASE) ---
   const loadAllUsers = async () => {
     try {
       const { data, error } = await supabase.from('brickflow_users').select('*');
@@ -190,7 +187,6 @@ function LegacyApp() {
       }
     } catch (e) { console.error(e); }
     
-    // Fallback LocalStorage
     const saved = localStorage.getItem(`brickflow-projects-${userKey}`);
     if (saved) setProjects(JSON.parse(saved));
   };
@@ -203,13 +199,12 @@ function LegacyApp() {
   };
 
   const initializeBoardData = () => ({
-    todo: { lists: [{ id: 'l1', title: 'A Fazer', tasks: [] }, { id: 'l2', title: 'Fazendo', tasks: [] }, { id: 'l3', title: 'Feito', tasks: [] }] },
-    kanban: { lists: [{ id: 'k1', title: 'Backlog', tasks: [] }, { id: 'k2', title: 'Em Progresso', tasks: [] }, { id: 'k3', title: 'Concluído', tasks: [] }] },
+    todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'FEITO', tasks: [] }] },
+    kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] },
     timeline: { periods: [{ id: 'p1', title: 'Q1', tasks: [] }] },
     goals: { objectives: [] }
   });
 
-  // --- AÇÕES ---
   const handleLogout = () => {
     setIsLoggedIn(false);
     localStorage.removeItem('brickflow-current-user');
@@ -257,7 +252,6 @@ function LegacyApp() {
     const isEdit = modalState.mode === 'edit';
     const isSub = modalState.type === 'subProject';
     
-    // Captura as visualizações selecionadas
     const selectedTabs = ALL_TABS.filter(tab => formData[`view_${tab.id}`] === 'on').map(t => t.id);
     const enabledTabs = selectedTabs.length > 0 ? selectedTabs : ['kanban'];
 
@@ -271,12 +265,9 @@ function LegacyApp() {
     };
 
     if (isEdit) {
-        // [CORREÇÃO] Garante que usamos o ID correto para edição
         const targetId = modalState.data.id;
-        
         const updatedProjects = projects.map(p => {
             if (p.id === targetId && !isSub) return { ...p, ...projectData };
-            
             if (p.subProjects && p.subProjects.length > 0) {
                 const updatedSubs = p.subProjects.map(sp => sp.id === targetId ? { ...sp, ...projectData } : sp);
                 return { ...p, subProjects: updatedSubs };
@@ -285,8 +276,6 @@ function LegacyApp() {
         });
         
         updateProjectsState(updatedProjects);
-        
-        // Atualiza a referência visual imediata
         if (currentProject?.id === targetId) setCurrentProject(updatedProjects.find(p => p.id === targetId));
         if (currentSubProject?.id === targetId) {
             const parent = updatedProjects.find(p => p.subProjects.some(sp => sp.id === targetId));
@@ -330,7 +319,6 @@ function LegacyApp() {
     }
   };
 
-  // --- DRAG & DROP ---
   const handleDragStart = (e, item, type, sourceId = null) => {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', JSON.stringify({ id: item.id, type, sourceId }));
@@ -449,19 +437,17 @@ function LegacyApp() {
     if(action === 'save') setModalState({ isOpen: false, type: null });
   };
 
-  // --- RENDERIZADORES ---
-
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-zinc-950 text-zinc-100 p-4">
-        <Card className="w-full max-w-md border-zinc-800 bg-zinc-900/50 backdrop-blur-xl shadow-2xl">
+      <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
+        <Card className="w-full max-w-md border-zinc-800 bg-zinc-950 shadow-2xl glass-panel">
           <CardHeader className="text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center border border-zinc-700 shadow-inner">
-              <img src={logoImage} alt="BrickFlow" className="w-10 h-10 object-contain opacity-90" />
+            <div className="mx-auto">
+              <img src={logoImage} alt="BrickFlow" className="h-12 w-auto object-contain opacity-90 mx-auto" />
             </div>
             <div>
-              <CardTitle className="text-2xl font-bold tracking-tight">BrickFlow OS</CardTitle>
-              <CardDescription className="text-zinc-400">Entre para acessar seu workspace</CardDescription>
+              <CardTitle className="text-2xl font-bold tracking-tight brick-title">BRICKFLOW OS</CardTitle>
+              <CardDescription className="text-zinc-500">Do zero ao todo.</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
@@ -477,9 +463,9 @@ function LegacyApp() {
                   loadUserProjects(userData.userKey);
                 } else { alert("Credenciais inválidas"); }
             }} className="space-y-4">
-              <div className="space-y-2"><Label className="text-zinc-300">Usuário</Label><Input name="username" placeholder="Ex: JOAO" className="bg-zinc-950 border-zinc-800" required /></div>
-              <div className="space-y-2"><Label className="text-zinc-300">PIN</Label><Input name="pin" type="password" placeholder="••••" maxLength={4} className="bg-zinc-950 border-zinc-800 text-center tracking-widest" required /></div>
-              <Button type="submit" className="w-full bg-primary hover:bg-red-600 text-white font-medium">Entrar no Sistema</Button>
+              <div className="space-y-2"><Label className="text-zinc-400 text-xs uppercase tracking-wider">Usuário</Label><Input name="username" placeholder="EX: JOAO" className="bg-black border-zinc-800 focus:border-red-600" required /></div>
+              <div className="space-y-2"><Label className="text-zinc-400 text-xs uppercase tracking-wider">PIN</Label><Input name="pin" type="password" placeholder="••••" maxLength={4} className="bg-black border-zinc-800 text-center tracking-widest focus:border-red-600" required /></div>
+              <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest h-12">Entrar</Button>
             </form>
           </CardContent>
         </Card>
@@ -488,43 +474,42 @@ function LegacyApp() {
   }
 
   const renderHeader = () => (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-zinc-950/80 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60">
-      <div className="container flex h-14 items-center justify-between mx-auto px-4 md:px-8">
-        <div className="flex items-center gap-4">
-          <div onClick={() => setCurrentView('home')} className="cursor-pointer flex items-center gap-2">
+    <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black/90 backdrop-blur">
+      <div className="container flex h-16 items-center justify-between mx-auto px-4 md:px-8">
+        <div className="flex items-center gap-6">
+          <div onClick={() => setCurrentView('home')} className="cursor-pointer flex items-center gap-2 hover:opacity-80 transition-opacity">
              <img src={logoImage} alt="BrickFlow" className="h-8 w-auto object-contain" />
           </div>
           <Separator orientation="vertical" className="h-6 bg-zinc-800" />
           <nav className="flex items-center gap-2 text-sm">
-            <Button variant="ghost" className={currentView === 'home' ? 'text-white' : 'text-zinc-400'} onClick={() => setCurrentView('home')}>Dashboard</Button>
+            <Button variant="ghost" className={`uppercase tracking-wider text-xs font-bold ${currentView === 'home' ? 'text-white' : 'text-zinc-500'}`} onClick={() => setCurrentView('home')}>Dashboard</Button>
             {currentProject && (
               <>
-                <span className="text-zinc-600">/</span>
-                <Button variant="ghost" className="text-zinc-400" onClick={() => setCurrentView('project')}>{currentProject.name}</Button>
+                <span className="text-zinc-700">/</span>
+                <Button variant="ghost" className="uppercase tracking-wider text-xs font-bold text-zinc-500 hover:text-white" onClick={() => setCurrentView('project')}>{currentProject.name}</Button>
               </>
             )}
           </nav>
         </div>
         
         <div className="flex items-center gap-4">
-          {isSyncing && <span className="text-xs text-zinc-500 animate-pulse flex items-center gap-1"><RotateCcw className="h-3 w-3 animate-spin"/> Salvando...</span>}
+          {isSyncing && <MonolithLoader text="SYNC" />}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-auto rounded-full gap-2 px-2 hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
-                <Avatar className="h-7 w-7"><AvatarFallback>{currentUser?.displayName?.charAt(0)}</AvatarFallback></Avatar>
-                <span className="text-xs font-medium text-zinc-300 hidden sm:inline-block">{currentUser?.displayName}</span>
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
+                <Avatar className="h-8 w-8"><AvatarFallback className="bg-zinc-900 text-zinc-400 text-xs">{currentUser?.displayName?.charAt(0)}</AvatarFallback></Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-zinc-950 border-zinc-800" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
+            <DropdownMenuContent className="w-56 bg-zinc-950 border-zinc-800 rounded-none shadow-2xl" align="end">
+              <DropdownMenuLabel className="font-normal p-3">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none text-white">{currentUser?.displayName}</p>
-                  <p className="text-xs leading-none text-zinc-500">@{currentUser?.username}</p>
+                  <p className="text-sm font-bold leading-none text-white uppercase">{currentUser?.displayName}</p>
+                  <p className="text-xs leading-none text-zinc-600">@{currentUser?.username}</p>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-zinc-800" />
-              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer"><RotateCcw className="mr-2 h-4 w-4" /> Trocar Usuário</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:text-red-400 focus:bg-red-950/20 cursor-pointer"><LogOut className="mr-2 h-4 w-4" /> Sair</DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-zinc-900" />
+              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs tracking-wider"><RotateCcw className="mr-2 h-3 w-3" /> Trocar</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-500 focus:bg-red-950/10 cursor-pointer uppercase text-xs tracking-wider"><LogOut className="mr-2 h-3 w-3" /> Sair</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -533,20 +518,20 @@ function LegacyApp() {
   );
 
   const renderHome = () => (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="col-span-2 bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 opacity-10"><Sparkles className="w-24 h-24 text-primary" /></div>
+        <Card className="col-span-2 bg-zinc-950 border-zinc-900 relative overflow-hidden cinema-card group">
+          <div className="absolute top-0 right-0 p-4 opacity-5"><Sparkles className="w-32 h-32 text-red-600" /></div>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-zinc-100"><Sparkles className="w-5 h-5 text-primary" /> Sorte do Dia</CardTitle>
-            <CardDescription className="text-zinc-400 italic">"{dailyPhrase}"</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-zinc-100 uppercase tracking-widest text-sm text-red-600"><Sparkles className="w-4 h-4" /> Sorte do Dia</CardTitle>
+            <CardDescription className="text-zinc-300 text-lg font-light leading-relaxed mt-2 group-hover:text-white transition-colors">"{dailyPhrase}"</CardDescription>
           </CardHeader>
         </Card>
-        <Card className="bg-zinc-900/50 border-zinc-800">
-          <CardHeader><CardTitle className="text-sm uppercase tracking-wider flex gap-2"><Dna className="w-4 h-4" /> Mega Sena</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex justify-between">{megaSenaNumbers.map((num, i) => (
-              <div key={i} className="w-8 h-8 rounded-full bg-emerald-950 border border-emerald-900 text-emerald-400 flex items-center justify-center font-bold text-sm">{num}</div>
+        <Card className="bg-zinc-950 border-zinc-900 cinema-card">
+          <CardHeader><CardTitle className="text-xs uppercase tracking-widest flex gap-2 text-emerald-600"><Dna className="w-4 h-4" /> Mega Sena</CardTitle></CardHeader>
+          <CardContent className="flex items-center justify-center h-full pb-8">
+            <div className="flex flex-wrap justify-center gap-2">{megaSenaNumbers.map((num, i) => (
+              <div key={i} className="w-9 h-9 rounded-none border border-emerald-900/30 bg-emerald-950/10 text-emerald-500 flex items-center justify-center font-mono font-bold text-sm hover:bg-emerald-900/30 hover:border-emerald-500/50 transition-all cursor-default">{num.toString().padStart(2, '0')}</div>
             ))}</div>
           </CardContent>
         </Card>
@@ -554,79 +539,108 @@ function LegacyApp() {
 
       {currentUser?.displayName === 'Fran' && <SudokuGame />}
 
-      <div className="flex justify-between items-end border-b border-zinc-800 pb-2">
-        <h2 className="text-3xl font-bold">Projetos</h2>
-        <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white text-black hover:bg-zinc-200"><Plus className="mr-2 h-4 w-4" /> Novo Projeto</Button>
+      <div className="flex justify-between items-end border-b border-zinc-900 pb-4">
+        <h2 className="text-4xl font-black text-white uppercase tracking-tighter">Projetos</h2>
+        <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white text-black hover:bg-zinc-300 font-bold uppercase tracking-wider rounded-none h-10 px-6"><Plus className="mr-2 h-4 w-4" /> Novo</Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.filter(p => !p.isArchived).map(project => (
-          <Card 
-            key={project.id} 
-            draggable={true}
-            onDragStart={(e) => handleDragStart(e, project, 'project')}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, project.id, 'project')}
-            onClick={() => handleAccessProject(project)} 
-            className="group relative overflow-hidden bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all cursor-pointer hover:shadow-xl active:cursor-grabbing"
-          >
-            <div className={`absolute top-0 left-0 w-1 h-full bg-${project.color}-500 group-hover:w-2 transition-all`} />
-            <CardHeader className="pl-6">
-              <div className="flex justify-between">
-                <CardTitle className="text-xl">{project.name}</CardTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800">
-                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }}>Editar</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-500" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>Excluir</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <CardDescription>{project.description || "Sem descrição"}</CardDescription>
-            </CardHeader>
-            <CardContent className="pl-6 flex gap-2">
-              <Badge variant="outline" className="bg-zinc-950">{project.subProjects?.length || 0} Áreas</Badge>
-              {project.isProtected && <Badge variant="secondary" className="bg-yellow-900/20 text-yellow-500"><Lock className="w-3 h-3 mr-1" /> Privado</Badge>}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {projects.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 opacity-20 hover:opacity-40 transition-opacity">
+          <h1 className="text-8xl font-black text-zinc-800 uppercase tracking-tighter text-center leading-none">DO ZERO<br/>AO TODO</h1>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.filter(p => !p.isArchived).map(project => (
+            <Card 
+              key={project.id} 
+              draggable={true}
+              onDragStart={(e) => handleDragStart(e, project, 'project')}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, project.id, 'project')}
+              onClick={() => handleAccessProject(project)} 
+              className="group aspect-[4/5] relative overflow-hidden bg-zinc-950 border-zinc-900 hover:border-zinc-700 transition-all cursor-pointer hover:shadow-2xl active:cursor-grabbing flex flex-col justify-between"
+            >
+              <div className={`absolute top-0 left-0 w-full h-1 bg-${project.color}-600`} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+              
+              <CardHeader className="relative z-10 pt-8">
+                <div className="flex justify-between items-start">
+                  <Badge variant="outline" className={`bg-${project.color}-950/30 text-${project.color}-500 border-${project.color}-900/50 uppercase text-[10px] tracking-widest rounded-none mb-2`}>
+                     {project.subProjects?.length || 0} Áreas
+                  </Badge>
+                  {project.isProtected && <Lock className="w-3 h-3 text-zinc-600" />}
+                </div>
+                <CardTitle className="text-3xl font-bold text-white uppercase leading-none break-words">{project.name}</CardTitle>
+              </CardHeader>
+
+              <CardContent className="relative z-10">
+                <p className="text-zinc-500 line-clamp-3 text-sm">{project.description || "Descrição não definida."}</p>
+              </CardContent>
+
+              <CardFooter className="relative z-10 border-t border-zinc-900/50 pt-4 flex justify-between items-center bg-black/20 backdrop-blur-sm">
+                 <span className="text-xs text-zinc-700 font-mono uppercase">BRICK.{project.id.slice(-4)}</span>
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-600 hover:text-white"><MoreVertical className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none">
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-xs uppercase tracking-wider">Editar</DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-600 text-xs uppercase tracking-wider" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>Excluir</DropdownMenuItem>
+                    </DropdownMenuContent>
+                 </DropdownMenu>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 
   const renderProjectView = () => (
-    <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => setCurrentView('home')}><ArrowLeft className="h-4 w-4" /></Button>
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">{currentProject.name} {currentProject.isProtected && <Lock className="h-5 w-5 text-zinc-500"/>}</h1>
-          <p className="text-zinc-400">{currentProject.description}</p>
+    <div className="space-y-8 animate-in slide-in-from-right-4 duration-300 pb-20">
+      <div className="flex items-center gap-6 border-b border-zinc-900 pb-6">
+        <Button variant="outline" size="icon" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 rounded-none h-12 w-12"><ArrowLeft className="h-5 w-5" /></Button>
+        <div className="flex-1">
+          <h1 className="text-4xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+            {currentProject.name} 
+            {currentProject.isProtected && <Lock className="h-6 w-6 text-zinc-700"/>}
+          </h1>
+          <p className="text-zinc-500 mt-1 max-w-2xl">{currentProject.description}</p>
         </div>
-        <div className="ml-auto flex gap-2">
-           <Button variant="outline" onClick={() => { setCurrentSubProject(null); setCurrentBoardType('kanban'); setCurrentView('subproject'); }}>Quadro Principal</Button>
-           <Button onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })}><Plus className="mr-2 h-4 w-4" /> Nova Área</Button>
+        <div className="flex gap-2">
+           <Button variant="outline" className="border-zinc-800 hover:bg-zinc-900 rounded-none uppercase text-xs tracking-wider h-12" onClick={() => { setCurrentSubProject(null); setCurrentBoardType('kanban'); setCurrentView('subproject'); }}>Quadro Geral</Button>
+           <Button onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })} className="bg-red-600 hover:bg-red-700 text-white rounded-none uppercase text-xs tracking-wider h-12 px-6"><Plus className="mr-2 h-4 w-4" /> Nova Área</Button>
         </div>
       </div>
-      <Separator className="bg-zinc-800" />
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {currentProject.subProjects?.filter(s => !s.isArchived).map(sub => (
-          <Card key={sub.id} onClick={() => handleAccessProject(sub, 'subproject')} className="cursor-pointer bg-zinc-900 border-zinc-800 hover:bg-zinc-800/80 transition-all">
+          <Card key={sub.id} onClick={() => handleAccessProject(sub, 'subproject')} className="group cursor-pointer bg-zinc-950 border-zinc-900 hover:border-red-900/50 transition-all duration-300 hover:bg-zinc-900 rounded-none relative">
+            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white"><MoreVertical className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none">
+                  <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub }); }} className="text-xs uppercase">Editar</DropdownMenuItem>
+                  <DropdownMenuItem className="text-red-600 text-xs uppercase" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <CardHeader>
-              <div className="flex justify-between">
-                <div className={`p-2 rounded bg-${sub.color || 'zinc'}-500/20 text-${sub.color || 'zinc'}-500`}><FolderOpen className="h-5 w-5" /></div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800">
-                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub }); }}>Editar</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-500" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <div className="flex items-center gap-3 mb-4">
+                 <div className={`w-1 h-8 bg-${sub.color || 'zinc'}-600`} />
+                 <FolderOpen className={`h-5 w-5 text-${sub.color || 'zinc'}-600`} />
               </div>
-              <CardTitle className="mt-4">{sub.name}</CardTitle>
-              <CardDescription>{sub.description}</CardDescription>
+              <CardTitle className="text-xl uppercase tracking-wide text-white">{sub.name}</CardTitle>
+              <CardDescription className="text-zinc-500 text-sm line-clamp-2">{sub.description}</CardDescription>
             </CardHeader>
           </Card>
         ))}
+        {/* Card Vazio para Adicionar */}
+        <div 
+          onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })}
+          className="border border-dashed border-zinc-900 hover:border-zinc-700 bg-transparent flex flex-col items-center justify-center h-full min-h-[200px] cursor-pointer group transition-all"
+        >
+          <Plus className="h-8 w-8 text-zinc-800 group-hover:text-zinc-600 mb-2 transition-colors" />
+          <span className="text-xs uppercase tracking-widest text-zinc-800 group-hover:text-zinc-600">Criar Área</span>
+        </div>
       </div>
     </div>
   );
@@ -638,53 +652,53 @@ function LegacyApp() {
     const enabledTabs = currentEntity.enabledTabs || DEFAULT_TABS;
 
     return (
-      <div className="flex flex-col h-[calc(100vh-8rem)]">
-        <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col h-[calc(100vh-6rem)]">
+        <div className="flex items-center justify-between mb-6 border-b border-zinc-900 pb-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => setCurrentView(currentSubProject ? 'project' : 'home')}><ArrowLeft className="mr-2 h-4 w-4" /> Voltar</Button>
-            <h2 className="text-2xl font-bold">{entityName}</h2>
+            <Button variant="ghost" size="sm" onClick={() => setCurrentView(currentSubProject ? 'project' : 'home')} className="text-zinc-500 hover:text-white uppercase text-xs tracking-widest"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight">{entityName}</h2>
           </div>
           <Tabs value={currentBoardType} onValueChange={setCurrentBoardType}>
-            <TabsList className="bg-zinc-900 border border-zinc-800">
-              {enabledTabs.includes('kanban') && <TabsTrigger value="kanban">Kanban</TabsTrigger>}
-              {enabledTabs.includes('todo') && <TabsTrigger value="todo">Lista</TabsTrigger>}
-              {enabledTabs.includes('files') && <TabsTrigger value="files">Arquivos</TabsTrigger>}
-              {enabledTabs.includes('goals') && <TabsTrigger value="goals">Metas</TabsTrigger>}
+            <TabsList className="bg-black border border-zinc-800 rounded-none h-10 p-0">
+              {enabledTabs.includes('kanban') && <TabsTrigger value="kanban" className="rounded-none uppercase text-xs tracking-wider h-full data-[state=active]:bg-zinc-900 data-[state=active]:text-white">Kanban</TabsTrigger>}
+              {enabledTabs.includes('todo') && <TabsTrigger value="todo" className="rounded-none uppercase text-xs tracking-wider h-full data-[state=active]:bg-zinc-900 data-[state=active]:text-white">Lista</TabsTrigger>}
+              {enabledTabs.includes('files') && <TabsTrigger value="files" className="rounded-none uppercase text-xs tracking-wider h-full data-[state=active]:bg-zinc-900 data-[state=active]:text-white">Arquivos</TabsTrigger>}
+              {enabledTabs.includes('goals') && <TabsTrigger value="goals" className="rounded-none uppercase text-xs tracking-wider h-full data-[state=active]:bg-zinc-900 data-[state=active]:text-white">Metas</TabsTrigger>}
             </TabsList>
           </Tabs>
         </div>
 
-        <div className="flex-1 bg-zinc-950/30 border border-zinc-800 rounded-xl overflow-hidden relative">
-          <div className="absolute inset-0 p-4 overflow-auto">
+        <div className="flex-1 overflow-hidden relative bg-black">
+          <div className="absolute inset-0 overflow-auto pr-2">
             {/* KANBAN */}
             {currentBoardType === 'kanban' && (
-              <div className="flex h-full gap-6 min-w-max">
+              <div className="flex h-full gap-4 min-w-max pb-4">
                 {data.lists?.map(list => (
-                  <div key={list.id} className="w-80 flex flex-col h-full bg-zinc-900/40 rounded-xl border border-zinc-800/50"
+                  <div key={list.id} className="w-80 flex flex-col h-full bg-zinc-950 border border-zinc-900"
                        onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, list.id, 'list')}>
-                    <div className="p-3 border-b border-zinc-800 flex justify-between items-center">
-                      <span className="font-semibold text-zinc-300">{list.title}</span>
-                      <Badge variant="secondary" className="bg-zinc-800 text-zinc-500">{list.tasks?.length || 0}</Badge>
+                    <div className="p-4 border-b border-zinc-900 flex justify-between items-center bg-black/50">
+                      <span className="font-bold text-xs uppercase tracking-widest text-zinc-400">{list.title}</span>
+                      <span className="text-zinc-600 text-xs font-mono">{list.tasks?.length || 0}</span>
                     </div>
                     <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
                       {list.tasks?.map(task => (
                         <Card key={task.id} draggable onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
                               onDragEnter={(e) => handleDragEnter(e, task.id)}
                               onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}
-                              className={`bg-zinc-900 border-zinc-800 hover:border-zinc-600 cursor-grab active:cursor-grabbing ${dragOverTargetId === task.id ? 'border-t-2 border-t-primary' : ''}`}>
+                              className={`bg-zinc-900/50 border-zinc-800 hover:border-zinc-600 cursor-grab active:cursor-grabbing rounded-none shadow-none group ${dragOverTargetId === task.id ? 'border-t-2 border-t-red-600' : ''}`}>
                           <CardContent className="p-3">
                             <div className="flex justify-between items-start mb-2">
-                              <span className="text-sm font-medium text-zinc-200">{task.title}</span>
-                              {task.priority === 'high' && <div className="h-2 w-2 rounded-full bg-red-500 shrink-0" />}
+                              <span className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">{task.title}</span>
+                              {task.priority === 'high' && <div className="h-1.5 w-1.5 rounded-full bg-red-600 shrink-0" />}
                             </div>
-                            <div className="flex items-center justify-between text-xs text-zinc-500">
+                            <div className="flex items-center justify-between text-[10px] text-zinc-600 uppercase tracking-wide">
                               {task.responsibleUsers?.length > 0 && <ResponsibleUsersButton users={task.responsibleUsers} />}
                               {task.endDate && <span>{new Date(task.endDate).toLocaleDateString().slice(0,5)}</span>}
                             </div>
                           </CardContent>
                         </Card>
                       ))}
-                      <Button variant="ghost" className="w-full border border-dashed border-zinc-800 text-zinc-500 hover:text-zinc-300 mt-2"
+                      <Button variant="ghost" className="w-full border border-dashed border-zinc-900 text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900/50 rounded-none h-10 uppercase text-xs tracking-widest"
                         onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
                         <Plus className="h-3 w-3 mr-2" /> Adicionar
                       </Button>
@@ -696,24 +710,27 @@ function LegacyApp() {
 
             {/* TODO LIST */}
             {currentBoardType === 'todo' && (
-              <div className="max-w-4xl mx-auto space-y-6">
+              <div className="max-w-4xl mx-auto space-y-8">
                 {data.lists?.map(list => (
-                  <div key={list.id} className="space-y-2">
-                    <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider pl-1">{list.title}</h3>
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg divide-y divide-zinc-800">
+                  <div key={list.id} className="space-y-1">
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest pl-2 mb-2">{list.title}</h3>
+                    <div className="bg-zinc-950 border border-zinc-900 divide-y divide-zinc-900">
                       {list.tasks?.map(task => (
-                        <div key={task.id} className="p-3 flex items-center gap-4 hover:bg-zinc-800/50 transition-colors">
-                          <Checkbox checked={list.title === 'Concluído'} className="border-zinc-700" />
+                        <div key={task.id} className="p-3 flex items-center gap-4 hover:bg-zinc-900 transition-colors group">
+                          <Checkbox checked={list.title === 'Concluído'} className="border-zinc-800 data-[state=checked]:bg-zinc-700 data-[state=checked]:border-zinc-700 rounded-none" />
                           <div className="flex-1 cursor-pointer" onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}>
-                            <p className="text-sm font-medium text-zinc-200">{task.title}</p>
+                            <p className="text-sm text-zinc-300 group-hover:text-white transition-colors">{task.title}</p>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-600 hover:text-red-500" 
-                                  onClick={() => handleTaskAction('delete', { taskId: task.id })}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <div className="opacity-0 group-hover:opacity-100 flex items-center gap-2">
+                            <span className="text-[10px] uppercase text-zinc-600">{task.priority}</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-600 hover:text-red-600" 
+                                    onClick={() => handleTaskAction('delete', { taskId: task.id })}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
-                      <Button variant="ghost" className="w-full text-xs text-zinc-500 justify-start h-10 px-4" onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
+                      <Button variant="ghost" className="w-full text-xs text-zinc-600 hover:text-zinc-400 justify-start h-10 px-4 uppercase tracking-widest rounded-none" onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
                         <Plus className="h-3 w-3 mr-2" /> Adicionar item
                       </Button>
                     </div>
@@ -722,25 +739,32 @@ function LegacyApp() {
               </div>
             )}
 
-            {/* FILES */}
+            {/* FILES (Com Visual Monolito no Upload) */}
             {currentBoardType === 'files' && (
               <div 
-                className={`space-y-6 min-h-[400px] relative rounded-xl transition-colors ${isFileDragging ? 'bg-zinc-900/50 border-2 border-dashed border-primary/50' : ''}`}
+                className={`space-y-6 min-h-[400px] relative transition-colors p-4 ${isFileDragging ? 'bg-zinc-900/30 border border-dashed border-red-900' : ''}`}
                 onDragOver={(e) => { e.preventDefault(); setIsFileDragging(true); }}
                 onDragLeave={(e) => { e.preventDefault(); setIsFileDragging(false); }}
                 onDrop={handleFileDrop}
               >
                 {(isFileDragging || isUploading) && (
-                  <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm rounded-xl">
-                    <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-800 shadow-2xl flex flex-col items-center">
-                      {isUploading ? <Loader2 className="w-12 h-12 text-primary animate-spin mb-2" /> : <Upload className="w-12 h-12 text-primary animate-bounce mb-2" />}
-                      <p className="text-white font-medium">{isUploading ? 'Enviando arquivos...' : 'Solte os arquivos aqui'}</p>
-                    </div>
+                  <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm">
+                    {isUploading ? (
+                       <MonolithLoader text="UPLOADING" />
+                    ) : (
+                       <div className="text-center animate-bounce">
+                          <Upload className="w-16 h-16 text-zinc-500 mx-auto mb-4" />
+                          <p className="text-white font-black text-2xl uppercase tracking-widest">Solte os Arquivos</p>
+                       </div>
+                    )}
                   </div>
                 )}
 
-                <div className="flex justify-between items-center bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
-                  <div><h3 className="text-lg font-medium text-white">Arquivos</h3><p className="text-sm text-zinc-500">Documentos do projeto.</p></div>
+                <div className="flex justify-between items-center bg-zinc-950 p-6 border border-zinc-900">
+                  <div>
+                    <h3 className="text-xl font-bold text-white uppercase tracking-tight">Central de Arquivos</h3>
+                    <p className="text-xs text-zinc-500 mt-1 uppercase tracking-widest">Documentação e Ativos</p>
+                  </div>
                   <div className="relative">
                     <Input 
                       type="file" 
@@ -748,26 +772,28 @@ function LegacyApp() {
                       multiple 
                       onChange={handleFileUploadWithFeedback} 
                     />
-                    <Button className="bg-white text-black hover:bg-zinc-200">
+                    <Button className="bg-white text-black hover:bg-zinc-300 uppercase tracking-widest text-xs font-bold rounded-none h-10 px-6">
                       <Upload className="mr-2 h-4 w-4" /> Upload
                     </Button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {files?.filter(f => f.subProjectId === (currentSubProject?.id || null)).map(file => (
-                    <Card key={file.id} className="bg-zinc-900 border-zinc-800 hover:border-zinc-600 transition-all group relative">
-                      <CardContent className="p-4 flex flex-col items-center text-center gap-3">
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                          <Button size="icon" variant="destructive" className="h-6 w-6" onClick={() => handleDeleteFile(file.id)}>
+                    <Card key={file.id} className="bg-zinc-950 border-zinc-900 hover:border-zinc-700 transition-all group relative rounded-none aspect-square flex flex-col items-center justify-center hover:bg-zinc-900/50">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-zinc-500 hover:text-red-600" onClick={() => handleDeleteFile(file.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
-                        </div>
-                        <div className="h-12 w-12 rounded bg-zinc-950 flex items-center justify-center text-2xl border border-zinc-800">{file.type?.includes('image') ? '🖼️' : '📄'}</div>
-                        <div className="w-full"><p className="text-sm font-medium truncate text-zinc-200" title={file.name}>{file.name}</p><p className="text-xs text-zinc-500">{formatFileSize(file.size)}</p></div>
-                        <Button variant="outline" size="sm" className="w-full h-7 text-xs border-zinc-800" asChild>
-                          <a href={file.data} download={file.name}><Download className="mr-2 h-3 w-3" /> Baixar</a>
-                        </Button>
-                      </CardContent>
+                      </div>
+                      <div className="mb-3 text-4xl opacity-50 group-hover:opacity-100 transition-opacity grayscale group-hover:grayscale-0">
+                        {file.type?.includes('image') ? '🖼️' : file.type?.includes('pdf') ? '📄' : '📦'}
+                      </div>
+                      <p className="text-xs text-zinc-400 font-medium truncate w-full text-center px-2">{file.name}</p>
+                      <p className="text-[9px] text-zinc-600 uppercase tracking-widest mt-1">{formatFileSize(file.size)}</p>
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 backdrop-blur-sm gap-2">
+                         <a href={file.data} download={file.name} className="text-white hover:text-red-500"><Download className="w-5 h-5"/></a>
+                      </div>
                     </Card>
                   ))}
                 </div>
@@ -780,19 +806,21 @@ function LegacyApp() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/20 selection:text-primary">
+    <div className="min-h-screen bg-black text-foreground flex flex-col font-sans selection:bg-red-900/30 selection:text-white overflow-hidden">
       {renderHeader()}
-      <main className="flex-1 container mx-auto p-4 md:p-6 lg:p-8 pt-6">
-        {currentView === 'home' && renderHome()}
-        {currentView === 'project' && renderProjectView()}
-        {currentView === 'subproject' && renderBoard()}
+      <main className="flex-1 container mx-auto p-4 md:p-6 lg:p-8 pt-6 h-[calc(100vh-4rem)] overflow-hidden">
+        <div className="h-full overflow-y-auto pr-2 custom-scrollbar">
+          {currentView === 'home' && renderHome()}
+          {currentView === 'project' && renderProjectView()}
+          {currentView === 'subproject' && renderBoard()}
+        </div>
       </main>
 
       {/* MODAL GLOBAL */}
       <Dialog open={modalState.isOpen} onOpenChange={(open) => !open && setModalState({ ...modalState, isOpen: false })}>
-        <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-zinc-100 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="sm:max-w-[500px] bg-black border-zinc-800 text-zinc-100 max-h-[90vh] overflow-y-auto rounded-none shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+          <DialogHeader className="border-b border-zinc-900 pb-4">
+            <DialogTitle className="text-xl font-black uppercase tracking-tight">
               {modalState.type === 'project' && (modalState.mode === 'create' ? 'Novo Projeto' : 'Editar Projeto')}
               {modalState.type === 'subProject' && (modalState.mode === 'create' ? 'Nova Área' : 'Editar Área')}
               {modalState.type === 'password' && 'Acesso Restrito'}
@@ -802,10 +830,10 @@ function LegacyApp() {
           
           {modalState.type === 'password' ? (
             <form onSubmit={(e) => { e.preventDefault(); handlePasswordSubmit(new FormData(e.target).get('password')); }}>
-              <div className="space-y-4 py-4">
-                <p className="text-zinc-400">Este conteúdo é protegido por senha.</p>
-                <Input type="password" name="password" placeholder="Senha do projeto" autoFocus className="bg-zinc-900 border-zinc-800" />
-                <Button type="submit" className="w-full">Acessar</Button>
+              <div className="space-y-6 py-6">
+                <p className="text-zinc-400 text-sm">Este conteúdo é protegido por senha.</p>
+                <Input type="password" name="password" placeholder="SENHA" autoFocus className="bg-zinc-950 border-zinc-800 rounded-none h-12 text-center tracking-[0.5em] uppercase" />
+                <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 rounded-none h-12 uppercase font-bold tracking-widest">Acessar</Button>
               </div>
             </form>
           ) : (
@@ -814,68 +842,90 @@ function LegacyApp() {
               const formData = Object.fromEntries(new FormData(e.target));
               if (modalState.type === 'project' || modalState.type === 'subProject') handleSaveProject(formData);
               if (modalState.type === 'task') handleTaskAction('save', formData);
-            }} className="space-y-4 py-4">
+            }} className="space-y-6 py-6">
               
               {(modalState.type === 'project' || modalState.type === 'subProject') && (
                 <>
                   <div className="space-y-2">
-                    <Label>Nome</Label>
-                    <Input name="name" defaultValue={modalState.data?.name} required className="bg-zinc-900 border-zinc-800" />
+                    <Label className="text-xs uppercase tracking-widest text-zinc-500">Nome</Label>
+                    <Input name="name" defaultValue={modalState.data?.name} required className="bg-zinc-950 border-zinc-800 rounded-none h-10 focus:border-white" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Descrição</Label>
-                    <Textarea name="description" defaultValue={modalState.data?.description} className="bg-zinc-900 border-zinc-800" />
+                    <Label className="text-xs uppercase tracking-widest text-zinc-500">Descrição</Label>
+                    <Textarea name="description" defaultValue={modalState.data?.description} className="bg-zinc-950 border-zinc-800 rounded-none" />
                   </div>
-                  <div className="space-y-3 pt-2">
-                    <Label>Visualizações Habilitadas</Label>
-                    <div className="grid grid-cols-2 gap-2">
+                  
+                  <div className="space-y-3 pt-2 border-t border-zinc-900">
+                    <Label className="text-xs uppercase tracking-widest text-zinc-500">Visualizações</Label>
+                    <div className="grid grid-cols-2 gap-3">
                       {ALL_TABS.map(tab => (
-                        <div key={tab.id} className="flex items-center space-x-2 border border-zinc-800 p-2 rounded-md bg-zinc-900/50">
+                        <div key={tab.id} className="flex items-center space-x-3 border border-zinc-900 p-3 bg-zinc-950/50 hover:bg-zinc-900 transition-colors">
                           <Checkbox 
                             id={`view_${tab.id}`} 
                             name={`view_${tab.id}`} 
                             defaultChecked={!modalState.data || (modalState.data.enabledTabs && modalState.data.enabledTabs.includes(tab.id))}
+                            className="rounded-none border-zinc-700 data-[state=checked]:bg-white data-[state=checked]:text-black"
                           />
-                          <Label htmlFor={`view_${tab.id}`} className="flex items-center gap-2 cursor-pointer">
-                            <tab.icon className="h-4 w-4 text-zinc-400" /> {tab.label}
+                          <Label htmlFor={`view_${tab.id}`} className="flex items-center gap-2 cursor-pointer text-sm text-zinc-300 uppercase tracking-wide">
+                            <tab.icon className="h-3 w-3 text-zinc-500" /> {tab.label}
                           </Label>
                         </div>
                       ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 pt-2">
+
+                  <div className="grid grid-cols-2 gap-6 pt-2">
                     <div className="space-y-2">
-                      <Label>Cor</Label>
+                      <Label className="text-xs uppercase tracking-widest text-zinc-500">Cor</Label>
                       <Select name="color" defaultValue={modalState.data?.color || "blue"}>
-                        <SelectTrigger className="bg-zinc-900 border-zinc-800"><SelectValue /></SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                          {USER_COLORS.map(c => <SelectItem key={c} value={c}>{c.toUpperCase()}</SelectItem>)}
+                        <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-none h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-zinc-950 border-zinc-800 rounded-none">
+                          {USER_COLORS.map(c => <SelectItem key={c} value={c} className="uppercase text-xs tracking-wider">{c}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="flex items-end pb-2 gap-2">
-                      <Checkbox id="prot" name="isProtected" defaultChecked={modalState.data?.isProtected} />
-                      <Label htmlFor="prot">Proteger com Senha</Label>
+                    <div className="flex items-end pb-3 gap-2">
+                      <Checkbox id="prot" name="isProtected" defaultChecked={modalState.data?.isProtected} className="rounded-none border-zinc-700" />
+                      <Label htmlFor="prot" className="text-sm text-zinc-300 cursor-pointer">Proteger com Senha</Label>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>Senha (Opcional)</Label>
-                    <Input name="password" type="password" defaultValue={modalState.data?.password} className="bg-zinc-900 border-zinc-800" />
+                    <Label className="text-xs uppercase tracking-widest text-zinc-500">Senha (Opcional)</Label>
+                    <Input name="password" type="password" defaultValue={modalState.data?.password} className="bg-zinc-950 border-zinc-800 rounded-none h-10" />
                   </div>
                 </>
               )}
 
               {modalState.type === 'task' && (
                 <>
-                  <div className="space-y-2"><Label>Título</Label><Input name="title" defaultValue={modalState.data?.title} required className="bg-zinc-900 border-zinc-800" /></div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Prioridade</Label><Select name="priority" defaultValue={modalState.data?.priority || 'medium'}><SelectTrigger className="bg-zinc-900 border-zinc-800"><SelectValue /></SelectTrigger><SelectContent className="bg-zinc-900 border-zinc-800"><SelectItem value="low">Baixa</SelectItem><SelectItem value="medium">Média</SelectItem><SelectItem value="high">Alta</SelectItem></SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Prazo</Label><Input type="date" name="endDate" defaultValue={modalState.data?.endDate} className="bg-zinc-900 border-zinc-800" /></div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-widest text-zinc-500">Título</Label>
+                    <Input name="title" defaultValue={modalState.data?.title} required className="bg-zinc-950 border-zinc-800 rounded-none h-12 text-lg font-bold" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-widest text-zinc-500">Prioridade</Label>
+                        <Select name="priority" defaultValue={modalState.data?.priority || 'medium'}>
+                            <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-none"><SelectValue /></SelectTrigger>
+                            <SelectContent className="bg-zinc-950 border-zinc-800 rounded-none">
+                                <SelectItem value="low">BAIXA</SelectItem>
+                                <SelectItem value="medium">MÉDIA</SelectItem>
+                                <SelectItem value="high">ALTA</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-widest text-zinc-500">Prazo</Label>
+                        <Input type="date" name="endDate" defaultValue={modalState.data?.endDate} className="bg-zinc-950 border-zinc-800 rounded-none" />
+                    </div>
                   </div>
                 </>
               )}
 
-              <DialogFooter><Button type="submit">Salvar</Button></DialogFooter>
+              <DialogFooter className="pt-4 border-t border-zinc-900">
+                <Button type="button" variant="ghost" onClick={() => setModalState({ ...modalState, isOpen: false })} className="hover:bg-zinc-900 rounded-none uppercase text-xs tracking-widest">Cancelar</Button>
+                <Button type="submit" className="bg-white text-black hover:bg-zinc-200 rounded-none uppercase text-xs font-bold tracking-widest px-8">Salvar</Button>
+              </DialogFooter>
             </form>
           )}
         </DialogContent>
