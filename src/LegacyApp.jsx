@@ -4,7 +4,7 @@ import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import { formatFileSize } from './utils/formatFileSize';
 import { absurdPhrases } from './utils/phrases';
-import { supabase } from './lib/supabaseClient';
+import { supabase, hasSupabaseConfig, supabaseConfigError } from './lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
@@ -135,7 +135,7 @@ function LegacyApp() {
 
   const saveTimeoutRef = useRef(null);
   useEffect(() => {
-    if (projects.length > 0 && isLoggedIn && currentUser) {
+    if (projects.length > 0 && isLoggedIn && currentUser && hasSupabaseConfig) {
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
       
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -173,6 +173,7 @@ function LegacyApp() {
   }, [projects, isLoggedIn, currentUser]);
 
   const loadAllUsers = async () => {
+    if (!hasSupabaseConfig) return;
     try {
       const { data, error } = await supabase.from('brickflow_users').select('*');
       if (!error && data) setAllUsers(data);
@@ -180,6 +181,7 @@ function LegacyApp() {
   };
 
   const loadUserProjects = async (userKey) => {
+    if (!hasSupabaseConfig) return;
     try {
       const { data, error } = await supabase.from('brickflow_data').select('*');
       if (!error && data && data.length > 0 && data[0].data) {
@@ -437,6 +439,38 @@ function LegacyApp() {
     else setCurrentProject(newProj);
     if(action === 'save') setModalState({ isOpen: false, type: null });
   };
+
+  if (!hasSupabaseConfig) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
+        <Card className="w-full max-w-xl border-zinc-900 bg-black shadow-2xl">
+          <CardHeader className="space-y-6 text-center">
+            <div className="mx-auto">
+              <img src={logoImage} alt="BrickFlow" className="h-16 w-auto object-contain opacity-90 mx-auto" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl font-black tracking-tighter brick-title text-white">
+                SUPABASE DESATIVADO
+              </CardTitle>
+              <CardDescription className="text-zinc-500 text-xs font-mono uppercase tracking-widest mt-2">
+                O app não pode iniciar sem conexão com o Supabase
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="border border-zinc-900 bg-zinc-950 p-4 font-mono text-[11px] text-zinc-400">
+              {supabaseConfigError}
+            </div>
+            <div className="text-[11px] text-zinc-500 font-mono uppercase tracking-widest space-y-2">
+              <p>Configure as variáveis no ambiente ou no arquivo .env:</p>
+              <p>VITE_SUPABASE_URL</p>
+              <p>VITE_SUPABASE_ANON_KEY</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (
