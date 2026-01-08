@@ -120,7 +120,8 @@ const INITIAL_STATE = {
     { username: 'admin', pin: '1234', displayName: 'Admin', color: 'red', avatar: '' },
     { username: 'fran', pin: '1234', displayName: 'Fran', color: 'purple', avatar: '' }
   ],
-  projects: []
+  projects: [],
+  version: 0
 };
 
 const COLOR_VARIANTS = {
@@ -143,6 +144,9 @@ const ALL_TABS = [
 
 export default function App() {
   const [appData, setAppData] = useState(null); 
+  const appDataRef = useRef(null);
+  const currentUserRef = useRef(null);
+  const saveQueueRef = useRef(Promise.resolve());
   const [currentView, setCurrentView] = useState('home');
   const [currentProject, setCurrentProject] = useState(null);
   const [currentSubProject, setCurrentSubProject] = useState(null);
@@ -159,6 +163,79 @@ export default function App() {
   const [projectHistory, setProjectHistory] = useState([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(false);
+
+  useEffect(() => {
+    appDataRef.current = appData;
+  }, [appData]);
+
+  const normalizeApiState = useCallback((data) => {
+    if (!data) return null;
+    if (Array.isArray(data)) {
+      return { ...INITIAL_STATE, projects: data };
+    }
+    return {
+      ...INITIAL_STATE,
+      ...data,
+      version: typeof data.version === 'number' ? data.version : 0
+    };
+  }, []);
+
+  const createRequestId = useCallback(() => {
+    if (crypto?.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }, []);
+
+  // --- SYNC ---
+  const saveDataToApi = useCallback(async (newData) => {
+    setIsSyncing(true);
+    try {
+      const requestId = createRequestId();
+      const payload = {
+        data: newData,
+        version: newData?.version ?? 0,
+        client_request_id: requestId,
+        userId: currentUserRef.current?.username
+      };
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (response.status === 409) {
+        const conflict = await response.json();
+        const refreshResponse = await fetch('/api/projects');
+        if (refreshResponse.ok) {
+          const latest = await refreshResponse.json();
+          const normalized = normalizeApiState(latest) ?? INITIAL_STATE;
+          setAppData(normalized);
+        }
+        console.warn('Conflito de versão detectado:', conflict);
+        return;
+      }
+      if (response.ok) {
+        const result = await response.json();
+        if (typeof result.version === 'number') {
+          setAppData(prev => prev ? { ...prev, version: result.version } : prev);
+        }
+        setConnectionError(false); 
+      }
+    } catch (e) {
+      console.error("Erro ao salvar:", e);
+      setConnectionError(true);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [createRequestId, normalizeApiState]);
+
+  const enqueueSave = useCallback((explicitData) => {
+    saveQueueRef.current = saveQueueRef.current.then(async () => {
+      const dataToSave = explicitData ?? appDataRef.current;
+      if (!dataToSave) return;
+      await saveDataToApi(dataToSave);
+    });
+  }, [saveDataToApi]);
 
   // --- CARREGAMENTO ---
   useEffect(() => {
@@ -186,12 +263,12 @@ export default function App() {
         
         if (!data || (Array.isArray(data) && data.length === 0)) {
           data = INITIAL_STATE;
-          saveDataToApi(data);
+          enqueueSave(data);
         } else if (Array.isArray(data)) {
           data = { ...INITIAL_STATE, projects: data };
-          saveDataToApi(data);
+          enqueueSave(data);
         }
-        setAppData(data);
+        setAppData(normalizeApiState(data));
         setInitialLoadSuccess(true);
       } catch (err) {
         console.error("Erro:", err);
@@ -203,33 +280,16 @@ export default function App() {
     };
     loadData();
     return () => clearTimeout(slowLoadTimer);
-  }, []);
-
-  // --- SYNC ---
-  const saveDataToApi = async (newData) => {
-    setIsSyncing(true);
-    try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: newData, userId: currentUser?.username })
-      });
-      if (response.ok) setConnectionError(false); 
-    } catch (e) {
-      console.error("Erro ao salvar:", e);
-      setConnectionError(true);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+  }, [enqueueSave, normalizeApiState]);
 
   const updateGlobalState = useCallback((updater) => {
     setAppData(prev => {
       const newState = typeof updater === 'function' ? updater(prev) : updater;
-      saveDataToApi(newState); 
+      appDataRef.current = newState;
+      enqueueSave();
       return newState;
     });
-  }, []);
+  }, [enqueueSave]);
 
   const updateProjects = (updater) => {
     updateGlobalState(prev => ({ 
@@ -246,6 +306,10 @@ export default function App() {
     currentUser, isLoggedIn, handleLogin, handleCreateUser, handleLogout, handleSwitchUser,
     showLoginModal, setShowLoginModal, showCreateUserModal, setShowCreateUserModal
   } = useUsers(appData?.users, updateUsers);
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
 
   const fetchProjectHistory = useCallback(async (projectId) => {
     if (!projectId) return;
@@ -276,9 +340,7 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Falha ao restaurar');
       const result = await response.json();
-      const normalizedData = Array.isArray(result.data)
-        ? { ...INITIAL_STATE, projects: result.data }
-        : result.data;
+      const normalizedData = normalizeApiState(result.data) ?? INITIAL_STATE;
       setAppData(normalizedData);
       const nextProjects = normalizedData?.projects || [];
       const updatedProject = nextProjects.find(project => project.id === currentProject.id) || null;
