@@ -19,7 +19,7 @@ function LegacyProjectView({
 }) {
   // CORREÇÃO ERRO #310: Hook elevado para o Top-Level
   const activeSubProjects = useMemo(() => {
-    return currentProject?.subProjects?.filter(s => !s.isArchived) || [];
+    return currentProject?.subProjects?.filter(s => !s.isArchived && !s.deleted_at) || [];
   }, [currentProject]);
 
   const usersMap = useMemo(() => {

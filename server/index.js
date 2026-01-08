@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 import { getClient, query } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -182,6 +183,22 @@ const getProjectChanges = (previousState, nextState) => {
   return changes;
 };
 
+const createClientRequestId = (prefix) => {
+  if (typeof randomUUID === 'function') {
+    return `${prefix}-${randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
+const getLatestStateRecord = async () => {
+  const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
+  if (rows.length > 0) {
+    return rows[0];
+  }
+  const fallback = await query('SELECT data, version FROM brickflow_state ORDER BY id DESC LIMIT 1');
+  return fallback.rows[0] || null;
+};
+
 // --- API ROUTES ---
 
 // Rota para buscar o estado atual
@@ -210,6 +227,116 @@ app.get('/api/projects', async (req, res) => {
     } else {
        res.status(500).json({ error: 'Erro interno ao buscar dados' });
     }
+  }
+});
+
+app.get('/api/trash', async (req, res) => {
+  try {
+    const record = await getLatestStateRecord();
+    if (!record) {
+      return res.json({ projects: [], subProjects: [] });
+    }
+
+    const normalized = normalizeStateData(record.data) ?? { projects: [] };
+    const projects = getProjectsFromState(normalized);
+    const deletedProjects = projects.filter(project => project.deleted_at);
+    const deletedSubProjects = projects.flatMap(project => (
+      (project.subProjects || [])
+        .filter(subProject => subProject.deleted_at)
+        .map(subProject => ({
+          ...subProject,
+          projectId: project.id,
+          projectName: project.name
+        }))
+    ));
+
+    res.json({ projects: deletedProjects, subProjects: deletedSubProjects });
+  } catch (err) {
+    console.error('Erro ao listar lixeira:', err);
+    res.status(500).json({ error: 'Erro interno ao listar lixeira' });
+  }
+});
+
+app.post('/api/trash/restore', async (req, res) => {
+  const { type, id, projectId } = req.body;
+
+  if (!type || !id) {
+    return res.status(400).json({ error: 'Tipo e ID são obrigatórios' });
+  }
+
+  const client = await getClient();
+
+  try {
+    await client.query('BEGIN');
+    const stateResult = await client.query(
+      'SELECT data, version FROM brickflow_state WHERE id = 1 FOR UPDATE'
+    );
+
+    if (stateResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Estado não encontrado' });
+    }
+
+    const currentVersion = stateResult.rows[0].version ?? 0;
+    const normalized = normalizeStateData(stateResult.rows[0].data) ?? { projects: [] };
+    const projects = getProjectsFromState(normalized);
+    let updatedProjects = projects;
+    let found = false;
+
+    if (type === 'project') {
+      updatedProjects = projects.map(project => {
+        if (project.id !== id) return project;
+        found = true;
+        return { ...project, deleted_at: null };
+      });
+    } else if (type === 'subProject') {
+      if (!projectId) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Project ID é obrigatório para restaurar área' });
+      }
+      updatedProjects = projects.map(project => {
+        if (project.id !== projectId) return project;
+        const subProjects = (project.subProjects || []).map(subProject => {
+          if (subProject.id !== id) return subProject;
+          found = true;
+          return { ...subProject, deleted_at: null };
+        });
+        return { ...project, subProjects };
+      });
+    } else {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Tipo inválido' });
+    }
+
+    if (!found) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Item não encontrado' });
+    }
+
+    const nextVersion = currentVersion + 1;
+    const updatedState = { ...normalized, projects: updatedProjects, version: nextVersion };
+    const clientRequestId = `trash-restore-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    await client.query(
+      `INSERT INTO brickflow_state (id, data, updated_at, version)
+       VALUES (1, $1, CURRENT_TIMESTAMP, $2)
+       ON CONFLICT (id) DO UPDATE
+       SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP, version = EXCLUDED.version`,
+      [JSON.stringify(updatedState), nextVersion]
+    );
+    await client.query(
+      'INSERT INTO brickflow_events (client_request_id, data) VALUES ($1, $2)',
+      [clientRequestId, JSON.stringify(updatedState)]
+    );
+    await client.query('COMMIT');
+
+    res.json({ success: true, data: updatedState });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Erro ao restaurar lixeira:', err);
+    res.status(500).json({ error: 'Erro interno ao restaurar item' });
+  } finally {
+    client.release();
   }
 });
 
@@ -261,7 +388,11 @@ app.post('/api/projects', async (req, res) => {
           [client_request_id]
         );
         if (rows.length > 0) {
-          return res.json({ ack: true, change_id: rows[0].id });
+          const { rows: stateRows } = await query(
+            'SELECT version FROM brickflow_state WHERE id = 1'
+          );
+          const currentVersion = stateRows.length > 0 ? stateRows[0].version ?? 0 : 0;
+          return res.json({ ack: true, change_id: rows[0].id, version: currentVersion });
         }
       } catch (lookupError) {
         console.error('Erro ao validar duplicidade:', lookupError);
@@ -351,7 +482,7 @@ app.post('/api/backups/restore', async (req, res) => {
     );
     await client.query(
       'INSERT INTO brickflow_events (client_request_id, data) VALUES ($1, $2)',
-      [`backup-restore-${Date.now()}`, JSON.stringify(updatedSnapshot)]
+      [createClientRequestId('backup-restore'), JSON.stringify(updatedSnapshot)]
     );
     await client.query('COMMIT');
 

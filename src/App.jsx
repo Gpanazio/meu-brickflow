@@ -174,6 +174,9 @@ export default function App() {
   const [isBackupsLoading, setIsBackupsLoading] = useState(false);
   const [backupError, setBackupError] = useState(false);
   const [isBackupRestoring, setIsBackupRestoring] = useState(false);
+  const [trashItems, setTrashItems] = useState({ projects: [], subProjects: [] });
+  const [isTrashLoading, setIsTrashLoading] = useState(false);
+  const [trashError, setTrashError] = useState(false);
 
   const normalizeApiState = (data) => {
     if (!data) return null;
@@ -262,6 +265,7 @@ export default function App() {
           const latest = await refreshResponse.json();
           const normalized = normalizeApiState(latest) ?? INITIAL_STATE;
           setAppData(normalized);
+          appDataRef.current = normalized;
         }
         console.warn('Conflito de versão detectado:', conflict);
         return;
@@ -269,7 +273,12 @@ export default function App() {
       if (response.ok) {
         const result = await response.json();
         if (typeof result.version === 'number') {
-          setAppData(prev => prev ? { ...prev, version: result.version } : prev);
+          setAppData(prev => {
+            if (!prev) return prev;
+            const nextState = { ...prev, version: result.version };
+            appDataRef.current = nextState;
+            return nextState;
+          });
         }
         setConnectionError(false); 
       }
@@ -280,6 +289,15 @@ export default function App() {
       setIsSyncing(false);
     }
   };
+
+  const enqueueSave = useCallback(() => {
+    saveQueueRef.current = saveQueueRef.current.then(() => {
+      const latest = appDataRef.current;
+      if (!latest) return null;
+      return saveDataToApi(latest);
+    });
+    return saveQueueRef.current;
+  }, [saveDataToApi]);
 
   const updateGlobalState = useCallback((updater) => {
     setAppData(prev => {
@@ -370,6 +388,26 @@ export default function App() {
     }
   }, []);
 
+  const fetchTrash = useCallback(async () => {
+    setIsTrashLoading(true);
+    setTrashError(false);
+    try {
+      const response = await fetch('/api/trash');
+      if (!response.ok) throw new Error('Falha ao buscar lixeira');
+      const data = await response.json();
+      setTrashItems({
+        projects: Array.isArray(data?.projects) ? data.projects : [],
+        subProjects: Array.isArray(data?.subProjects) ? data.subProjects : []
+      });
+    } catch (err) {
+      console.error('Erro ao carregar lixeira:', err);
+      setTrashItems({ projects: [], subProjects: [] });
+      setTrashError(true);
+    } finally {
+      setIsTrashLoading(false);
+    }
+  }, []);
+
   const handleRestoreBackup = useCallback(async (backupId) => {
     if (!backupId) return;
     setIsSyncing(true);
@@ -399,6 +437,36 @@ export default function App() {
       setIsBackupRestoring(false);
     }
   }, [currentProject, currentUser]);
+
+  const handleRestoreTrashItem = useCallback(async ({ type, id, projectId }) => {
+    if (!type || !id) return;
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/trash/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id, projectId })
+      });
+      if (!response.ok) throw new Error('Falha ao restaurar item');
+      const result = await response.json();
+      const normalizedData = normalizeApiState(result.data) ?? INITIAL_STATE;
+      setAppData(normalizedData);
+      appDataRef.current = normalizedData;
+      setConnectionError(false);
+      await fetchTrash();
+    } catch (err) {
+      console.error('Erro ao restaurar item:', err);
+      setConnectionError(true);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [fetchTrash]);
+
+  useEffect(() => {
+    if (currentView === 'trash') {
+      fetchTrash();
+    }
+  }, [currentView, fetchTrash]);
 
   const handleExportBackupFromServer = useCallback((backupId) => {
     const targetBackup = backups.find(backup => backup.id === backupId) || backups[0];
@@ -464,7 +532,22 @@ export default function App() {
   const handleDragStart = () => {};
   const handleDragOver = (e) => e.preventDefault();
   const handleDrop = () => {};
-  const handleDeleteProject = (item) => updateProjects(prev => prev.filter(p => p.id !== item.id));
+  const handleDeleteProject = (item, isSubProject = false) => {
+    const deletedAt = new Date().toISOString();
+    updateProjects(prev => {
+      if (isSubProject) {
+        return prev.map(project => ({
+          ...project,
+          subProjects: (project.subProjects || []).map(subProject => (
+            subProject.id === item.id ? { ...subProject, deleted_at: deletedAt } : subProject
+          ))
+        }));
+      }
+      return prev.map(project => (
+        project.id === item.id ? { ...project, deleted_at: deletedAt } : project
+      ));
+    });
+  };
 
   // --- RENDER ---
 
@@ -579,13 +662,23 @@ export default function App() {
             />
           )}
 
+          {currentView === 'trash' && (
+            <TrashView
+              trashItems={trashItems}
+              isLoading={isTrashLoading}
+              error={trashError}
+              onRestoreItem={handleRestoreTrashItem}
+              onReturnHome={() => setCurrentView('home')}
+            />
+          )}
+
           {currentView === 'project' && currentProject && (
             <LegacyProjectView
               currentProject={currentProject}
               setCurrentView={setCurrentView}
               setModalState={setModalState}
               handleAccessProject={handleAccessProject}
-              handleDeleteProject={(sub) => updateProjects(prev => prev.map(p => p.id === currentProject.id ? {...p, subProjects: p.subProjects.filter(s => s.id !== sub.id)} : p))}
+              handleDeleteProject={(sub) => handleDeleteProject(sub, true)}
               COLOR_VARIANTS={COLOR_VARIANTS}
               history={projectHistory}
               isHistoryLoading={isHistoryLoading}
@@ -655,6 +748,7 @@ export default function App() {
                       createdAt: new Date().toISOString(),
                       createdBy: currentUser.username,
                       isArchived: false,
+                      deleted_at: null,
                       isProtected: data.isProtected === 'on',
                       color: data.color || 'blue'
                     };
@@ -673,7 +767,8 @@ export default function App() {
                             kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] }, 
                             files: { files: [] }
                           },
-                          isArchived: false
+                          isArchived: false,
+                          deleted_at: null
                       };
                       updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: [...(p.subProjects || []), newSub] } : p));
                   } else {
@@ -895,5 +990,110 @@ function UserSettingsModal({
         </div>
       </div>
     </Dialog>
+  );
+}
+
+function TrashView({ trashItems, isLoading, error, onRestoreItem, onReturnHome }) {
+  const deletedProjects = trashItems?.projects || [];
+  const deletedSubProjects = trashItems?.subProjects || [];
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+      <div className="flex items-center justify-between border-b border-zinc-900 pb-6">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight">Lixeira</h1>
+          <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest mt-2">
+            Itens excluídos ficam aqui até a restauração.
+          </p>
+        </div>
+        <Button variant="outline" onClick={onReturnHome} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest">
+          <ArrowLeft className="mr-2 h-3 w-3" /> Voltar
+        </Button>
+      </div>
+
+      {error && (
+        <div className="border border-red-900/60 bg-red-950/40 p-4 text-[10px] text-red-400 font-mono uppercase tracking-widest">
+          Erro ao carregar lixeira. Tente novamente.
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">
+          Carregando itens deletados...
+        </div>
+      )}
+
+      {!isLoading && !error && deletedProjects.length === 0 && deletedSubProjects.length === 0 && (
+        <div className="border border-zinc-900 bg-black/60 p-6 text-center">
+          <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+            Nenhum item na lixeira.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && deletedProjects.length > 0 && (
+        <div className="border border-zinc-900 bg-black/60 p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Projetos</h2>
+            <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">{deletedProjects.length} itens</span>
+          </div>
+          <div className="space-y-3">
+            {deletedProjects.map(project => (
+              <div key={project.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border border-zinc-900 p-4 bg-black/80">
+                <div className="space-y-1">
+                  <p className="text-sm font-bold uppercase tracking-widest text-zinc-200">{project.name}</p>
+                  <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+                    Excluído em {formatBackupTimestamp(project.deleted_at) || 'data desconhecida'}
+                  </p>
+                  {project.description && (
+                    <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest line-clamp-2">
+                      {project.description}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest"
+                  onClick={() => onRestoreItem({ type: 'project', id: project.id })}
+                >
+                  <RotateCcw className="mr-2 h-3 w-3" /> Restaurar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isLoading && deletedSubProjects.length > 0 && (
+        <div className="border border-zinc-900 bg-black/60 p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Áreas</h2>
+            <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">{deletedSubProjects.length} itens</span>
+          </div>
+          <div className="space-y-3">
+            {deletedSubProjects.map(subProject => (
+              <div key={subProject.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border border-zinc-900 p-4 bg-black/80">
+                <div className="space-y-1">
+                  <p className="text-sm font-bold uppercase tracking-widest text-zinc-200">{subProject.name}</p>
+                  <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+                    Projeto: {subProject.projectName || 'Sem projeto'}
+                  </p>
+                  <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+                    Excluído em {formatBackupTimestamp(subProject.deleted_at) || 'data desconhecida'}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest"
+                  onClick={() => onRestoreItem({ type: 'subProject', id: subProject.id, projectId: subProject.projectId })}
+                >
+                  <RotateCcw className="mr-2 h-3 w-3" /> Restaurar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
