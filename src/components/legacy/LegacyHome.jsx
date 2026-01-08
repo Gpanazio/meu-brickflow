@@ -17,6 +17,9 @@ function LegacyHome({
   handleDeleteProject,
   COLOR_VARIANTS
 }) {
+  // Safe project list
+  const safeProjects = Array.isArray(projects) ? projects : [];
+
   return (
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
       
@@ -69,14 +72,16 @@ function LegacyHome({
           <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black h-8 px-4 text-[10px] uppercase font-bold tracking-widest rounded-none mb-2"><Plus className="mr-1 h-3 w-3" /> Novo</Button>
         </div>
 
-        {projects.length === 0 ? (
+        {safeProjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 opacity-30">
             <h1 className="text-4xl font-black text-zinc-800 uppercase tracking-tighter">VAZIO</h1>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-l border-zinc-900">
-            {React.useMemo(() => projects.filter(p => !p.isArchived), [projects]).map(project => {
-              const colors = COLOR_VARIANTS[project.color || 'blue'];
+            {React.useMemo(() => safeProjects.filter(p => !p.isArchived), [safeProjects]).map(project => {
+              // Safety check for color variant
+              const colors = COLOR_VARIANTS[project.color] || COLOR_VARIANTS['blue'];
+              
               return (
                 <div 
                   key={project.id} 
