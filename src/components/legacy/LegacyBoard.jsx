@@ -58,7 +58,7 @@ function LegacyBoard({
                      onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, list.id, 'list')}>
                   <div className="p-4 border-b border-zinc-900 flex justify-between items-center">
                     <span className="font-bold text-[10px] uppercase tracking-[0.2em] text-zinc-500">{list.title}</span>
-                    <span className="text-zinc-700 text-[10px] font-mono">{list.tasks?.length.toString().padStart(2, '0') || '00'}</span>
+                    <span className="text-zinc-700 text-[10px] font-mono">{(list.tasks?.length ?? 0).toString().padStart(2, '0')}</span>
                   </div>
                   <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black">
                     {list.tasks?.map(task => (
