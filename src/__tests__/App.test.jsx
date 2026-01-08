@@ -6,39 +6,22 @@ import App from '../App.jsx'
 import { __resetSupabaseResponses } from '../lib/supabaseClient'
 
 vi.mock('../lib/supabaseClient', () => {
-  const defaultResponses = {
-    select: { data: [], error: null },
-    update: { data: [], error: null },
-    insert: { data: [], error: null }
-  }
-  const responses = structuredClone(defaultResponses)
-
   const buildSelectResponse = () => {
-    const response = responses.select
-    const builder = {
-      limit: vi.fn(() => builder),
+    const response = { data: [], error: null }
+    return {
+      limit: vi.fn(() => Promise.resolve(response)),
       then: (resolve) => Promise.resolve(response).then(resolve)
     }
-    return builder
   }
 
   return {
-    __setSupabaseResponses: (next) => {
-      if (!next) return
-      for (const key of Object.keys(defaultResponses)) {
-        responses[key] = next[key] ?? responses[key]
-      }
-    },
-    __resetSupabaseResponses: () => {
-      Object.assign(responses, structuredClone(defaultResponses))
-    },
     supabase: {
       from: vi.fn(() => ({
         select: vi.fn(() => buildSelectResponse()),
         update: vi.fn(() => ({
-          eq: vi.fn(() => Promise.resolve(responses.update))
+          eq: vi.fn(() => Promise.resolve({ data: [], error: null }))
         })),
-        insert: vi.fn(() => Promise.resolve(responses.insert))
+        insert: vi.fn(() => Promise.resolve({ data: [], error: null }))
       }))
     },
     hasSupabaseConfig: false
