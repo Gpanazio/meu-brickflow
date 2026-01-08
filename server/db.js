@@ -5,7 +5,7 @@ dotenv.config();
 
 const { Pool } = pg;
 
-const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+export const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
 
 // Verificação de Segurança
 if (!hasDatabaseUrl) {

@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
-import { getClient, query } from './db.js';
+import { getClient, hasDatabaseUrl, query } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -637,6 +637,10 @@ app.get('*', (req, res) => {
 });
 
 const bootstrapDatabase = async () => {
+  if (!hasDatabaseUrl) {
+    console.warn('⚠️ DATABASE_URL não configurada. Inicialização do banco ignorada.');
+    return;
+  }
   try {
     await initDB();
     await ensureInitialBackup();
