@@ -1,15 +1,42 @@
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useEffect, useState } from 'react'
 import { useUsers } from '../useUsers'
 import { toast } from 'sonner'
 
-vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
-vi.mock('../../lib/supabaseClient', () => ({
-  supabase: { from: vi.fn() },
-  handleSupabaseError: vi.fn()
-}))
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
-import { supabase } from '../../lib/supabaseClient'
+const apiState = {
+  users: [
+    { username: 'admin', pin: '1234', displayName: 'Admin' },
+    { username: 'fran', pin: '1234', displayName: 'Fran' }
+  ],
+  projects: []
+}
+
+function useUsersFromApi() {
+  const [data, setData] = useState(null)
+
+  useEffect(() => {
+    let isMounted = true
+    fetch('/api/projects')
+      .then((response) => response.json())
+      .then((responseData) => {
+        if (isMounted) {
+          setData(responseData)
+        }
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const updateGlobalUsers = (newUsers) => {
+    setData((prev) => ({ ...prev, users: newUsers }))
+  }
+
+  return useUsers(data?.users, updateGlobalUsers)
+}
 
 function wrapper({ children }) {
   return children
@@ -18,58 +45,56 @@ function wrapper({ children }) {
 describe('useUsers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    supabase.from.mockReset()
-    supabase.from.mockReturnValue({
-      select: () => Promise.resolve({ data: [], error: null })
-    })
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => apiState
+      })
+    )
     localStorage.clear()
   })
 
-  it('should initialize without user', () => {
-    const { result } = renderHook(() => useUsers(), { wrapper })
+  it('should initialize without user', async () => {
+    const { result } = renderHook(() => useUsersFromApi(), { wrapper })
+
+    await waitFor(() => {
+      expect(result.current.showLoginModal).toBe(true)
+    })
+
     expect(result.current.currentUser).toBeNull()
   })
 
-  it('notifies when login user not found', async () => {
-    supabase.from.mockReturnValue({
-      select: () => {
-        const chain = {
-          eq: () => chain,
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-          then: (resolve) => resolve({ data: [], error: null })
-        }
-        return chain
-      }
+  it('notifies when login credentials are invalid', async () => {
+    const { result } = renderHook(() => useUsersFromApi(), { wrapper })
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/projects')
     })
 
-    const { result } = renderHook(() => useUsers(), { wrapper })
     await act(async () => {
       await result.current.handleLogin('foo', '1234')
     })
 
-    expect(toast.error).toHaveBeenCalledWith(
-      'Usuário não encontrado! Clique em "Criar Usuário" para se cadastrar.'
-    )
+    expect(toast.error).toHaveBeenCalledWith('Usuário ou PIN incorretos.')
   })
 
   it('notifies when creating existing user', async () => {
-    supabase.from.mockReturnValue({
-      select: () => Promise.resolve({ data: [{ username: 'foo' }], error: null })
+    const { result } = renderHook(() => useUsersFromApi(), { wrapper })
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/projects')
     })
 
-    const { result } = renderHook(() => useUsers(), { wrapper })
     await act(async () => {
       await result.current.handleCreateUser({
-        username: 'foo',
-        displayName: 'Foo',
+        username: 'admin',
+        displayName: 'Admin',
         avatar: '',
         color: '',
         pin: '1234'
       })
     })
 
-    expect(toast.error).toHaveBeenCalledWith(
-      'Este usuário já existe! Tente fazer login ou escolha outro nome.'
-    )
+    expect(toast.error).toHaveBeenCalledWith('Usuário já existe.')
   })
 })
