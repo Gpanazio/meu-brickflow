@@ -36,7 +36,7 @@ function LegacyHome({
   }, []);
 
   const activeProjects = useMemo(() => {
-    return safeProjects.filter(p => !p.isArchived);
+    return safeProjects.filter(p => !p.isArchived && !p.deleted_at);
   }, [safeProjects]);
 
   return (
@@ -96,7 +96,7 @@ function LegacyHome({
           </Button>
         </div>
 
-        {safeProjects.length === 0 ? (
+        {activeProjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 opacity-30">
             <h1 className="text-4xl font-black text-zinc-800 uppercase tracking-tighter">VAZIO</h1>
             <p className="text-zinc-600 text-xs font-mono mt-2">Nenhum projeto encontrado</p>

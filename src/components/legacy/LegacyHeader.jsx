@@ -26,6 +26,7 @@ function LegacyHeader({
           <Separator orientation="vertical" className="h-3 bg-zinc-800" />
           <nav className="flex items-center gap-2">
             <Button variant="ghost" className={`uppercase tracking-widest text-[10px] font-bold rounded-none h-8 px-2 ${currentView === 'home' ? 'text-white' : 'text-zinc-600'}`} onClick={() => setCurrentView('home')}>Central</Button>
+            <Button variant="ghost" className={`uppercase tracking-widest text-[10px] font-bold rounded-none h-8 px-2 ${currentView === 'trash' ? 'text-white' : 'text-zinc-600'}`} onClick={() => setCurrentView('trash')}>Lixeira</Button>
             {currentProject && (
               <>
                 <span className="text-zinc-800">/</span>
