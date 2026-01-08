@@ -11,11 +11,11 @@ import ResponsibleUsersButton from './components/ResponsibleUsersButton';
 import SudokuGame from './components/SudokuGame';
 import { useFiles } from './hooks/useFiles';
 
-// --- COMPONENTES UI (SHADCN) ---
+// --- COMPONENTES UI ---
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
-import { Card, CardContent } from './components/ui/card'; // Simplificado
+import { Card, CardContent } from './components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './components/ui/dialog';
 import { Badge } from './components/ui/badge';
 import { Separator } from './components/ui/separator';
@@ -27,7 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from './components/ui/dropdown-menu';
 import { 
   MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
-  Trash2, Eye, FolderOpen, Lock, Sparkles, Dna, RotateCcw,
+  Trash2, Eye, FolderOpen, Lock, RotateCcw,
   ListTodo, KanbanSquare, FileText, Goal
 } from 'lucide-react';
 
@@ -41,17 +41,17 @@ const ALL_TABS = [
 
 const USER_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'];
 
-// Mapeamento explícito para o Tailwind detectar as classes
+// Mapeamento de cores para o Tailwind (Evita que o purge do CSS remova as cores dinâmicas)
 const COLOR_VARIANTS = {
-  blue: { bg: 'bg-blue-600', text: 'text-blue-500', border: 'border-blue-800', badge: 'bg-blue-950 text-blue-400 border-blue-800' },
-  red: { bg: 'bg-red-600', text: 'text-red-500', border: 'border-red-800', badge: 'bg-red-950 text-red-400 border-red-800' },
-  green: { bg: 'bg-green-600', text: 'text-green-500', border: 'border-green-800', badge: 'bg-green-950 text-green-400 border-green-800' },
-  purple: { bg: 'bg-purple-600', text: 'text-purple-500', border: 'border-purple-800', badge: 'bg-purple-950 text-purple-400 border-purple-800' },
-  orange: { bg: 'bg-orange-600', text: 'text-orange-500', border: 'border-orange-800', badge: 'bg-orange-950 text-orange-400 border-orange-800' },
-  cyan: { bg: 'bg-cyan-600', text: 'text-cyan-500', border: 'border-cyan-800', badge: 'bg-cyan-950 text-cyan-400 border-cyan-800' },
-  pink: { bg: 'bg-pink-600', text: 'text-pink-500', border: 'border-pink-800', badge: 'bg-pink-950 text-pink-400 border-pink-800' },
-  yellow: { bg: 'bg-yellow-600', text: 'text-yellow-500', border: 'border-yellow-800', badge: 'bg-yellow-950 text-yellow-400 border-yellow-800' },
-  zinc: { bg: 'bg-zinc-600', text: 'text-zinc-500', border: 'border-zinc-800', badge: 'bg-zinc-950 text-zinc-400 border-zinc-800' }
+  blue: { bg: 'bg-blue-600', text: 'text-blue-500', border: 'border-blue-900' },
+  red: { bg: 'bg-red-600', text: 'text-red-500', border: 'border-red-900' },
+  green: { bg: 'bg-green-600', text: 'text-green-500', border: 'border-green-900' },
+  purple: { bg: 'bg-purple-600', text: 'text-purple-500', border: 'border-purple-900' },
+  orange: { bg: 'bg-orange-600', text: 'text-orange-500', border: 'border-orange-900' },
+  cyan: { bg: 'bg-cyan-600', text: 'text-cyan-500', border: 'border-cyan-900' },
+  pink: { bg: 'bg-pink-600', text: 'text-pink-500', border: 'border-pink-900' },
+  yellow: { bg: 'bg-yellow-600', text: 'text-yellow-500', border: 'border-yellow-900' },
+  zinc: { bg: 'bg-zinc-600', text: 'text-zinc-500', border: 'border-zinc-900' }
 };
 
 const generateMegaSenaNumbers = () => {
@@ -66,14 +66,6 @@ const generateMegaSenaNumbers = () => {
 };
 
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-// Loader Minimalista
-const SimpleLoader = () => (
-  <div className="flex items-center justify-center gap-2 animate-pulse">
-    <div className="w-2 h-2 bg-red-600 rounded-full"></div>
-    <span className="text-[10px] font-mono text-zinc-500 uppercase">Carregando</span>
-  </div>
-);
 
 function LegacyApp() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -204,7 +196,14 @@ function LegacyApp() {
 
   const getCurrentBoardData = () => {
     const target = currentView === 'subproject' ? currentSubProject : currentProject;
-    return target?.boardData?.[currentBoardType] || {};
+    if (!target) return {};
+    
+    // Fallback se o boardData não existir (projetos antigos)
+    if (!target.boardData) {
+        return initializeBoardData()[currentBoardType];
+    }
+    
+    return target.boardData[currentBoardType] || initializeBoardData()[currentBoardType];
   };
 
   const initializeBoardData = () => ({
@@ -453,7 +452,7 @@ function LegacyApp() {
           <div className="p-8 space-y-6">
             <div className="text-center space-y-2">
               <img src={logoImage} alt="BrickFlow" className="h-10 w-auto mx-auto mb-4 opacity-90" />
-              <h1 className="text-xl font-bold tracking-widest text-white uppercase">BrickFlow OS</h1>
+              <h1 className="text-lg font-bold tracking-widest text-white uppercase">BrickFlow OS</h1>
               <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">Acesso Restrito</p>
             </div>
             <form onSubmit={(e) => {
@@ -524,18 +523,30 @@ function LegacyApp() {
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
       
       {/* HEADER DE BOAS VINDAS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 border-b border-zinc-900 pb-8">
-        <div className="col-span-3">
-           <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight leading-none mb-2">
-             OLÁ, <span className="text-zinc-700">{currentUser?.displayName}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-zinc-900 pb-8">
+        <div>
+           <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-2">
+             Olá, <span className="text-zinc-500">{currentUser?.displayName}</span>
            </h1>
-           <p className="text-zinc-500 text-[10px] font-mono tracking-widest uppercase max-w-lg">
-             SISTEMA ONLINE // {new Date().toLocaleDateString('pt-BR')}
+           <p className="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
+             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
            </p>
         </div>
-        <div className="col-span-1 flex flex-col justify-end items-end md:border-l md:border-zinc-900 md:pl-8">
-           <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest mb-1">Sorte Diária</p>
-           <p className="text-right text-xs text-zinc-400 italic">"{dailyPhrase.slice(0, 50)}..."</p>
+        <div className="flex flex-col items-end justify-between gap-4">
+           <div className="text-right">
+              <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest mb-1">Sorte Diária</p>
+              <p className="text-sm text-zinc-300 italic max-w-md">"{dailyPhrase}"</p>
+           </div>
+           <div className="flex items-center gap-2">
+              <span className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">Mega Sena</span>
+              <div className="flex gap-1">
+                {megaSenaNumbers.map(n => (
+                  <div key={n} className="w-6 h-6 flex items-center justify-center bg-zinc-900 text-zinc-300 text-[10px] font-mono border border-zinc-800">
+                    {n.toString().padStart(2, '0')}
+                  </div>
+                ))}
+              </div>
+           </div>
         </div>
       </div>
 
@@ -549,7 +560,7 @@ function LegacyApp() {
 
         {projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 opacity-30 border-t border-b border-zinc-900">
-            <h1 className="text-6xl font-black text-zinc-800 uppercase tracking-tighter">VAZIO</h1>
+            <h1 className="text-4xl font-black text-zinc-800 uppercase tracking-tighter">VAZIO</h1>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-zinc-900">
@@ -571,7 +582,7 @@ function LegacyApp() {
                   </div>
 
                   <div className="space-y-2 relative z-10">
-                    <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight leading-none group-hover:translate-x-1 transition-transform">
+                    <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight leading-none group-hover:translate-x-1 transition-transform">
                       {project.name}
                     </h3>
                     <p className="text-zinc-600 text-[10px] font-mono leading-tight line-clamp-2">
@@ -608,7 +619,7 @@ function LegacyApp() {
         </div>
         
         <div>
-          <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+          <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
             {currentProject.name} 
             {currentProject.isProtected && <Lock className="h-6 w-6 text-zinc-800"/>}
           </h1>
@@ -679,7 +690,7 @@ function LegacyApp() {
             {/* KANBAN */}
             {currentBoardType === 'kanban' && (
               <div className="flex h-full gap-0 border-l border-zinc-900 min-w-max">
-                {data.lists?.map(list => (
+                {data.lists ? data.lists.map(list => (
                   <div key={list.id} className="w-72 flex flex-col h-full bg-black border-r border-zinc-900"
                        onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, list.id, 'list')}>
                     <div className="p-4 border-b border-zinc-900 flex justify-between items-center">
@@ -708,14 +719,14 @@ function LegacyApp() {
                       </Button>
                     </div>
                   </div>
-                ))}
+                )) : <div className="p-8 text-zinc-500 text-xs">Nenhum dado encontrado para este quadro.</div>}
               </div>
             )}
 
             {/* TODO LIST */}
             {currentBoardType === 'todo' && (
               <div className="max-w-4xl mx-auto space-y-8">
-                {data.lists?.map(list => (
+                {data.lists ? data.lists.map(list => (
                   <div key={list.id} className="space-y-0">
                     <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] mb-2 pl-4 border-l-2 border-red-600">{list.title}</h3>
                     <div className="bg-black border-t border-zinc-900">
@@ -739,7 +750,7 @@ function LegacyApp() {
                       </Button>
                     </div>
                   </div>
-                ))}
+                )) : <div className="p-8 text-zinc-500 text-xs">Lista não inicializada.</div>}
               </div>
             )}
 
@@ -754,7 +765,7 @@ function LegacyApp() {
                 {(isFileDragging || isUploading) && (
                   <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/90 backdrop-blur-sm">
                     {isUploading ? (
-                       <SimpleLoader />
+                       <div className="animate-pulse text-white text-xs uppercase tracking-widest">Carregando...</div>
                     ) : (
                        <div className="text-center animate-pulse">
                           <Upload className="w-8 h-8 text-white mx-auto mb-4" />
