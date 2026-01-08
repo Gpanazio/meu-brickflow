@@ -560,6 +560,52 @@ function LegacyHome({ currentUser, dailyPhrase, megaSenaNumbers, projects, setMo
   );
 }
 
+function LegacyProjectView({ currentProject, setCurrentView, setModalState, handleAccessProject, handleDeleteProject }) {
+  const activeSubProjects = useMemo(() => {
+    return currentProject?.subProjects?.filter(s => !s.isArchived) || [];
+  }, [currentProject]);
+
+  if (!currentProject) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500 pb-24">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-10 px-5 uppercase text-xs font-bold tracking-widest">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+          </Button>
+        </div>
+        <div className="border border-zinc-900 bg-black/60 p-8 text-center">
+          <h2 className="text-xl font-bold text-white uppercase tracking-widest">Projeto indisponível</h2>
+          <p className="mt-2 text-xs text-zinc-500 font-mono uppercase tracking-widest">Selecione um projeto válido para continuar.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-500 pb-24">
+      <div className="flex flex-col gap-8 border-b border-zinc-900 pb-8">
+        <div className="flex justify-between items-center">
+           <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-10 px-5 uppercase text-xs font-bold tracking-widest"><ArrowLeft className="mr-2 h-4 w-4" /> Voltar</Button>
+           <Button onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black rounded-none uppercase text-xs font-bold tracking-widest h-10 px-6"><Plus className="mr-2 h-4 w-4" /> Nova Área</Button>
+        </div>
+        <div><h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter flex items-center gap-4">{currentProject.name} {currentProject.isProtected && <Lock className="h-8 w-8 text-zinc-800"/>}</h1><p className="text-zinc-500 text-sm font-mono uppercase tracking-widest mt-4 max-w-2xl leading-relaxed">{currentProject.description}</p></div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-zinc-900 border border-zinc-900">
+        {activeSubProjects.map(sub => {
+          const colors = COLOR_VARIANTS[sub.color] || COLOR_VARIANTS['zinc'] || COLOR_VARIANTS['blue'];
+          return (
+            <div key={sub.id} onClick={() => handleAccessProject(sub, 'subproject')} className="group cursor-pointer bg-black hover:bg-zinc-950 transition-colors p-8 flex flex-col justify-between h-64">
+              <div className="flex justify-between items-start"><FolderOpen className={`h-6 w-6 ${colors.text} opacity-50 group-hover:opacity-100 transition-opacity`} /><DropdownMenu><DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-800 hover:text-white rounded-none"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none"><DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub }); }} className="text-xs uppercase tracking-widest h-10 cursor-pointer font-medium">Editar</DropdownMenuItem><DropdownMenuItem className="text-red-900 focus:text-red-600 text-xs uppercase tracking-widest h-10 cursor-pointer font-medium" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div>
+              <div><CardTitle className="text-2xl font-bold uppercase tracking-tight text-white mb-2">{sub.name}</CardTitle><span className="text-zinc-600 text-xs font-mono uppercase tracking-widest line-clamp-2 leading-relaxed">{sub.description || "---"}</span></div>
+            </div>
+          );
+        })}
+        <div onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })} className="bg-black flex flex-col items-center justify-center cursor-pointer group hover:bg-zinc-900/30 transition-colors h-64"><Plus className="h-8 w-8 text-zinc-800 group-hover:text-zinc-500 mb-3 transition-colors" /><span className="text-xs font-mono uppercase tracking-widest text-zinc-800 group-hover:text-zinc-500 font-bold">Adicionar Área</span></div>
+      </div>
+    </div>
+  );
+}
+
 function LegacyBoard({ data, entityName, enabledTabs, currentBoardType, setCurrentBoardType, currentSubProject, currentProject, setCurrentView, setModalState, handleTaskAction, isFileDragging, setIsFileDragging, handleFileDrop, isUploading, handleFileUploadWithFeedback, files, handleDeleteFile }) {
   const handleDragStart = (e, item, type, sourceId) => { e.dataTransfer.setData("text/plain", JSON.stringify({ id: item.id, type, sourceId })); };
 
@@ -700,15 +746,18 @@ export default function App() {
   };
 
   const handleAccessProject = (item, type = 'project') => {
-    accessProjectNavigation({
-      item,
-      type,
-      projects,
-      setCurrentProject,
-      setCurrentView,
-      setCurrentSubProject,
-      setCurrentBoardType
-    });
+    if (type === 'project') {
+      const targetProject = projects.find(project => project.id === item?.id) || item;
+      if (!targetProject) return;
+      setCurrentProject({ ...targetProject, subProjects: targetProject.subProjects || [] });
+      setCurrentView('project');
+      return;
+    }
+    const targetSubProject = item;
+    if (!targetSubProject) return;
+    setCurrentSubProject(targetSubProject);
+    setCurrentView('subproject');
+    setCurrentBoardType(targetSubProject.enabledTabs ? targetSubProject.enabledTabs[0] : 'kanban');
   };
 
   const handleDeleteProject = (item, isSub = false) => {
