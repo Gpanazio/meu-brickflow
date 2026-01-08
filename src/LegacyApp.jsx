@@ -447,7 +447,7 @@ function LegacyApp() {
     if(action === 'save') setModalState({ isOpen: false, type: null });
   };
 
-  const currentEntity = currentSubProject || currentProject;
+  const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
   const boardData = currentEntity ? getCurrentBoardData() : {};
   const entityName = currentEntity?.name || '';
   const enabledTabs = currentEntity?.enabledTabs || ['kanban'];
