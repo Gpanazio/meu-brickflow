@@ -4,36 +4,34 @@ import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import { formatFileSize } from './utils/formatFileSize';
 import { absurdPhrases } from './utils/phrases';
-import { supabase, hasSupabaseConfig, supabaseConfigError } from './lib/supabaseClient';
+import { supabase } from './lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
 import SudokuGame from './components/SudokuGame';
 import { useFiles } from './hooks/useFiles';
 
-// --- COMPONENTES SHADCN UI (Estilizados via CSS Global para Brutalismo) ---
+// --- COMPONENTES UI (SHADCN) ---
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './components/ui/dialog';
+import { Card, CardContent } from './components/ui/card'; // Simplificado
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './components/ui/dialog';
 import { Badge } from './components/ui/badge';
-import { ScrollArea } from './components/ui/scroll-area';
 import { Separator } from './components/ui/separator';
 import { Avatar, AvatarFallback } from './components/ui/avatar';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Checkbox } from './components/ui/checkbox';
 import { Label } from './components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from './components/ui/dropdown-menu';
 import { 
-  Settings, MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
-  Trash2, Download, Eye, LayoutGrid, 
-  FolderOpen, Calendar, Target, Lock, Sparkles, Dna, RotateCcw,
+  MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
+  Trash2, Eye, FolderOpen, Lock, Sparkles, Dna, RotateCcw,
   ListTodo, KanbanSquare, FileText, Goal
 } from 'lucide-react';
 
-// --- CONFIGURAÇÕES ---
+// --- CONFIGURAÇÕES & CONSTANTES ---
 const ALL_TABS = [
   { id: 'todo', label: 'LISTA', icon: ListTodo },
   { id: 'kanban', label: 'KANBAN', icon: KanbanSquare },
@@ -42,6 +40,19 @@ const ALL_TABS = [
 ];
 
 const USER_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'];
+
+// Mapeamento explícito para o Tailwind detectar as classes
+const COLOR_VARIANTS = {
+  blue: { bg: 'bg-blue-600', text: 'text-blue-500', border: 'border-blue-800', badge: 'bg-blue-950 text-blue-400 border-blue-800' },
+  red: { bg: 'bg-red-600', text: 'text-red-500', border: 'border-red-800', badge: 'bg-red-950 text-red-400 border-red-800' },
+  green: { bg: 'bg-green-600', text: 'text-green-500', border: 'border-green-800', badge: 'bg-green-950 text-green-400 border-green-800' },
+  purple: { bg: 'bg-purple-600', text: 'text-purple-500', border: 'border-purple-800', badge: 'bg-purple-950 text-purple-400 border-purple-800' },
+  orange: { bg: 'bg-orange-600', text: 'text-orange-500', border: 'border-orange-800', badge: 'bg-orange-950 text-orange-400 border-orange-800' },
+  cyan: { bg: 'bg-cyan-600', text: 'text-cyan-500', border: 'border-cyan-800', badge: 'bg-cyan-950 text-cyan-400 border-cyan-800' },
+  pink: { bg: 'bg-pink-600', text: 'text-pink-500', border: 'border-pink-800', badge: 'bg-pink-950 text-pink-400 border-pink-800' },
+  yellow: { bg: 'bg-yellow-600', text: 'text-yellow-500', border: 'border-yellow-800', badge: 'bg-yellow-950 text-yellow-400 border-yellow-800' },
+  zinc: { bg: 'bg-zinc-600', text: 'text-zinc-500', border: 'border-zinc-800', badge: 'bg-zinc-950 text-zinc-400 border-zinc-800' }
+};
 
 const generateMegaSenaNumbers = () => {
   const numbers = [];
@@ -56,11 +67,11 @@ const generateMegaSenaNumbers = () => {
 
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-// COMPONENTE: MONOLITO LOADING
-const MonolithLoader = ({ text }) => (
-  <div className="flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in duration-700">
-    <div className="w-12 h-24 bg-black border border-zinc-800 shadow-[0_0_30px_rgba(220,38,38,0.2)] animate-monolith-pulse"></div>
-    <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-600 animate-pulse">{text}</span>
+// Loader Minimalista
+const SimpleLoader = () => (
+  <div className="flex items-center justify-center gap-2 animate-pulse">
+    <div className="w-2 h-2 bg-red-600 rounded-full"></div>
+    <span className="text-[10px] font-mono text-zinc-500 uppercase">Carregando</span>
   </div>
 );
 
@@ -95,9 +106,6 @@ function LegacyApp() {
     sourceContainerId: null
   });
   const [dragOverTargetId, setDragOverTargetId] = useState(null);
-
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-  const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   const { 
     files, 
@@ -135,7 +143,7 @@ function LegacyApp() {
 
   const saveTimeoutRef = useRef(null);
   useEffect(() => {
-    if (projects.length > 0 && isLoggedIn && currentUser && hasSupabaseConfig) {
+    if (projects.length > 0 && isLoggedIn && currentUser) {
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
       
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -161,19 +169,18 @@ function LegacyApp() {
                  .from('brickflow_data')
                  .insert(dataPayload);
              }
-             debugLog("✅ Dados sincronizados com Supabase");
+             debugLog("✅ Sync OK");
           }
         } catch (error) { 
-          console.error("Erro fatal ao sincronizar:", error); 
+          console.error("Erro sync:", error); 
         } finally { 
           setIsSyncing(false); 
         }
-      }, 1000);
+      }, 2000);
     }
   }, [projects, isLoggedIn, currentUser]);
 
   const loadAllUsers = async () => {
-    if (!hasSupabaseConfig) return;
     try {
       const { data, error } = await supabase.from('brickflow_users').select('*');
       if (!error && data) setAllUsers(data);
@@ -181,7 +188,6 @@ function LegacyApp() {
   };
 
   const loadUserProjects = async (userKey) => {
-    if (!hasSupabaseConfig) return;
     try {
       const { data, error } = await supabase.from('brickflow_data').select('*');
       if (!error && data && data.length > 0 && data[0].data) {
@@ -440,52 +446,16 @@ function LegacyApp() {
     if(action === 'save') setModalState({ isOpen: false, type: null });
   };
 
-  if (!hasSupabaseConfig) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
-        <Card className="w-full max-w-xl border-zinc-900 bg-black shadow-2xl">
-          <CardHeader className="space-y-6 text-center">
-            <div className="mx-auto">
-              <img src={logoImage} alt="BrickFlow" className="h-16 w-auto object-contain opacity-90 mx-auto" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl font-black tracking-tighter brick-title text-white">
-                SUPABASE DESATIVADO
-              </CardTitle>
-              <CardDescription className="text-zinc-500 text-xs font-mono uppercase tracking-widest mt-2">
-                O app não pode iniciar sem conexão com o Supabase
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="border border-zinc-900 bg-zinc-950 p-4 font-mono text-[11px] text-zinc-400">
-              {supabaseConfigError}
-            </div>
-            <div className="text-[11px] text-zinc-500 font-mono uppercase tracking-widest space-y-2">
-              <p>Configure as variáveis no ambiente ou no arquivo .env:</p>
-              <p>VITE_SUPABASE_URL</p>
-              <p>VITE_SUPABASE_ANON_KEY</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
-        <Card className="w-full max-w-md border-zinc-900 bg-black shadow-2xl">
-          <CardHeader className="text-center space-y-6">
-            <div className="mx-auto">
-              <img src={logoImage} alt="BrickFlow" className="h-16 w-auto object-contain opacity-90 mx-auto" />
+        <Card className="w-full max-w-sm border-zinc-900 bg-black shadow-2xl rounded-none">
+          <div className="p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <img src={logoImage} alt="BrickFlow" className="h-10 w-auto mx-auto mb-4 opacity-90" />
+              <h1 className="text-xl font-bold tracking-widest text-white uppercase">BrickFlow OS</h1>
+              <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">Acesso Restrito</p>
             </div>
-            <div>
-              <CardTitle className="text-3xl font-black tracking-tighter brick-title text-white">BRICKFLOW OS</CardTitle>
-              <CardDescription className="text-zinc-600 text-xs font-mono uppercase tracking-widest mt-2">v.2.0.4 // Acesso Restrito</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
             <form onSubmit={(e) => {
                 e.preventDefault();
                 const fd = new FormData(e.target);
@@ -497,54 +467,52 @@ function LegacyApp() {
                   localStorage.setItem('brickflow-current-user', JSON.stringify(userData));
                   loadUserProjects(userData.userKey);
                 } else { alert("Credenciais inválidas"); }
-            }} className="space-y-6">
-              <div className="space-y-2"><Label className="text-zinc-500 text-[10px] uppercase tracking-widest">ID Operador</Label><Input name="username" placeholder="IDENTIFICAÇÃO" className="bg-zinc-950 border-zinc-800 focus:border-white h-12 rounded-none text-zinc-300 placeholder:text-zinc-800" required /></div>
-              <div className="space-y-2"><Label className="text-zinc-500 text-[10px] uppercase tracking-widest">Código de Acesso</Label><Input name="pin" type="password" placeholder="••••" maxLength={4} className="bg-zinc-950 border-zinc-800 text-center tracking-[1em] focus:border-white h-12 rounded-none text-white placeholder:text-zinc-800" required /></div>
-              <Button type="submit" className="w-full bg-white hover:bg-zinc-200 text-black font-bold uppercase tracking-widest h-14 rounded-none text-xs">Iniciar Sessão</Button>
+            }} className="space-y-4">
+              <Input name="username" placeholder="ID" className="bg-zinc-950 border-zinc-800 rounded-none text-zinc-300 placeholder:text-zinc-700 h-10" required />
+              <Input name="pin" type="password" placeholder="PIN" maxLength={4} className="bg-zinc-950 border-zinc-800 rounded-none text-center tracking-[0.5em] text-white placeholder:text-zinc-700 h-10" required />
+              <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 rounded-none uppercase text-xs font-bold tracking-widest h-10">Entrar</Button>
             </form>
-          </CardContent>
+          </div>
         </Card>
       </div>
     );
   }
 
   const renderHeader = () => (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/80">
-      <div className="container flex h-16 items-center justify-between mx-auto px-4 md:px-8">
-        <div className="flex items-center gap-6">
-          <div onClick={() => setCurrentView('home')} className="cursor-pointer flex items-center gap-2 hover:opacity-70 transition-opacity">
-             <img src={logoImage} alt="BrickFlow" className="h-6 w-auto object-contain" />
+    <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black/95 backdrop-blur">
+      <div className="container flex h-14 items-center justify-between mx-auto px-4 md:px-8">
+        <div className="flex items-center gap-4">
+          <div onClick={() => setCurrentView('home')} className="cursor-pointer hover:opacity-70 transition-opacity">
+             <img src={logoImage} alt="BrickFlow" className="h-5 w-auto" />
           </div>
-          <Separator orientation="vertical" className="h-4 bg-zinc-800" />
-          <nav className="flex items-center gap-2 text-sm">
-            <Button variant="ghost" className={`uppercase tracking-widest text-[10px] font-bold rounded-none ${currentView === 'home' ? 'text-white' : 'text-zinc-600'}`} onClick={() => setCurrentView('home')}>Central</Button>
+          <Separator orientation="vertical" className="h-3 bg-zinc-800" />
+          <nav className="flex items-center gap-2">
+            <Button variant="ghost" className={`uppercase tracking-widest text-[10px] font-bold rounded-none h-8 px-2 ${currentView === 'home' ? 'text-white' : 'text-zinc-600'}`} onClick={() => setCurrentView('home')}>Central</Button>
             {currentProject && (
               <>
                 <span className="text-zinc-800">/</span>
-                <Button variant="ghost" className="uppercase tracking-widest text-[10px] font-bold text-zinc-600 hover:text-white rounded-none" onClick={() => setCurrentView('project')}>{currentProject.name}</Button>
+                <Button variant="ghost" className="uppercase tracking-widest text-[10px] font-bold text-zinc-600 hover:text-white rounded-none h-8 px-2" onClick={() => setCurrentView('project')}>{currentProject.name}</Button>
               </>
             )}
           </nav>
         </div>
         
-        <div className="flex items-center gap-6">
-          {isSyncing && <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse shadow-[0_0_10px_#dc2626]" />}
+        <div className="flex items-center gap-4">
+          {isSyncing && <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse" />}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-none p-0 hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
-                <Avatar className="h-6 w-6 rounded-none"><AvatarFallback className="bg-zinc-900 text-zinc-500 text-[10px] rounded-none">{currentUser?.displayName?.charAt(0)}</AvatarFallback></Avatar>
+              <Button variant="ghost" className="h-8 w-8 rounded-none p-0 hover:bg-zinc-900">
+                <Avatar className="h-5 w-5 rounded-none"><AvatarFallback className="bg-zinc-900 text-zinc-500 text-[9px] rounded-none">{currentUser?.displayName?.charAt(0)}</AvatarFallback></Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-black border-zinc-800 rounded-none shadow-2xl" align="end">
-              <DropdownMenuLabel className="font-normal p-4">
-                <div className="flex flex-col space-y-2">
-                  <p className="text-sm font-black leading-none text-white uppercase tracking-tight">{currentUser?.displayName}</p>
-                  <p className="text-[10px] leading-none text-zinc-600 font-mono tracking-widest">@{currentUser?.username}</p>
-                </div>
+            <DropdownMenuContent className="w-48 bg-black border-zinc-800 rounded-none shadow-xl" align="end">
+              <DropdownMenuLabel className="p-3">
+                <p className="text-xs font-bold text-white uppercase tracking-tight">{currentUser?.displayName}</p>
+                <p className="text-[9px] text-zinc-600 font-mono tracking-widest">@{currentUser?.username}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-zinc-900" />
-              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[10px] tracking-widest h-10"><RotateCcw className="mr-2 h-3 w-3" /> Trocar Operador</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout} className="text-red-900 focus:text-red-600 focus:bg-red-950/10 cursor-pointer uppercase text-[10px] tracking-widest h-10"><LogOut className="mr-2 h-3 w-3" /> Encerrar</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] tracking-widest h-8"><RotateCcw className="mr-2 h-3 w-3" /> Trocar</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout} className="text-red-900 focus:text-red-600 focus:bg-zinc-900 cursor-pointer uppercase text-[9px] tracking-widest h-8"><LogOut className="mr-2 h-3 w-3" /> Sair</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -553,116 +521,78 @@ function LegacyApp() {
   );
 
   const renderHome = () => (
-    <div className="space-y-12 animate-in fade-in duration-700 pb-20">
+    <div className="space-y-12 animate-in fade-in duration-500 pb-20">
       
-      {/* HEADER DE BOAS VINDAS ESTILO TERMINAL */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border-b border-zinc-900 pb-12">
-        <div className="col-span-3 pr-12">
-           <h1 className="text-6xl md:text-8xl font-black text-white uppercase tracking-tighter leading-none mb-4">
-             BEM-VINDO, <br/><span className="text-zinc-800">{currentUser?.displayName}</span>
+      {/* HEADER DE BOAS VINDAS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 border-b border-zinc-900 pb-8">
+        <div className="col-span-3">
+           <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight leading-none mb-2">
+             OLÁ, <span className="text-zinc-700">{currentUser?.displayName}</span>
            </h1>
-           <p className="text-zinc-500 text-xs font-mono tracking-widest uppercase max-w-xl leading-relaxed">
-             SISTEMA OPERACIONAL BRICK v2.0 // STATUS: ONLINE // "TODO O VAZIO PODE SER PREENCHIDO COM PROPÓSITO."
+           <p className="text-zinc-500 text-[10px] font-mono tracking-widest uppercase max-w-lg">
+             SISTEMA ONLINE // {new Date().toLocaleDateString('pt-BR')}
            </p>
         </div>
-        <div className="col-span-1 border-l border-zinc-900 pl-8 flex flex-col justify-end">
-           <div className="text-right">
-              <span className="block text-[10px] text-zinc-600 font-mono uppercase tracking-widest mb-1">Data Estelar</span>
-              <span className="block text-xl font-bold text-white font-mono">{new Date().toLocaleDateString('pt-BR')}</span>
-           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-zinc-900">
-        <div className="col-span-2 border-r border-zinc-900 bg-black relative group p-8 min-h-[200px] flex flex-col justify-between">
-          <div className="absolute top-0 right-0 p-4 opacity-10"><Sparkles className="w-24 h-24 text-white" /></div>
-          <div>
-            <h3 className="flex items-center gap-2 text-zinc-500 uppercase tracking-widest text-[10px] mb-4"><Sparkles className="w-3 h-3" /> Algoritmo da Sorte</h3>
-            <p className="text-zinc-300 text-xl md:text-2xl font-light leading-snug font-serif italic">"{dailyPhrase}"</p>
-          </div>
-        </div>
-        <div className="bg-black p-8 flex flex-col justify-between">
-          <h3 className="text-[10px] uppercase tracking-widest flex gap-2 text-emerald-900 mb-4"><Dna className="w-3 h-3" /> Sequência Probabilística</h3>
-          <div className="flex flex-wrap gap-2">
-            {megaSenaNumbers.map((num, i) => (
-              <div key={i} className="w-8 h-8 border border-zinc-800 text-zinc-500 flex items-center justify-center font-mono text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">{num.toString().padStart(2, '0')}</div>
-            ))}
-          </div>
+        <div className="col-span-1 flex flex-col justify-end items-end md:border-l md:border-zinc-900 md:pl-8">
+           <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest mb-1">Sorte Diária</p>
+           <p className="text-right text-xs text-zinc-400 italic">"{dailyPhrase.slice(0, 50)}..."</p>
         </div>
       </div>
 
       {currentUser?.displayName === 'Fran' && <SudokuGame />}
 
-      <div className="space-y-0">
-        <div className="flex justify-between items-end border-b border-zinc-900 pb-4 mb-0">
-          <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">Diretório de Projetos</h2>
+      <div className="space-y-4">
+        <div className="flex justify-between items-end pb-2">
+          <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">Projetos</h2>
+          <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black h-8 px-4 text-[10px] uppercase font-bold tracking-widest rounded-none"><Plus className="mr-1 h-3 w-3" /> Novo</Button>
         </div>
 
         {projects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 opacity-20 hover:opacity-40 transition-opacity border-b border-zinc-900">
-            <h1 className="text-9xl font-black text-zinc-900 uppercase tracking-tighter text-center leading-none select-none">NULL</h1>
-            <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="mt-8 bg-zinc-900 text-zinc-500 hover:bg-zinc-800 hover:text-white uppercase tracking-widest text-xs font-bold rounded-none h-12 px-8">Inicializar Primeiro Projeto</Button>
+          <div className="flex flex-col items-center justify-center py-24 opacity-30 border-t border-b border-zinc-900">
+            <h1 className="text-6xl font-black text-zinc-800 uppercase tracking-tighter">VAZIO</h1>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-l border-zinc-900">
-            {projects.filter(p => !p.isArchived).map(project => (
-              <div 
-                key={project.id} 
-                draggable={true}
-                onDragStart={(e) => handleDragStart(e, project, 'project')}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, project.id, 'project')}
-                onClick={() => handleAccessProject(project)} 
-                className="group relative aspect-[4/5] border-r border-b border-zinc-900 bg-black hover:bg-zinc-950 transition-colors cursor-pointer p-8 flex flex-col justify-between"
-              >
-                {/* Linha de status superior */}
-                <div className="flex justify-between items-start w-full">
-                  <div className="flex flex-col gap-1">
-                     <span className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest group-hover:text-red-600 transition-colors">
-                       ID: {project.id.slice(-6).toUpperCase()}
-                     </span>
-                     <div className={`h-[2px] w-0 bg-red-600 group-hover:w-full transition-all duration-700 delay-100 ease-in-out`} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-zinc-900">
+            {projects.filter(p => !p.isArchived).map(project => {
+              const colors = COLOR_VARIANTS[project.color || 'blue'];
+              return (
+                <div 
+                  key={project.id} 
+                  draggable={true}
+                  onDragStart={(e) => handleDragStart(e, project, 'project')}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, project.id, 'project')}
+                  onClick={() => handleAccessProject(project)} 
+                  className="group relative aspect-video border-r border-b border-zinc-900 bg-black hover:bg-zinc-950 transition-all cursor-pointer p-6 flex flex-col justify-between"
+                >
+                  <div className="flex justify-between items-start w-full">
+                    <div className={`w-2 h-2 ${colors.bg}`}></div>
+                    {project.isProtected && <Lock className="w-3 h-3 text-zinc-800" />}
                   </div>
-                  {project.isProtected && <Lock className="w-3 h-3 text-zinc-800 group-hover:text-zinc-500 transition-colors" />}
-                </div>
 
-                {/* Conteúdo Central */}
-                <div className="space-y-6 relative z-10 mt-4">
-                  <h3 className="text-4xl lg:text-5xl font-black text-white uppercase tracking-tighter leading-[0.85] break-words">
-                    {project.name}
-                  </h3>
-                  <p className="text-zinc-600 text-[10px] uppercase tracking-wider font-mono leading-relaxed max-w-[90%] opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    {project.description || "DADOS.CONFIDENCIAIS//DESCRIÇÃO_PENDENTE"}
-                  </p>
-                </div>
+                  <div className="space-y-2 relative z-10">
+                    <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight leading-none group-hover:translate-x-1 transition-transform">
+                      {project.name}
+                    </h3>
+                    <p className="text-zinc-600 text-[10px] font-mono leading-tight line-clamp-2">
+                      {project.description || "SEM DESCRIÇÃO"}
+                    </p>
+                  </div>
 
-                {/* Footer Técnico */}
-                <div className="relative z-10 pt-4 flex justify-between items-end">
-                   <div className="flex flex-col gap-1">
-                      <span className="text-[9px] text-zinc-700 font-mono uppercase tracking-widest">Módulos</span>
-                      <span className="text-xl font-bold text-zinc-500">{project.subProjects?.length.toString().padStart(2, '0') || '00'}</span>
-                   </div>
-                   
-                   <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-800 hover:text-white hover:bg-transparent rounded-none"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none min-w-[150px]">
-                        <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-[10px] uppercase tracking-widest focus:bg-zinc-900 cursor-pointer h-10">Configurar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-900 focus:text-red-600 focus:bg-zinc-900 text-[10px] uppercase tracking-widest cursor-pointer h-10" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>Eliminar</DropdownMenuItem>
-                      </DropdownMenuContent>
-                   </DropdownMenu>
+                  <div className="flex justify-between items-end opacity-40 group-hover:opacity-100 transition-opacity">
+                     <span className="text-[9px] text-zinc-700 font-mono uppercase tracking-widest">{project.subProjects?.length || 0} ÁREAS</span>
+                     
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-800 hover:text-white rounded-none"><MoreVertical className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none">
+                          <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-[10px] uppercase tracking-widest h-8 cursor-pointer">Editar</DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-900 focus:text-red-600 focus:bg-zinc-900 text-[10px] uppercase tracking-widest cursor-pointer h-8" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>Eliminar</DropdownMenuItem>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                  </div>
                 </div>
-              </div>
-            ))}
-            
-            {/* Card de Adicionar - Integrado ao Grid */}
-            <div 
-              onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-              className="aspect-[4/5] border-r border-b border-zinc-900 flex flex-col items-center justify-center cursor-pointer hover:bg-zinc-950 group transition-colors relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.01)_10px,rgba(255,255,255,0.01)_20px)] opacity-0 group-hover:opacity-100 transition-opacity" />
-              <Plus className="h-12 w-12 text-zinc-800 group-hover:text-white mb-6 transition-colors duration-500" />
-              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.3em] group-hover:text-zinc-400">Novo Protocolo</span>
-            </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -670,54 +600,52 @@ function LegacyApp() {
   );
 
   const renderProjectView = () => (
-    <div className="space-y-12 animate-in slide-in-from-bottom-8 duration-500 pb-20">
-      <div className="flex flex-col gap-8 border-b border-zinc-900 pb-8">
-        <div className="flex justify-between items-start">
-           <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-10 px-4 uppercase text-[10px] tracking-widest"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
-           <div className="flex gap-0">
-              <Button variant="outline" className="border-zinc-800 hover:bg-zinc-900 rounded-none uppercase text-[10px] tracking-widest h-10 text-zinc-500 hover:text-white border-r-0" onClick={() => { setCurrentSubProject(null); setCurrentBoardType('kanban'); setCurrentView('subproject'); }}>Quadro Mestre</Button>
-              <Button onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black rounded-none uppercase text-[10px] font-bold tracking-widest h-10 px-6"><Plus className="mr-2 h-3 w-3" /> Nova Área</Button>
-           </div>
+    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
+      <div className="flex flex-col gap-6 border-b border-zinc-900 pb-6">
+        <div className="flex justify-between items-center">
+           <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
+           <Button onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black rounded-none uppercase text-[10px] font-bold tracking-widest h-8 px-4"><Plus className="mr-2 h-3 w-3" /> Nova Área</Button>
         </div>
         
         <div>
-          <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter flex items-center gap-4 mb-2">
+          <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
             {currentProject.name} 
-            {currentProject.isProtected && <Lock className="h-8 w-8 text-zinc-800"/>}
+            {currentProject.isProtected && <Lock className="h-6 w-6 text-zinc-800"/>}
           </h1>
-          <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest max-w-2xl leading-relaxed pl-1">{currentProject.description}</p>
+          <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-widest mt-2">{currentProject.description}</p>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 border-l border-t border-zinc-900">
-        {currentProject.subProjects?.filter(s => !s.isArchived).map(sub => (
-          <div key={sub.id} onClick={() => handleAccessProject(sub, 'subproject')} className="group cursor-pointer bg-black border-r border-b border-zinc-900 hover:bg-zinc-950 transition-all duration-300 relative aspect-square p-6 flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-               <FolderOpen className={`h-6 w-6 text-${sub.color || 'zinc'}-600 opacity-50 group-hover:opacity-100 transition-opacity`} />
-               <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-800 hover:text-white rounded-none"><MoreVertical className="h-3 w-3" /></Button></DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none">
-                  <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub }); }} className="text-[10px] uppercase tracking-widest h-8 cursor-pointer">Editar</DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-900 focus:text-red-600 text-[10px] uppercase tracking-widest h-8 cursor-pointer" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-zinc-900 border border-zinc-900">
+        {currentProject.subProjects?.filter(s => !s.isArchived).map(sub => {
+          const colors = COLOR_VARIANTS[sub.color || 'zinc'];
+          return (
+            <div key={sub.id} onClick={() => handleAccessProject(sub, 'subproject')} className="group cursor-pointer bg-black hover:bg-zinc-950 transition-colors p-6 flex flex-col justify-between h-48">
+              <div className="flex justify-between items-start">
+                 <FolderOpen className={`h-5 w-5 ${colors.text} opacity-50 group-hover:opacity-100 transition-opacity`} />
+                 <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-800 hover:text-white rounded-none"><MoreVertical className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none">
+                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub }); }} className="text-[10px] uppercase tracking-widest h-8 cursor-pointer">Editar</DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-900 focus:text-red-600 text-[10px] uppercase tracking-widest h-8 cursor-pointer" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              <div>
+                 <CardTitle className="text-lg font-bold uppercase tracking-tight text-white mb-1">{sub.name}</CardTitle>
+                 <span className="text-zinc-600 text-[9px] font-mono uppercase tracking-widest line-clamp-1">{sub.description || "---"}</span>
+              </div>
             </div>
-            
-            <div className="space-y-2">
-               <CardTitle className="text-xl font-bold uppercase tracking-tight text-white group-hover:translate-x-1 transition-transform">{sub.name}</CardTitle>
-               <CardDescription className="text-zinc-600 text-[10px] font-mono uppercase tracking-widest line-clamp-2">{sub.description || "SEM DESCRIÇÃO"}</CardDescription>
-            </div>
-
-            <div className="w-full h-[1px] bg-zinc-900 group-hover:bg-zinc-700 transition-colors" />
-          </div>
-        ))}
-        {/* Card Vazio para Adicionar */}
+          );
+        })}
+        {/* Botão de Adicionar - Integrado */}
         <div 
           onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })}
-          className="border-r border-b border-zinc-900 bg-transparent flex flex-col items-center justify-center aspect-square cursor-pointer group transition-all hover:bg-zinc-950/30"
+          className="bg-black flex flex-col items-center justify-center cursor-pointer group hover:bg-zinc-900/30 transition-colors h-48"
         >
-          <Plus className="h-8 w-8 text-zinc-800 group-hover:text-zinc-500 mb-4 transition-colors" />
-          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-800 group-hover:text-zinc-500">Criar Área</span>
+          <Plus className="h-6 w-6 text-zinc-800 group-hover:text-zinc-500 mb-2 transition-colors" />
+          <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-800 group-hover:text-zinc-500">Adicionar</span>
         </div>
       </div>
     </div>
@@ -731,13 +659,13 @@ function LegacyApp() {
 
     return (
       <div className="flex flex-col h-[calc(100vh-6rem)]">
-        <div className="flex items-center justify-between mb-8 border-b border-zinc-900 pb-4">
-          <div className="flex items-baseline gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-zinc-900 pb-4 gap-4">
+          <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => setCurrentView(currentSubProject ? 'project' : 'home')} className="text-zinc-500 hover:text-white uppercase text-[10px] tracking-widest rounded-none px-0"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
-            <h2 className="text-3xl font-black text-white uppercase tracking-tighter">{entityName}</h2>
+            <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">{entityName}</h2>
           </div>
           <Tabs value={currentBoardType} onValueChange={setCurrentBoardType}>
-            <TabsList className="bg-transparent border-b border-transparent rounded-none h-10 p-0 gap-6">
+            <TabsList className="bg-transparent border-b border-transparent rounded-none h-8 p-0 gap-4">
               {enabledTabs.includes('kanban') && <TabsTrigger value="kanban" className="rounded-none uppercase text-[10px] font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Kanban</TabsTrigger>}
               {enabledTabs.includes('todo') && <TabsTrigger value="todo" className="rounded-none uppercase text-[10px] font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Lista</TabsTrigger>}
               {enabledTabs.includes('files') && <TabsTrigger value="files" className="rounded-none uppercase text-[10px] font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Arquivos</TabsTrigger>}
@@ -750,35 +678,33 @@ function LegacyApp() {
           <div className="absolute inset-0 overflow-auto pr-2">
             {/* KANBAN */}
             {currentBoardType === 'kanban' && (
-              <div className="flex h-full gap-0 border-t border-l border-zinc-900 min-w-max">
+              <div className="flex h-full gap-0 border-l border-zinc-900 min-w-max">
                 {data.lists?.map(list => (
-                  <div key={list.id} className="w-80 flex flex-col h-full bg-black border-r border-zinc-900"
+                  <div key={list.id} className="w-72 flex flex-col h-full bg-black border-r border-zinc-900"
                        onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, list.id, 'list')}>
-                    <div className="p-6 border-b border-zinc-900 flex justify-between items-center">
+                    <div className="p-4 border-b border-zinc-900 flex justify-between items-center">
                       <span className="font-bold text-[10px] uppercase tracking-[0.2em] text-zinc-500">{list.title}</span>
                       <span className="text-zinc-700 text-[10px] font-mono">{list.tasks?.length.toString().padStart(2, '0') || '00'}</span>
                     </div>
-                    <div className="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar bg-black">
+                    <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black">
                       {list.tasks?.map(task => (
-                        <Card key={task.id} draggable onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
+                        <div key={task.id} draggable onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
                               onDragEnter={(e) => handleDragEnter(e, task.id)}
                               onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}
-                              className={`bg-zinc-950 border border-zinc-900 hover:border-zinc-700 cursor-grab active:cursor-grabbing rounded-none shadow-none group transition-all ${dragOverTargetId === task.id ? 'border-t-2 border-t-red-600' : ''}`}>
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start mb-3">
-                              <span className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors uppercase tracking-tight leading-tight">{task.title}</span>
+                              className={`bg-zinc-950 border border-zinc-900 hover:border-zinc-700 cursor-grab active:cursor-grabbing p-4 group transition-all ${dragOverTargetId === task.id ? 'border-t-2 border-t-red-600' : ''}`}>
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="text-xs font-bold text-zinc-300 group-hover:text-white transition-colors uppercase leading-tight">{task.title}</span>
                               {task.priority === 'high' && <div className="h-1 w-1 bg-red-600 shrink-0" />}
                             </div>
-                            <div className="flex items-center justify-between border-t border-zinc-900/50 pt-2 mt-2">
+                            <div className="flex items-center justify-between pt-2 border-t border-zinc-900/50 mt-2">
                               {task.responsibleUsers?.length > 0 && <ResponsibleUsersButton users={task.responsibleUsers} />}
                               {task.endDate && <span className="text-[9px] text-zinc-600 font-mono">{new Date(task.endDate).toLocaleDateString().slice(0,5)}</span>}
                             </div>
-                          </CardContent>
-                        </Card>
+                        </div>
                       ))}
-                      <Button variant="ghost" className="w-full border border-dashed border-zinc-900 text-zinc-700 hover:text-white hover:bg-zinc-950 rounded-none h-12 uppercase text-[10px] tracking-widest"
+                      <Button variant="ghost" className="w-full border border-dashed border-zinc-900 text-zinc-700 hover:text-white hover:bg-zinc-950 rounded-none h-10 uppercase text-[9px] tracking-widest"
                         onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
-                        <Plus className="h-3 w-3 mr-2" /> Adicionar Item
+                        <Plus className="h-3 w-3 mr-2" /> Adicionar
                       </Button>
                     </div>
                   </div>
@@ -788,13 +714,13 @@ function LegacyApp() {
 
             {/* TODO LIST */}
             {currentBoardType === 'todo' && (
-              <div className="max-w-5xl mx-auto space-y-12">
+              <div className="max-w-4xl mx-auto space-y-8">
                 {data.lists?.map(list => (
                   <div key={list.id} className="space-y-0">
-                    <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] mb-4 pl-4 border-l-2 border-red-600">{list.title}</h3>
+                    <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] mb-2 pl-4 border-l-2 border-red-600">{list.title}</h3>
                     <div className="bg-black border-t border-zinc-900">
                       {list.tasks?.map(task => (
-                        <div key={task.id} className="p-4 flex items-center gap-6 border-b border-zinc-900 hover:bg-zinc-950/50 transition-colors group">
+                        <div key={task.id} className="p-3 flex items-center gap-4 border-b border-zinc-900 hover:bg-zinc-950/50 transition-colors group">
                           <Checkbox checked={list.title === 'Concluído'} className="border-zinc-800 data-[state=checked]:bg-white data-[state=checked]:text-black rounded-none w-4 h-4" />
                           <div className="flex-1 cursor-pointer" onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}>
                             <p className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors uppercase tracking-wide">{task.title}</p>
@@ -808,7 +734,7 @@ function LegacyApp() {
                           </div>
                         </div>
                       ))}
-                      <Button variant="ghost" className="w-full text-[10px] text-zinc-600 hover:text-white justify-start h-12 px-4 uppercase tracking-widest rounded-none hover:bg-zinc-950" onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
+                      <Button variant="ghost" className="w-full text-[10px] text-zinc-600 hover:text-white justify-start h-10 px-4 uppercase tracking-widest rounded-none hover:bg-zinc-950" onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
                         <Plus className="h-3 w-3 mr-2" /> Inserir Dados
                       </Button>
                     </div>
@@ -817,10 +743,10 @@ function LegacyApp() {
               </div>
             )}
 
-            {/* FILES (Visual Monolítico) */}
+            {/* FILES */}
             {currentBoardType === 'files' && (
               <div 
-                className={`min-h-[500px] relative transition-all duration-500 p-0 ${isFileDragging ? 'bg-zinc-950 border-2 border-dashed border-red-900' : ''}`}
+                className={`min-h-[400px] relative transition-all duration-300 p-0 ${isFileDragging ? 'bg-zinc-950 border-2 border-dashed border-red-900' : ''}`}
                 onDragOver={(e) => { e.preventDefault(); setIsFileDragging(true); }}
                 onDragLeave={(e) => { e.preventDefault(); setIsFileDragging(false); }}
                 onDrop={handleFileDrop}
@@ -828,20 +754,19 @@ function LegacyApp() {
                 {(isFileDragging || isUploading) && (
                   <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/90 backdrop-blur-sm">
                     {isUploading ? (
-                       <MonolithLoader text="TRANSFERINDO DADOS" />
+                       <SimpleLoader />
                     ) : (
                        <div className="text-center animate-pulse">
-                          <Upload className="w-12 h-12 text-white mx-auto mb-4" />
-                          <p className="text-white font-mono text-xs uppercase tracking-[0.5em]">Iniciar Upload</p>
+                          <Upload className="w-8 h-8 text-white mx-auto mb-4" />
+                          <p className="text-white font-mono text-xs uppercase tracking-[0.5em]">Solte para Upload</p>
                        </div>
                     )}
                   </div>
                 )}
 
-                <div className="flex justify-between items-center bg-zinc-950 p-8 border-b border-zinc-900 mb-8">
+                <div className="flex justify-between items-center bg-zinc-950 p-6 border-b border-zinc-900 mb-6">
                   <div>
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Banco de Dados</h3>
-                    <p className="text-[10px] text-zinc-600 mt-2 font-mono uppercase tracking-widest">Arquivos e Documentação Técnica</p>
+                    <h3 className="text-xl font-black text-white uppercase tracking-tighter">Arquivos</h3>
                   </div>
                   <div className="relative">
                     <Input 
@@ -850,25 +775,25 @@ function LegacyApp() {
                       multiple 
                       onChange={handleFileUploadWithFeedback} 
                     />
-                    <Button className="bg-white text-black hover:bg-zinc-200 uppercase tracking-widest text-[10px] font-bold rounded-none h-12 px-8">
-                      <Upload className="mr-2 h-4 w-4" /> Carregar
+                    <Button className="bg-white text-black hover:bg-zinc-200 uppercase tracking-widest text-[10px] font-bold rounded-none h-10 px-6">
+                      <Upload className="mr-2 h-4 w-4" /> Upload
                     </Button>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-0 border-t border-l border-zinc-900">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-px bg-zinc-900 border border-zinc-900">
                   {files?.filter(f => f.subProjectId === (currentSubProject?.id || null)).map(file => (
-                    <div key={file.id} className="bg-black border-r border-b border-zinc-900 hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-6">
+                    <div key={file.id} className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4">
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                           <Button size="icon" variant="ghost" className="h-6 w-6 text-zinc-600 hover:text-red-600 rounded-none" onClick={() => handleDeleteFile(file.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                       </div>
-                      <div className="mb-4 opacity-30 group-hover:opacity-100 transition-opacity duration-500 scale-90 group-hover:scale-100">
-                        {file.type?.includes('image') ? <Eye className="w-8 h-8 text-white"/> : <FileText className="w-8 h-8 text-white"/>}
+                      <div className="mb-3 opacity-50 group-hover:opacity-100 transition-opacity">
+                        {file.type?.includes('image') ? <Eye className="w-6 h-6 text-white"/> : <FileText className="w-6 h-6 text-white"/>}
                       </div>
                       <p className="text-[10px] text-zinc-500 font-mono truncate w-full text-center group-hover:text-white transition-colors">{file.name}</p>
-                      <p className="text-[8px] text-zinc-700 uppercase tracking-widest mt-2">{formatFileSize(file.size)}</p>
+                      <p className="text-[8px] text-zinc-700 uppercase tracking-widest mt-1">{formatFileSize(file.size)}</p>
                       <a href={file.data} download={file.name} className="absolute inset-0 z-10" />
                     </div>
                   ))}
@@ -890,10 +815,10 @@ function LegacyApp() {
             {currentView === 'home' && (
               <motion.div 
                 key="home"
-                initial={{ opacity: 0, filter: "blur(10px)" }}
-                animate={{ opacity: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, scale: 0.98, filter: "blur(5px)" }}
-                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
               >
                 {renderHome()}
               </motion.div>
@@ -901,10 +826,10 @@ function LegacyApp() {
             {currentView === 'project' && (
               <motion.div 
                 key="project"
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -50 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
               >
                 {renderProjectView()}
               </motion.div>
@@ -915,7 +840,7 @@ function LegacyApp() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
               >
                 {renderBoard()}
               </motion.div>
@@ -924,25 +849,24 @@ function LegacyApp() {
         </div>
       </main>
 
-      {/* MODAL GLOBAL - Brutalista */}
+      {/* MODAL GLOBAL */}
       <Dialog open={modalState.isOpen} onOpenChange={(open) => !open && setModalState({ ...modalState, isOpen: false })}>
-        <DialogContent className="sm:max-w-[500px] bg-black border border-zinc-800 text-zinc-100 p-0 gap-0 shadow-[0_0_100px_-20px_rgba(0,0,0,1)] rounded-none">
-          <DialogHeader className="p-8 border-b border-zinc-900">
-            <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
-              {modalState.type === 'project' && (modalState.mode === 'create' ? 'Inicializar Projeto' : 'Configurar Projeto')}
+        <DialogContent className="sm:max-w-[400px] bg-black border border-zinc-800 text-zinc-100 p-0 gap-0 shadow-2xl rounded-none">
+          <DialogHeader className="p-6 border-b border-zinc-900">
+            <DialogTitle className="text-lg font-black uppercase tracking-tight">
+              {modalState.type === 'project' && (modalState.mode === 'create' ? 'Novo Projeto' : 'Configurar')}
               {modalState.type === 'subProject' && (modalState.mode === 'create' ? 'Nova Área' : 'Editar Área')}
-              {modalState.type === 'password' && 'Acesso Restrito // Nível 5'}
-              {modalState.type === 'task' && (modalState.mode === 'edit' ? 'Dados da Tarefa' : 'Nova Entrada')}
+              {modalState.type === 'password' && 'Acesso Restrito'}
+              {modalState.type === 'task' && (modalState.mode === 'edit' ? 'Editar' : 'Novo Item')}
             </DialogTitle>
           </DialogHeader>
           
-          <div className="p-8">
+          <div className="p-6">
             {modalState.type === 'password' ? (
               <form onSubmit={(e) => { e.preventDefault(); handlePasswordSubmit(new FormData(e.target).get('password')); }}>
-                <div className="space-y-8">
-                  <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest text-center">Protocolo de Segurança Ativo</p>
-                  <Input type="password" name="password" placeholder="SENHA" autoFocus className="bg-black border-zinc-800 rounded-none h-16 text-center text-xl tracking-[0.5em] uppercase focus:border-red-600 focus:ring-0 text-white placeholder:text-zinc-800" />
-                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 rounded-none h-14 uppercase font-bold tracking-widest text-xs">Desbloquear</Button>
+                <div className="space-y-4">
+                  <Input type="password" name="password" placeholder="SENHA" autoFocus className="bg-zinc-950 border-zinc-800 rounded-none h-12 text-center text-lg tracking-[0.5em] uppercase focus:border-white text-white placeholder:text-zinc-800" />
+                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200 rounded-none h-12 uppercase font-bold tracking-widest text-xs">Entrar</Button>
                 </div>
               </form>
             ) : (
@@ -951,89 +875,69 @@ function LegacyApp() {
                 const formData = Object.fromEntries(new FormData(e.target));
                 if (modalState.type === 'project' || modalState.type === 'subProject') handleSaveProject(formData);
                 if (modalState.type === 'task') handleTaskAction('save', formData);
-              }} className="space-y-6">
+              }} className="space-y-4">
                 
                 {(modalState.type === 'project' || modalState.type === 'subProject') && (
                   <>
                     <div className="space-y-2">
-                      <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Identificação</Label>
-                      <Input name="name" defaultValue={modalState.data?.name} required className="bg-zinc-950 border-zinc-800 rounded-none h-12 focus:border-white text-white placeholder:text-zinc-700" placeholder="NOME DO PROJETO" />
+                      <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Nome</Label>
+                      <Input name="name" defaultValue={modalState.data?.name} required className="bg-zinc-950 border-zinc-800 rounded-none h-10 focus:border-white text-white" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Detalhes</Label>
-                      <Textarea name="description" defaultValue={modalState.data?.description} className="bg-zinc-950 border-zinc-800 rounded-none min-h-[100px] text-zinc-300 focus:border-white placeholder:text-zinc-700" placeholder="DESCRIÇÃO TÉCNICA" />
+                      <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Descrição</Label>
+                      <Textarea name="description" defaultValue={modalState.data?.description} className="bg-zinc-950 border-zinc-800 rounded-none min-h-[80px] text-zinc-300 focus:border-white" />
                     </div>
                     
-                    <div className="space-y-4 pt-4 border-t border-zinc-900">
-                      <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Módulos Ativos</Label>
-                      <div className="grid grid-cols-2 gap-px bg-zinc-900 border border-zinc-900">
-                        {ALL_TABS.map(tab => (
-                          <div key={tab.id} className="flex items-center space-x-3 p-4 bg-black hover:bg-zinc-950 transition-colors">
-                            <Checkbox 
-                              id={`view_${tab.id}`} 
-                              name={`view_${tab.id}`} 
-                              defaultChecked={!modalState.data || (modalState.data.enabledTabs && modalState.data.enabledTabs.includes(tab.id))}
-                              className="rounded-none border-zinc-700 data-[state=checked]:bg-white data-[state=checked]:text-black w-4 h-4"
-                            />
-                            <Label htmlFor={`view_${tab.id}`} className="flex items-center gap-2 cursor-pointer text-[10px] font-bold text-zinc-300 uppercase tracking-wider">
-                              <tab.icon className="h-3 w-3 text-zinc-500" /> {tab.label}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-8 pt-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Espectro</Label>
+                        <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Cor</Label>
                         <Select name="color" defaultValue={modalState.data?.color || "blue"}>
-                          <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-none h-12"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-none h-10"><SelectValue /></SelectTrigger>
                           <SelectContent className="bg-black border-zinc-800 rounded-none">
-                            {USER_COLORS.map(c => <SelectItem key={c} value={c} className="uppercase text-[10px] tracking-widest focus:bg-zinc-900 cursor-pointer">{c}</SelectItem>)}
+                            {USER_COLORS.map(c => <SelectItem key={c} value={c} className="uppercase text-[10px] tracking-widest cursor-pointer">{c}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex items-end pb-4 gap-3">
-                        <Checkbox id="prot" name="isProtected" defaultChecked={modalState.data?.isProtected} className="rounded-none border-zinc-700 w-5 h-5 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600" />
-                        <Label htmlFor="prot" className="text-xs text-zinc-300 cursor-pointer uppercase tracking-wider font-bold">Criptografar</Label>
+                      <div className="flex items-end pb-3 gap-3">
+                        <Checkbox id="prot" name="isProtected" defaultChecked={modalState.data?.isProtected} className="rounded-none border-zinc-700" />
+                        <Label htmlFor="prot" className="text-[10px] text-zinc-400 cursor-pointer uppercase tracking-widest">Senha</Label>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Chave de Segurança</Label>
-                      <Input name="password" type="password" defaultValue={modalState.data?.password} className="bg-zinc-950 border-zinc-800 rounded-none h-12 text-white" placeholder="••••••" />
-                    </div>
+                    {modalState.data?.isProtected && (
+                       <Input name="password" type="password" defaultValue={modalState.data?.password} placeholder="Senha do projeto" className="bg-zinc-950 border-zinc-800 rounded-none h-10" />
+                    )}
                   </>
                 )}
 
                 {modalState.type === 'task' && (
                   <>
                     <div className="space-y-2">
-                      <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Título da Entrada</Label>
-                      <Input name="title" defaultValue={modalState.data?.title} required className="bg-zinc-950 border-zinc-800 rounded-none h-14 text-lg font-bold text-white focus:border-white placeholder:text-zinc-700" placeholder="TÍTULO" />
+                      <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Título</Label>
+                      <Input name="title" defaultValue={modalState.data?.title} required className="bg-zinc-950 border-zinc-800 rounded-none h-12 text-base font-bold text-white focus:border-white" />
                     </div>
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                          <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Nível de Prioridade</Label>
+                          <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Prioridade</Label>
                           <Select name="priority" defaultValue={modalState.data?.priority || 'medium'}>
-                              <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-none h-12 text-xs uppercase tracking-wider"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="bg-zinc-950 border-zinc-800 rounded-none h-10 text-xs uppercase"><SelectValue /></SelectTrigger>
                               <SelectContent className="bg-black border-zinc-800 rounded-none">
-                                  <SelectItem value="low" className="text-[10px] uppercase tracking-widest">Baixa</SelectItem>
-                                  <SelectItem value="medium" className="text-[10px] uppercase tracking-widest">Média</SelectItem>
-                                  <SelectItem value="high" className="text-[10px] uppercase tracking-widest text-red-500">Crítica</SelectItem>
+                                  <SelectItem value="low" className="text-[10px]">Baixa</SelectItem>
+                                  <SelectItem value="medium" className="text-[10px]">Média</SelectItem>
+                                  <SelectItem value="high" className="text-[10px] text-red-500">Alta</SelectItem>
                               </SelectContent>
                           </Select>
                       </div>
                       <div className="space-y-2">
-                          <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Prazo Limite</Label>
-                          <Input type="date" name="endDate" defaultValue={modalState.data?.endDate} className="bg-zinc-950 border-zinc-800 rounded-none h-12 text-xs uppercase tracking-wider text-zinc-300" />
+                          <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Data</Label>
+                          <Input type="date" name="endDate" defaultValue={modalState.data?.endDate} className="bg-zinc-950 border-zinc-800 rounded-none h-10 text-xs uppercase text-zinc-300" />
                       </div>
                     </div>
                   </>
                 )}
 
-                <DialogFooter className="pt-8 border-t border-zinc-900 gap-4">
-                  <Button type="button" variant="ghost" onClick={() => setModalState({ ...modalState, isOpen: false })} className="hover:bg-zinc-900 hover:text-white text-zinc-500 rounded-none uppercase text-[10px] tracking-widest h-12 px-6">Abortar</Button>
-                  <Button type="submit" className="bg-white text-black hover:bg-zinc-200 rounded-none uppercase text-[10px] font-bold tracking-widest h-12 px-8">Confirmar</Button>
+                <DialogFooter className="pt-6 border-t border-zinc-900 gap-2">
+                  <Button type="button" variant="ghost" onClick={() => setModalState({ ...modalState, isOpen: false })} className="hover:bg-zinc-900 hover:text-white text-zinc-500 rounded-none uppercase text-[10px] tracking-widest h-10 px-4">Cancelar</Button>
+                  <Button type="submit" className="bg-white text-black hover:bg-zinc-200 rounded-none uppercase text-[10px] font-bold tracking-widest h-10 px-6">Salvar</Button>
                 </DialogFooter>
               </form>
             )}
