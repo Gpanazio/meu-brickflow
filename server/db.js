@@ -9,16 +9,22 @@ export const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
 
 // --- CONFIGURAÇÃO DE SEGURANÇA E CONEXÃO ---
 const connectionString = process.env.DATABASE_URL || '';
-const isLocalConnection = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+// Verifica se é localhost OU se é IP local (192.168...)
+const isLocalConnection = 
+  connectionString.includes('localhost') || 
+  connectionString.includes('127.0.0.1') ||
+  connectionString.includes('@postgres:5432'); // Caso docker interno
 
 // Se for conexão remota (Railway/Supabase), forçamos SSL.
-// Se for local, desligamos para evitar erros de certificado.
 const useSSL = hasDatabaseUrl && !isLocalConnection;
 
 if (!hasDatabaseUrl) {
-  console.error("❌ ERRO: DATABASE_URL não definida! O sistema funcionará apenas offline.");
+  console.error("❌ ERRO: DATABASE_URL não definida!");
 } else {
+  // Mascara a senha para logar a URL e ajudar no debug
+  const maskedUrl = connectionString.replace(/:([^:@]+)@/, ':****@');
   console.log(`✅ Configurando Banco de Dados...`);
+  console.log(`   - URL: ${maskedUrl}`);
   console.log(`   - Modo: ${isLocalConnection ? 'Local' : 'Remoto (Nuvem)'}`);
   console.log(`   - SSL: ${useSSL ? 'ATIVO' : 'INATIVO'}`);
 }
@@ -27,43 +33,34 @@ const pool = hasDatabaseUrl
   ? new Pool({
       connectionString,
       ssl: useSSL ? { rejectUnauthorized: false } : false,
-      
-      // AUMENTADO PARA 60 SEGUNDOS
-      // Bancos gratuitos do Railway podem levar até 30s para "acordar"
-      connectionTimeoutMillis: 60000, 
-      
-      // Fecha conexões inativas após 30s para não lotar o banco
+      connectionTimeoutMillis: 30000, // 30s
       idleTimeoutMillis: 30000,
-      
-      // Limite de conexões simultâneas (evita erro de "too many connections" no plano free)
-      max: 10 
+      max: 10,
+      // Configuração importante para evitar queda em proxies (Railway Public URL)
+      keepAlive: true 
     })
   : null;
 
 // --- TESTE DE CONEXÃO AO INICIAR ---
 if (pool) {
-  // Tenta conectar sem travar o boot do servidor
   (async () => {
-    let retries = 3;
-    while (retries > 0) {
+    // Tenta até 5 vezes com espera progressiva
+    for (let i = 1; i <= 5; i++) {
       try {
+        console.log(`🔄 Tentativa de conexão ${i}/5...`);
         const client = await pool.connect();
-        console.log('✅ CONEXÃO ESTABELECIDA COM SUCESSO!');
         const res = await client.query('SELECT NOW()');
-        console.log(`   - Data do Servidor: ${res.rows[0].now}`);
+        console.log(`✅ CONEXÃO SUCESSO! Data do DB: ${res.rows[0].now}`);
         client.release();
-        break;
+        return; // Sai da função se der certo
       } catch (err) {
-        retries--;
-        console.error(`⚠️ Tentativa de conexão falhou (${3 - retries}/3): ${err.message}`);
-        if (err.message.includes('timeout')) {
-          console.log("⏳ O banco pode estar 'dormindo'. Aguardando 5s antes de tentar de novo...");
-        }
-        if (retries === 0) {
-          console.error("❌ FALHA CRÍTICA: Não foi possível conectar ao banco após 3 tentativas.");
-          console.error("👉 Verifique sua internet ou acesse o dashboard do Railway para ver se o serviço está ativo.");
+        console.error(`⚠️ Falha na tentativa ${i}: ${err.message}`);
+        if (i < 5) {
+          const waitTime = i * 2000; // 2s, 4s, 6s...
+          console.log(`⏳ Aguardando ${waitTime/1000}s...`);
+          await new Promise(res => setTimeout(res, waitTime));
         } else {
-          await new Promise(res => setTimeout(res, 5000));
+          console.error("❌ FALHA CRÍTICA: Verifique se a URL no .env é a 'Public Networking' do Railway.");
         }
       }
     }
@@ -71,16 +68,11 @@ if (pool) {
 }
 
 export const query = (text, params) => {
-  if (!pool) {
-    // Retorna erro silencioso ou loga, mas não quebra a promessa se for opcional
-    return Promise.reject(new Error('DATABASE_URL não configurada.'));
-  }
+  if (!pool) return Promise.reject(new Error('DATABASE_URL não configurada.'));
   return pool.query(text, params);
 };
 
 export const getClient = async () => {
-  if (!pool) {
-    throw new Error('DATABASE_URL não configurada.');
-  }
+  if (!pool) throw new Error('DATABASE_URL não configurada.');
   return pool.connect();
 };
