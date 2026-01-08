@@ -8,11 +8,12 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-// --- IMPORTS OBRIGATÓRIOS ---
+// --- IMPORTS ---
 import LegacyHome from './components/legacy/LegacyHome';
 import LegacyProjectView from './components/legacy/LegacyProjectView';
 import LegacyBoard from './components/legacy/LegacyBoard';
-import LegacyHeader from './components/legacy/LegacyHeader'; // <--- O IMPORT QUE FALTOU
+import LegacyHeader from './components/legacy/LegacyHeader';
+import { CreateProjectModal } from './components/CreateProjectModal'; // NOVO IMPORT
 import { useUsers } from './hooks/useUsers'; 
 import { useFiles } from './hooks/useFiles'; 
 import SudokuGame from './components/SudokuGame';
@@ -93,9 +94,6 @@ const Dialog = ({ open, onOpenChange, children }) => {
   );
 };
 const DialogContent = ({ className, children }) => <div className={cn("", className)}>{children}</div>;
-const DialogHeader = ({ className, ...props }) => <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />;
-const DialogFooter = ({ className, ...props }) => <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />;
-const DialogTitle = ({ className, ...props }) => <h2 className={cn("text-xl font-semibold leading-none tracking-tight text-white", className)} {...props} />;
 
 const Select = ({ value, onValueChange, name, defaultValue }) => (
   <div className="relative">
@@ -139,15 +137,6 @@ const COLOR_VARIANTS = {
   orange: { bg: 'bg-orange-600', text: 'text-orange-500', border: 'border-orange-900' },
   zinc: { bg: 'bg-zinc-600', text: 'text-zinc-500', border: 'border-zinc-900' }
 };
-
-const ALL_TABS = [
-  { id: 'todo', label: 'LISTA', icon: ListTodo },
-  { id: 'kanban', label: 'KANBAN', icon: KanbanSquare },
-  { id: 'files', label: 'ARQUIVOS', icon: FileText },
-  { id: 'goals', label: 'METAS', icon: Goal }
-];
-
-// --- APP PRINCIPAL ---
 
 export default function App() {
   const [appData, setAppData] = useState(null); 
@@ -197,9 +186,7 @@ export default function App() {
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   };
 
-  // --- CARREGAMENTO ---
   useEffect(() => {
-    // Carrega frase
     if (absurdPhrases && absurdPhrases.length > 0) {
       setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
     } else {
@@ -207,13 +194,12 @@ export default function App() {
     }
     setMegaSenaNumbers(generateMegaSenaNumbers());
     
-    // Timer para "Servidor Dormindo"
     const slowLoadTimer = setTimeout(() => setShowSlowLoad(true), 3000);
 
     const loadData = async () => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         const response = await fetch('/api/projects', { signal: controller.signal });
         clearTimeout(timeoutId);
@@ -242,7 +228,6 @@ export default function App() {
     return () => clearTimeout(slowLoadTimer);
   }, []);
 
-  // --- SYNC ---
   const saveDataToApi = async (newData) => {
     setIsSyncing(true);
     try {
@@ -267,7 +252,6 @@ export default function App() {
           setAppData(normalized);
           appDataRef.current = normalized;
         }
-        console.warn('Conflito de versão detectado:', conflict);
         return;
       }
       if (response.ok) {
@@ -338,7 +322,6 @@ export default function App() {
       const data = await response.json();
       setProjectHistory(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Erro ao carregar histórico:", err);
       setProjectHistory([]);
       setHistoryError(true);
     } finally {
@@ -364,7 +347,6 @@ export default function App() {
       setCurrentProject(updatedProject);
       await fetchProjectHistory(currentProject.id);
     } catch (err) {
-      console.error("Erro ao restaurar:", err);
       setConnectionError(true);
     } finally {
       setIsSyncing(false);
@@ -380,7 +362,6 @@ export default function App() {
       const data = await response.json();
       setBackups(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Erro ao carregar backups:', err);
       setBackups([]);
       setBackupError(true);
     } finally {
@@ -400,7 +381,6 @@ export default function App() {
         subProjects: Array.isArray(data?.subProjects) ? data.subProjects : []
       });
     } catch (err) {
-      console.error('Erro ao carregar lixeira:', err);
       setTrashItems({ projects: [], subProjects: [] });
       setTrashError(true);
     } finally {
@@ -430,7 +410,6 @@ export default function App() {
       setCurrentView(updatedProject ? 'project' : 'home');
       setConnectionError(false);
     } catch (err) {
-      console.error('Erro ao restaurar backup:', err);
       setConnectionError(true);
     } finally {
       setIsSyncing(false);
@@ -455,7 +434,6 @@ export default function App() {
       setConnectionError(false);
       await fetchTrash();
     } catch (err) {
-      console.error('Erro ao restaurar item:', err);
       setConnectionError(true);
     } finally {
       setIsSyncing(false);
@@ -548,8 +526,6 @@ export default function App() {
       ));
     });
   };
-
-  // --- RENDER ---
 
   if (!appData && !connectionError) {
     return (
@@ -700,8 +676,7 @@ export default function App() {
               setCurrentView={setCurrentView} 
               setModalState={setModalState} 
               handleTaskAction={(action, data) => {
-                 if (action === 'save') { /* Lógica movida para o Modal Global */ }
-                 else if (action === 'delete') {
+                 if (action === 'delete') {
                     updateProjects(prev => {
                         return prev.map(p => {
                             if (p.id !== currentProject.id) return p;
@@ -727,113 +702,110 @@ export default function App() {
         </div>
       </main>
 
-      {/* MODAL GLOBAL */}
-      {modalState.isOpen && (
-        <Dialog open={modalState.isOpen} onOpenChange={(open) => setModalState(prev => ({ ...prev, isOpen: open }))}>
-           <div className="bg-black text-white p-2">
-             <h2 className="text-xl font-black uppercase mb-6">{modalState.mode === 'create' ? 'Novo' : 'Editar'} {modalState.type === 'project' ? 'Projeto' : 'Item'}</h2>
-             
-             <form onSubmit={(e) => {
-               e.preventDefault();
-               const fd = new FormData(e.target);
-               const data = Object.fromEntries(fd);
-               
-               if (modalState.type === 'project') {
-                 if (modalState.mode === 'create') {
-                    const newProj = { 
-                      id: generateId('proj'), 
-                      ...data, 
-                      subProjects: [], 
-                      boardData: {},
-                      createdAt: new Date().toISOString(),
-                      createdBy: currentUser.username,
-                      isArchived: false,
-                      deleted_at: null,
-                      isProtected: data.isProtected === 'on',
-                      color: data.color || 'blue'
-                    };
-                    updateProjects(prev => [...prev, newProj]);
-                 } else {
-                    updateProjects(prev => prev.map(p => p.id === modalState.data.id ? { ...p, ...data, isProtected: data.isProtected === 'on' } : p));
-                 }
-               } else if (modalState.type === 'subProject') {
-                  const targetProjId = currentProject.id;
-                  if (modalState.mode === 'create') {
-                      const newSub = {
-                          id: generateId('sub'),
-                          ...data,
-                          boardData: { 
-                            todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'CONCLUÍDO', tasks: [] }] }, 
-                            kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] }, 
-                            files: { files: [] }
-                          },
-                          isArchived: false,
-                          deleted_at: null
-                      };
-                      updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: [...(p.subProjects || []), newSub] } : p));
-                  } else {
-                      updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: p.subProjects.map(sp => sp.id === modalState.data.id ? { ...sp, ...data } : sp) } : p));
-                  }
-               } else if (modalState.type === 'task') {
-                  const listId = modalState.listId || modalState.data.listId;
-                  const taskData = { ...data, id: modalState.mode === 'create' ? generateId('task') : modalState.data.id, responsibleUsers: [] };
-                  
-                  updateProjects(prev => {
-                      return prev.map(p => {
-                          if (p.id !== currentProject.id) return p;
-                          return {
-                              ...p,
-                              subProjects: p.subProjects.map(sp => {
-                                  if (sp.id !== currentSubProject.id) return sp;
-                                  const board = sp.boardData[currentBoardType];
-                                  const newLists = board.lists.map(l => {
-                                      if (l.id !== listId) return l;
-                                      return { ...l, tasks: modalState.mode === 'create' ? [...l.tasks, taskData] : l.tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t) };
-                                  });
-                                  return { ...sp, boardData: { ...sp.boardData, [currentBoardType]: { ...board, lists: newLists } } };
-                              })
+      {/* MODAL GLOBAL RESTAURADO - CRIAÇÃO DE PROJETO */}
+      {modalState.isOpen && modalState.type === 'project' && modalState.mode === 'create' ? (
+        <CreateProjectModal 
+          isOpen={modalState.isOpen}
+          onClose={() => setModalState({ isOpen: false, type: null })}
+          onCreate={(projectData) => {
+             const newProj = { 
+               id: generateId('proj'), 
+               ...projectData, 
+               createdAt: new Date().toISOString(),
+               createdBy: currentUser.username,
+               isArchived: false,
+               deleted_at: null
+             };
+             updateProjects(prev => [...prev, newProj]);
+             setModalState({ isOpen: false, type: null });
+          }}
+        />
+      ) : (
+        /* MODAL GENÉRICO PARA SUBPROJETOS E TASKS */
+        modalState.isOpen && (
+          <Dialog open={modalState.isOpen} onOpenChange={(open) => setModalState(prev => ({ ...prev, isOpen: open }))}>
+             <div className="bg-black text-white p-2">
+                <h2 className="text-xl font-black uppercase mb-6">{modalState.mode === 'create' ? 'Novo' : 'Editar'} {modalState.type === 'subProject' ? 'Área' : 'Item'}</h2>
+                <form onSubmit={(e) => {
+                   e.preventDefault();
+                   const fd = new FormData(e.target);
+                   const data = Object.fromEntries(fd);
+                   
+                   if (modalState.type === 'subProject') {
+                      const targetProjId = currentProject.id;
+                      if (modalState.mode === 'create') {
+                          const newSub = {
+                              id: generateId('sub'),
+                              ...data,
+                              boardData: { 
+                                todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'CONCLUÍDO', tasks: [] }] }, 
+                                kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] }, 
+                                files: { files: [] }
+                              },
+                              isArchived: false,
+                              deleted_at: null
                           };
+                          updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: [...(p.subProjects || []), newSub] } : p));
+                      } else {
+                          updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: p.subProjects.map(sp => sp.id === modalState.data.id ? { ...sp, ...data } : sp) } : p));
+                      }
+                   } else if (modalState.type === 'task') {
+                      const listId = modalState.listId || modalState.data.listId;
+                      const taskData = { ...data, id: modalState.mode === 'create' ? generateId('task') : modalState.data.id, responsibleUsers: [] };
+                      updateProjects(prev => {
+                          return prev.map(p => {
+                              if (p.id !== currentProject.id) return p;
+                              return {
+                                  ...p,
+                                  subProjects: p.subProjects.map(sp => {
+                                      if (sp.id !== currentSubProject.id) return sp;
+                                      const board = sp.boardData[currentBoardType];
+                                      const newLists = board.lists.map(l => {
+                                          if (l.id !== listId) return l;
+                                          return { ...l, tasks: modalState.mode === 'create' ? [...l.tasks, taskData] : l.tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t) };
+                                      });
+                                      return { ...sp, boardData: { ...sp.boardData, [currentBoardType]: { ...board, lists: newLists } } };
+                                  })
+                              };
+                          });
                       });
-                  });
-               }
-
-               setModalState({ isOpen: false, type: null });
-             }} className="space-y-6">
-               
-               {/* Formulário Genérico */}
-               <div className="space-y-2">
-                 <Label>Nome / Título</Label>
-                 <Input name="name" defaultValue={modalState.data?.name || modalState.data?.title} required autoFocus className="bg-zinc-950 border-zinc-800" />
-               </div>
-               
-               {modalState.type !== 'task' && (
+                   }
+                   setModalState({ isOpen: false, type: null });
+                }} className="space-y-6">
+                   
                    <div className="space-y-2">
-                     <Label>Descrição</Label>
-                     <textarea name="description" defaultValue={modalState.data?.description} className="w-full bg-zinc-950 border border-zinc-800 p-3 text-sm text-white rounded-md focus:outline-none focus:ring-1 focus:ring-red-600 min-h-[100px]" />
+                     <Label>Nome / Título</Label>
+                     <Input name={modalState.type === 'task' ? "title" : "name"} defaultValue={modalState.data?.name || modalState.data?.title} required autoFocus className="bg-zinc-950 border-zinc-800 text-white" />
                    </div>
-               )}
+                   
+                   {modalState.type !== 'task' && (
+                       <div className="space-y-2">
+                         <Label>Descrição</Label>
+                         <textarea name="description" defaultValue={modalState.data?.description} className="w-full bg-zinc-950 border border-zinc-800 p-3 text-sm text-white rounded-md focus:outline-none focus:ring-1 focus:ring-red-600 min-h-[100px]" />
+                       </div>
+                   )}
 
-               {modalState.type === 'project' && (
-                   <div className="space-y-2">
-                       <Label>Cor</Label>
-                       <Select name="color" defaultValue={modalState.data?.color || 'blue'} />
-                   </div>
-               )}
+                   {modalState.type === 'subProject' && (
+                       <div className="space-y-2">
+                           <Label>Cor</Label>
+                           <Select name="color" defaultValue={modalState.data?.color || 'blue'} />
+                       </div>
+                   )}
 
-               {modalState.type === 'task' && (
-                   <div className="space-y-2">
-                       <Label>Prioridade</Label>
-                       <Select name="priority" defaultValue={modalState.data?.priority || 'medium'} />
-                   </div>
-               )}
-               
-               <Button type="submit" className="w-full bg-white text-zinc-950 font-bold uppercase hover:bg-zinc-200">Salvar</Button>
-             </form>
-           </div>
-        </Dialog>
+                   {modalState.type === 'task' && (
+                       <div className="space-y-2">
+                           <Label>Prioridade</Label>
+                           <Select name="priority" defaultValue={modalState.data?.priority || 'medium'} />
+                       </div>
+                   )}
+                   
+                   <Button type="submit" className="w-full bg-white text-zinc-950 font-bold uppercase hover:bg-zinc-200">Salvar</Button>
+                </form>
+             </div>
+          </Dialog>
+        )
       )}
 
-      {/* COMPONENTE DE MODAL DE USUÁRIO - DEFINIDO ABAIXO */}
       <UserSettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
@@ -850,8 +822,6 @@ export default function App() {
     </div>
   );
 }
-
-// --- SUB-COMPONENTES AUXILIARES ---
 
 function UserSettingsModal({
   isOpen,
