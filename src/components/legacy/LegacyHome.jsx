@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { Plus, MoreVertical, Lock, Sparkles, Dna } from 'lucide-react';
@@ -17,8 +17,24 @@ function LegacyHome({
   handleDeleteProject,
   COLOR_VARIANTS
 }) {
-  // Safe project list
+  // BLINDAGEM DE DADOS: Garantia de que projects é um array
   const safeProjects = Array.isArray(projects) ? projects : [];
+
+  // CORREÇÃO ERRO #310: Hooks elevados para o Top-Level
+  // O cálculo da data deve ocorrer aqui, não dentro do JSX
+  const currentDate = useMemo(() => {
+    return new Date().toLocaleDateString('pt-BR', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    });
+  }, []);
+
+  // Filtragem de projetos ativos (não arquivados) também no Top-Level
+  const activeProjects = useMemo(() => {
+    return safeProjects.filter(p => !p.isArchived);
+  }, [safeProjects]);
 
   return (
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
@@ -29,7 +45,7 @@ function LegacyHome({
            Olá, <span className="text-zinc-700">{currentUser?.displayName}</span>
          </h1>
          <p className="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
-           {React.useMemo(() => new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), [])}
+           {currentDate}
          </p>
       </div>
 
@@ -78,8 +94,8 @@ function LegacyHome({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-l border-zinc-900">
-            {React.useMemo(() => safeProjects.filter(p => !p.isArchived), [safeProjects]).map(project => {
-              // Safety check for color variant
+            {activeProjects.map(project => {
+              // Safety check for color variant with strict fallback
               const colors = COLOR_VARIANTS[project.color] || COLOR_VARIANTS['blue'];
               
               return (
