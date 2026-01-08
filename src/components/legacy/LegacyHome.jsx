@@ -17,11 +17,8 @@ function LegacyHome({
   handleDeleteProject,
   COLOR_VARIANTS
 }) {
-  // BLINDAGEM DE DADOS: Garantia de que projects é um array
   const safeProjects = Array.isArray(projects) ? projects : [];
 
-  // CORREÇÃO ERRO #310: Hooks elevados para o Top-Level
-  // O cálculo da data deve ocorrer aqui, não dentro do JSX
   const currentDate = useMemo(() => {
     return new Date().toLocaleDateString('pt-BR', { 
       weekday: 'long', 
@@ -31,7 +28,6 @@ function LegacyHome({
     });
   }, []);
 
-  // Filtragem de projetos ativos (não arquivados) também no Top-Level
   const activeProjects = useMemo(() => {
     return safeProjects.filter(p => !p.isArchived);
   }, [safeProjects]);
@@ -49,10 +45,10 @@ function LegacyHome({
          </p>
       </div>
 
-      {/* DASHBOARD WIDGETS: Separados e Geométricos */}
+      {/* DASHBOARD WIDGETS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-zinc-900 border border-zinc-900">
         
-        {/* Widget Sorte do Dia - Maior Destaque */}
+        {/* Widget Sorte do Dia */}
         <div className="md:col-span-2 bg-black p-8 flex flex-col justify-between min-h-[160px] group hover:bg-zinc-950/30 transition-colors">
            <div className="flex items-center gap-2 mb-4">
               <Sparkles className="w-3 h-3 text-red-600" />
@@ -63,7 +59,7 @@ function LegacyHome({
            </p>
         </div>
 
-        {/* Widget Mega Sena - Lateral */}
+        {/* Widget Mega Sena */}
         <div className="bg-black p-8 flex flex-col justify-between min-h-[160px] group hover:bg-zinc-950/30 transition-colors">
            <div className="flex items-center gap-2 mb-4">
               <Dna className="w-3 h-3 text-emerald-600" />
@@ -79,6 +75,7 @@ function LegacyHome({
         </div>
       </div>
 
+      {/* SUDOKU RESTRITO À FRAN (Restaurado) */}
       {currentUser?.displayName === 'Fran' && <SudokuGame />}
 
       {/* LISTA DE PROJETOS */}
@@ -95,7 +92,6 @@ function LegacyHome({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-l border-zinc-900">
             {activeProjects.map(project => {
-              // Safety check for color variant with strict fallback
               const colors = COLOR_VARIANTS[project.color] || COLOR_VARIANTS['blue'];
               
               return (
@@ -128,7 +124,7 @@ function LegacyHome({
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-800 hover:text-white rounded-none"><MoreVertical className="h-3 w-3" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none">
-                          <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-[10px] uppercase tracking-widest h-8 cursor-pointer">Editar</DropdownMenuItem>
+                          <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-[10px] uppercase tracking-widest h-8 cursor-pointer text-white hover:bg-zinc-900">Editar</DropdownMenuItem>
                           <DropdownMenuItem className="text-red-900 focus:text-red-600 focus:bg-zinc-900 text-[10px] uppercase tracking-widest cursor-pointer h-8" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>Eliminar</DropdownMenuItem>
                         </DropdownMenuContent>
                      </DropdownMenu>
