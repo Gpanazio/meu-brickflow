@@ -1,125 +1,123 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { debugLog } from '../utils/debugLog'
+import { useCallback, useState, useMemo } from 'react'
 import { formatFileSize } from '../utils/formatFileSize'
-import { supabase, handleSupabaseError } from '../lib/supabaseClient'
 
-export function useFiles(currentProject, currentSubProject, currentUser) {
-  const [files, setFiles] = useState([])
+export function useFiles(currentProject, currentSubProject, updateProjects) {
   const [isDragging, setIsDragging] = useState(false)
-  const [previewFile, setPreviewFile] = useState(null)
-  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
-  const saveFileToSupabase = useCallback(async (fileData) => {
-    const { error } = await supabase.from('brickflow_files').insert(fileData)
-    handleSupabaseError(error, 'Salvar arquivo')
-  }, [])
+  // 1. LEITURA: Os arquivos agora vêm direto do estado do projeto (JSON)
+  // Não fazemos mais 'fetch' do Supabase. Se o projeto carregou, os arquivos estão lá.
+  const files = useMemo(() => {
+    if (!currentSubProject?.boardData?.files?.files) return []
+    return currentSubProject.boardData.files.files
+  }, [currentSubProject])
 
-  const loadFilesFromSupabase = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('brickflow_files')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (error) {
-      handleSupabaseError(error, 'Carregar arquivos')
-      return
-    }
-    setFiles(data)
-  }, [])
-
-  const deleteFileFromSupabase = useCallback(async (fileId) => {
-    const { error } = await supabase.from('brickflow_files').delete().eq('id', fileId)
-    handleSupabaseError(error, 'Deletar arquivo')
-  }, [])
-
-  useEffect(() => {
-    if (currentSubProject) {
-      loadFilesFromSupabase()
-    }
-  }, [currentSubProject?.id, loadFilesFromSupabase])
-
-  const currentFiles = useMemo(() => {
-    if (!currentSubProject || !files) return []
-    return files.filter(
-      file =>
-        file.projectId === currentProject?.id &&
-        file.subProjectId === currentSubProject.id
-    )
-  }, [currentProject?.id, currentSubProject?.id, files])
-
-  const getCurrentFiles = useCallback(() => currentFiles, [currentFiles])
-
+  // 2. UPLOAD: Converte para Texto (Base64) e injeta no JSON do Projeto
   const handleFileUpload = useCallback(async (event) => {
-    const uploadedFiles = Array.from(event.target.files)
-    if (!uploadedFiles.length || !currentSubProject) return
+    // Suporta tanto input normal quanto drag-and-drop
+    const uploadedFiles = Array.from(event.target.files || event.dataTransfer?.files || [])
+    if (!uploadedFiles.length || !currentSubProject || !updateProjects) return
 
-    const uploadDate = new Date().toISOString()
+    setIsUploading(true)
 
     try {
-      await Promise.all(
-        uploadedFiles.map(async (file) => {
-          const base64 = await new Promise((resolve) => {
-            const reader = new FileReader()
-            reader.onload = () => resolve(reader.result)
-            reader.readAsDataURL(file)
-          })
-
-          const fileData = {
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            data: base64,
-            uploadDate,
-            uploadedBy: currentUser.username,
-            projectId: currentProject?.id,
-            subProjectId: currentSubProject?.id,
-            projectName: currentProject?.name,
-            subProjectName: currentSubProject?.name
+      // Processa todos os arquivos em paralelo
+      const newFilesPromises = uploadedFiles.map(async (file) => {
+        return new Promise((resolve) => {
+          const reader = new FileReader()
+          
+          reader.onload = () => {
+            resolve({
+              id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              data: reader.result, // Aqui está o arquivo convertido em texto!
+              uploadDate: new Date().toISOString(),
+              uploadedBy: 'user', // Pode ser melhorado com currentUser se necessário
+              projectId: currentProject.id,
+              subProjectId: currentSubProject.id
+            })
           }
-
-          await saveFileToSupabase(fileData)
+          
+          // Lê o arquivo como URL de dados (Base64)
+          reader.readAsDataURL(file)
         })
-      )
-      await loadFilesFromSupabase()
+      })
+
+      const newFiles = await Promise.all(newFilesPromises)
+
+      // 3. SALVAMENTO: Atualiza o estado global
+      // O App.jsx vai perceber essa mudança e disparar o salvamento automático no Railway
+      updateProjects(prevProjects => {
+        return prevProjects.map(proj => {
+          if (proj.id !== currentProject.id) return proj
+          
+          return {
+            ...proj,
+            subProjects: proj.subProjects.map(sub => {
+              if (sub.id !== currentSubProject.id) return sub
+              
+              const currentFiles = sub.boardData?.files?.files || []
+              return {
+                ...sub,
+                boardData: {
+                  ...sub.boardData,
+                  files: {
+                    ...sub.boardData.files,
+                    files: [...currentFiles, ...newFiles]
+                  }
+                }
+              }
+            })
+          }
+        })
+      })
+
     } catch (error) {
-      debugLog('❌ Erro no upload:', error.message)
+      console.error('Erro no processamento do arquivo:', error)
+      alert('Erro ao processar arquivo. Tente novamente.')
+    } finally {
+      setIsUploading(false)
+      if (event.target) event.target.value = '' // Limpa o input
     }
-    event.target.value = ''
-  }, [currentProject?.id, currentProject?.name, currentSubProject, currentUser.username, loadFilesFromSupabase, saveFileToSupabase])
+  }, [currentProject, currentSubProject, updateProjects])
 
-  const handlePreviewFile = useCallback((file) => {
-    setPreviewFile(file)
-    setShowPreviewModal(true)
-  }, [])
+  // 4. DELETAR: Remove do JSON local (o sync salva depois)
+  const handleDeleteFile = useCallback((fileId) => {
+    if (!window.confirm('Tem certeza que deseja excluir este arquivo?')) return
 
-  const handleDownloadFile = useCallback((file) => {
-    const link = document.createElement('a')
-    link.href = file.data
-    link.download = file.name
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }, [])
-
-  const handleDeleteFile = useCallback(async (fileId) => {
-    const confirmed = window.confirm('Tem certeza que deseja excluir este arquivo?')
-    if (!confirmed) return
-    await deleteFileFromSupabase(fileId)
-    await loadFilesFromSupabase()
-  }, [deleteFileFromSupabase, loadFilesFromSupabase])
+    updateProjects(prevProjects => {
+      return prevProjects.map(proj => {
+        if (proj.id !== currentProject.id) return proj
+        return {
+          ...proj,
+          subProjects: proj.subProjects.map(sub => {
+            if (sub.id !== currentSubProject.id) return sub
+            const currentFiles = sub.boardData?.files?.files || []
+            return {
+              ...sub,
+              boardData: {
+                ...sub.boardData,
+                files: {
+                  ...sub.boardData.files,
+                  files: currentFiles.filter(f => f.id !== fileId)
+                }
+              }
+            }
+          })
+        }
+      })
+    })
+  }, [currentProject, currentSubProject, updateProjects])
 
   return {
     files,
-    setFiles,
     isDragging,
     setIsDragging,
-    previewFile,
-    showPreviewModal,
-    setShowPreviewModal,
+    isUploading,
     handleFileUpload,
-    handlePreviewFile,
-    handleDownloadFile,
     handleDeleteFile,
-    getCurrentFiles,
     formatFileSize
   }
 }
