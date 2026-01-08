@@ -31,7 +31,12 @@ export const supabaseConfigError = hasSupabaseConfig
 
 export { hasSupabaseConfig }
 
-const createNoopResult = (data = []) =>
+/**
+ * Creates a resolved no-op Supabase response object.
+ * @param {any[] | null} [data=[]] - Data to return in the response.
+ * @returns {Promise<{data: any[] | null, error: {message: string}}>} A resolved response promise.
+ */
+export const createNoopResult = (data = []) =>
   Promise.resolve({
     data,
     error: {
@@ -39,7 +44,13 @@ const createNoopResult = (data = []) =>
     }
   })
 
-const createNoopBuilder = (defaultData = []) => {
+/**
+ * Creates a no-op query builder that mimics the Supabase query builder API.
+ * It returns a thenable object so callers can await chained operations safely.
+ * @param {any[]} [defaultData=[]] - The default data to resolve the promise with.
+ * @returns {object} A no-op builder object.
+ */
+export const createNoopBuilder = (defaultData = []) => {
   const result = createNoopResult(defaultData)
   const builder = {
     select: () => builder,
@@ -58,7 +69,11 @@ const createNoopBuilder = (defaultData = []) => {
   return builder
 }
 
-const createNoopChannel = () => {
+/**
+ * Creates a no-op realtime channel with a chainable API.
+ * @returns {{on: Function, subscribe: Function, unsubscribe: Function}} A no-op channel.
+ */
+export const createNoopChannel = () => {
   const channel = {
     on: () => channel,
     subscribe: () => channel,
