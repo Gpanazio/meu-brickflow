@@ -4,7 +4,7 @@ import { debugLog } from '../utils/debugLog'
 export const VITE_SUPABASE_URL_KEY = 'VITE_SUPABASE_URL'
 export const VITE_SUPABASE_ANON_KEY_NAME = 'VITE_SUPABASE_ANON_KEY'
 
-const isTestEnv = import.meta.env.MODE === 'test' || process.env.NODE_ENV === 'test'
+const isTestEnv = import.meta.env.MODE === 'test'
 
 const missingVariables = [
   !import.meta.env.VITE_SUPABASE_URL && VITE_SUPABASE_URL_KEY,
