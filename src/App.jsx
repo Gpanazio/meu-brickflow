@@ -716,7 +716,8 @@ export default function App() {
           setIsLoading(false);
         }
       } else {
-          setIsLoading(false);
+          setIsLoggedIn(true);
+          await loadUserProjects(currentUser);
       }
       
       // Carregar Users do banco (se houver)
