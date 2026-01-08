@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
   Trash2, Eye, FolderOpen, Lock, RotateCcw,
   ListTodo, KanbanSquare, FileText, Goal, Sparkles, Dna,
   X, Check, ChevronDown, Settings, Calendar, WifiOff, Save,
-  RefreshCw, Power
+  Power
 } from 'lucide-react';
 import './App.css';
 
+// --- IMPORTS DOS COMPONENTES ---
 import LegacyHome from './components/legacy/LegacyHome';
 import LegacyProjectView from './components/legacy/LegacyProjectView';
 import LegacyBoard from './components/legacy/LegacyBoard';
+import LegacyHeader from './components/legacy/LegacyHeader'; // <--- O IMPORT QUE FALTAVA
 import { useUsers } from './hooks/useUsers'; 
 import { useFiles } from './hooks/useFiles'; 
 import SudokuGame from './components/SudokuGame';
@@ -53,7 +55,6 @@ const Button = React.forwardRef(({ className, variant = "default", size = "defau
     default: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
     destructive: "bg-red-900 text-white hover:bg-red-800",
     outline: "border border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-300",
-    secondary: "bg-zinc-800 text-zinc-100 hover:bg-zinc-700",
     ghost: "hover:bg-zinc-900 text-zinc-400 hover:text-white",
     white: "bg-white text-zinc-950 hover:bg-zinc-200 font-bold", 
   };
@@ -67,16 +68,6 @@ const Input = React.forwardRef(({ className, type, ...props }, ref) => (
   <input type={type} className={cn("flex h-10 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-600 disabled:cursor-not-allowed disabled:opacity-50 text-zinc-100", className)} ref={ref} {...props} />
 ));
 Input.displayName = "Input";
-
-const Textarea = React.forwardRef(({ className, ...props }, ref) => (
-  <textarea className={cn("flex min-h-[80px] w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm shadow-sm placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-600 disabled:cursor-not-allowed disabled:opacity-50 text-zinc-100", className)} ref={ref} {...props} />
-));
-Textarea.displayName = "Textarea";
-
-const Label = React.forwardRef(({ className, ...props }, ref) => (
-  <label ref={ref} className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-300", className)} {...props} />
-));
-Label.displayName = "Label";
 
 const Dialog = ({ open, onOpenChange, children }) => {
   if (!open) return null;
@@ -113,27 +104,14 @@ const Checkbox = React.forwardRef(({ className, checked, onCheckedChange, defaul
 ));
 Checkbox.displayName = "Checkbox";
 
-const DropdownMenu = ({ children }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
-  useEffect(() => {
-    const handleClickOutside = (event) => { if (containerRef.current && !containerRef.current.contains(event.target)) setIsOpen(false); };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-  return <div className="relative inline-block text-left" ref={containerRef}>{React.Children.map(children, child => React.cloneElement(child, { isOpen, setIsOpen }))}</div>;
-};
-
-const DropdownMenuTrigger = ({ asChild, children, isOpen, setIsOpen, ...props }) => React.cloneElement(children, { onClick: (e) => { e.stopPropagation(); setIsOpen(!isOpen); if (children.props.onClick) children.props.onClick(e); }, ...props });
-const DropdownMenuContent = ({ children, isOpen, align = 'start', className }) => isOpen ? <div className={cn("absolute z-50 min-w-[10rem] overflow-hidden rounded-md border border-zinc-800 bg-black p-1 text-zinc-100 shadow-md animate-in data-[side=bottom]:slide-in-from-top-2", align === 'end' ? 'right-0' : 'left-0', className)}>{children}</div> : null;
-const DropdownMenuItem = ({ children, className, onClick, ...props }) => <div className={cn("relative flex cursor-default select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-zinc-900 hover:text-zinc-100 cursor-pointer", className)} onClick={(e) => { if(onClick) onClick(e); }} {...props}>{children}</div>;
-const DropdownMenuLabel = ({ className, ...props }) => <div className={cn("px-3 py-2 text-sm font-semibold", className)} {...props} />;
-const DropdownMenuSeparator = ({ className, ...props }) => <div className={cn("-mx-1 my-1 h-px bg-zinc-800", className)} {...props} />;
+const Label = React.forwardRef(({ className, ...props }, ref) => (
+  <label ref={ref} className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-300", className)} {...props} />
+));
+Label.displayName = "Label";
 
 const Avatar = ({ className, children }) => <div className={cn("relative flex h-12 w-12 shrink-0 overflow-hidden rounded-full border border-zinc-800", className)}>{children}</div>;
 const AvatarImage = ({ src, className }) => <img src={src} alt="Avatar" className={cn("aspect-square h-full w-full object-cover", className)} />;
 const AvatarFallback = ({ className, children }) => <div className={cn("flex h-full w-full items-center justify-center rounded-full bg-zinc-900 font-medium", className)}>{children}</div>;
-const Separator = ({ className, orientation = "horizontal" }) => <div className={cn("shrink-0 bg-zinc-800", orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]", className)} />;
 
 // --- CONFIGURAÇÃO INICIAL ---
 const INITIAL_STATE = {
@@ -143,6 +121,22 @@ const INITIAL_STATE = {
   ],
   projects: []
 };
+
+const COLOR_VARIANTS = {
+  blue: { bg: 'bg-blue-600', text: 'text-blue-500', border: 'border-blue-900' },
+  red: { bg: 'bg-red-600', text: 'text-red-500', border: 'border-red-900' },
+  green: { bg: 'bg-green-600', text: 'text-green-500', border: 'border-green-900' },
+  purple: { bg: 'bg-purple-600', text: 'text-purple-500', border: 'border-purple-900' },
+  orange: { bg: 'bg-orange-600', text: 'text-orange-500', border: 'border-orange-900' },
+  zinc: { bg: 'bg-zinc-600', text: 'text-zinc-500', border: 'border-zinc-900' }
+};
+
+const ALL_TABS = [
+  { id: 'todo', label: 'LISTA', icon: ListTodo },
+  { id: 'kanban', label: 'KANBAN', icon: KanbanSquare },
+  { id: 'files', label: 'ARQUIVOS', icon: FileText },
+  { id: 'goals', label: 'METAS', icon: Goal }
+];
 
 // --- APP PRINCIPAL ---
 
@@ -158,12 +152,13 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
+  const [initialLoadSuccess, setInitialLoadSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showSlowLoad, setShowSlowLoad] = useState(false); // Novo estado para mostrar botão de "Demorando..."
+  const [showSlowLoad, setShowSlowLoad] = useState(false);
 
   // --- CARREGAMENTO ---
   useEffect(() => {
-    // Carrega frase aleatória
+    // Carrega frase
     if (absurdPhrases && absurdPhrases.length > 0) {
       setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
     } else {
@@ -171,14 +166,13 @@ export default function App() {
     }
     setMegaSenaNumbers(generateMegaSenaNumbers());
     
-    // Timer para mostrar opção de "Forçar Início" se demorar mais que 3s
+    // Timer para "Servidor Dormindo"
     const slowLoadTimer = setTimeout(() => setShowSlowLoad(true), 3000);
 
     const loadData = async () => {
       try {
-        // Timeout de 10s para a requisição não ficar presa eternamente
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
         const response = await fetch('/api/projects', { signal: controller.signal });
         clearTimeout(timeoutId);
@@ -194,6 +188,7 @@ export default function App() {
           saveDataToApi(data);
         }
         setAppData(data);
+        setInitialLoadSuccess(true);
       } catch (err) {
         console.error("Erro:", err);
         setConnectionError(true);
@@ -210,11 +205,12 @@ export default function App() {
   const saveDataToApi = async (newData) => {
     setIsSyncing(true);
     try {
-      await fetch('/api/projects', {
+      const response = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: newData })
       });
+      if (response.ok) setConnectionError(false); 
     } catch (e) {
       console.error("Erro ao salvar:", e);
       setConnectionError(true);
@@ -260,10 +256,9 @@ export default function App() {
     linkElement.click();
   };
 
-  // Função para "descongelar" manualmente se o servidor estiver off
   const forceOfflineMode = () => {
     setAppData(INITIAL_STATE);
-    setConnectionError(true); // Marca erro para avisar que não está salvando
+    setConnectionError(true);
     setIsLoading(false);
   };
 
@@ -291,14 +286,13 @@ export default function App() {
 
   // --- RENDER ---
 
-  // Tela de Carregamento com Escape Hatch
   if (!appData && !connectionError) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 text-center p-4">
         <div className="text-zinc-500 font-mono animate-pulse uppercase tracking-widest">Iniciando Sistema...</div>
         {showSlowLoad && (
-          <div className="animate-in fade-in zoom-in duration-500 flex flex-col items-center gap-2">
-            <p className="text-zinc-700 text-xs font-mono">O servidor está demorando...</p>
+          <div className="animate-in fade-in zoom-in duration-500 flex flex-col items-center gap-3">
+            <p className="text-zinc-700 text-xs font-mono">O servidor está demorando para acordar...</p>
             <Button variant="outline" onClick={forceOfflineMode} className="text-xs h-8 border-red-900 text-red-500 hover:bg-red-950 hover:text-white">
               <Power className="w-3 h-3 mr-2" /> Forçar Início Offline
             </Button>
@@ -308,13 +302,12 @@ export default function App() {
     );
   }
 
-  // Tela de Erro de Conexão (agora permite usar o app mesmo assim se tiver dados)
   if (connectionError && !appData) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center text-red-600 gap-4 p-8 text-center">
         <WifiOff className="w-16 h-16" />
         <h1 className="text-2xl font-black uppercase">Falha na Conexão</h1>
-        <p className="text-zinc-500">Não foi possível carregar os dados do servidor.</p>
+        <p className="text-zinc-500 text-sm max-w-md">Não foi possível carregar os dados. Verifique a internet ou se a variável DATABASE_URL está configurada no Railway.</p>
         <div className="flex gap-4">
           <Button onClick={() => window.location.reload()} className="bg-white text-zinc-950 font-bold">Tentar Novamente</Button>
           <Button variant="outline" onClick={forceOfflineMode} className="border-zinc-700 text-zinc-400 hover:text-white">Modo Offline (Temporário)</Button>
@@ -342,7 +335,7 @@ export default function App() {
         </div>
         
         <Dialog open={showCreateUserModal} onOpenChange={setShowCreateUserModal}>
-          <div className="bg-black text-white">
+          <div className="bg-black text-white p-2">
             <h2 className="text-lg font-bold mb-4 uppercase">Novo Usuário</h2>
             <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); handleCreateUser(Object.fromEntries(fd)); }} className="space-y-4">
               <Input name="displayName" placeholder="Nome Exibição" required />
@@ -357,8 +350,7 @@ export default function App() {
   }
 
   const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
-  const boardData = currentEntity?.boardData?.[currentBoardType] || 
-    (currentBoardType === 'files' ? { files: [] } : { lists: [] });
+  const boardData = currentEntity?.boardData?.[currentBoardType] || (currentBoardType === 'files' ? { files: [] } : { lists: [] });
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
@@ -382,7 +374,7 @@ export default function App() {
                 <WifiOff className="w-4 h-4" /> Modo Offline
               </div>
               <button onClick={() => saveDataToApi(appData)} className="text-xs text-white hover:underline flex items-center gap-1">
-                <RefreshCw className="w-3 h-3" /> Tentar Reconectar
+                <RotateCcw className="w-3 h-3" /> Tentar Reconectar
               </button>
             </div>
           )}
@@ -497,10 +489,12 @@ export default function App() {
                           isArchived: false
                       };
                       updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: [...(p.subProjects || []), newSub] } : p));
+                  } else {
+                      updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: p.subProjects.map(sp => sp.id === modalState.data.id ? { ...sp, ...data } : sp) } : p));
                   }
                } else if (modalState.type === 'task') {
                   const listId = modalState.listId || modalState.data.listId;
-                  const taskData = { ...data, id: modalState.mode === 'create' ? generateId('task') : modalState.data.id, responsibleUsers: [] }; // Simplificado
+                  const taskData = { ...data, id: modalState.mode === 'create' ? generateId('task') : modalState.data.id, responsibleUsers: [] };
                   
                   updateProjects(prev => {
                       return prev.map(p => {
@@ -524,21 +518,30 @@ export default function App() {
                setModalState({ isOpen: false, type: null });
              }} className="space-y-6">
                
-               {/* Formulário Genérico Simplificado */}
+               {/* Formulário Genérico */}
                <div className="space-y-2">
                  <Label>Nome / Título</Label>
                  <Input name="name" defaultValue={modalState.data?.name || modalState.data?.title} required autoFocus className="bg-zinc-950 border-zinc-800" />
                </div>
+               
                {modalState.type !== 'task' && (
                    <div className="space-y-2">
                      <Label>Descrição</Label>
                      <textarea name="description" defaultValue={modalState.data?.description} className="w-full bg-zinc-950 border border-zinc-800 p-3 text-sm text-white rounded-md focus:outline-none focus:ring-1 focus:ring-red-600 min-h-[100px]" />
                    </div>
                )}
+
                {modalState.type === 'project' && (
                    <div className="space-y-2">
                        <Label>Cor</Label>
                        <Select name="color" defaultValue={modalState.data?.color || 'blue'} />
+                   </div>
+               )}
+
+               {modalState.type === 'task' && (
+                   <div className="space-y-2">
+                       <Label>Prioridade</Label>
+                       <Select name="priority" defaultValue={modalState.data?.priority || 'medium'} />
                    </div>
                )}
                
@@ -548,7 +551,70 @@ export default function App() {
         </Dialog>
       )}
 
+      {/* COMPONENTE DE MODAL DE USUÁRIO - DEFINIDO NO FINAL DO ARQUIVO */}
       <UserSettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} currentUser={currentUser} onUpdateUser={handleUpdateUser} />
     </div>
+  );
+}
+
+// --- SUB-COMPONENTES (Para evitar erros de referência se não forem importados) ---
+
+function UserSettingsModal({ isOpen, onClose, currentUser, onUpdateUser }) {
+  const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar);
+  const fileInputRef = useRef(null);
+  
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => setAvatarPreview(ev.target.result);
+        reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = () => { onUpdateUser({ ...currentUser, avatar: avatarPreview }); onClose(); };
+
+  if (!isOpen) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div className="relative z-50 w-full max-w-lg border border-zinc-800 bg-black p-0 shadow-2xl rounded-lg overflow-hidden">
+          <div className="p-6 border-b border-zinc-900 flex justify-between items-center">
+             <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2"><Settings className="w-5 h-5 text-zinc-500" /> Configurações</h2>
+             <button onClick={onClose}><X className="w-5 h-5 text-zinc-500 hover:text-white" /></button>
+          </div>
+          <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
+              <div className="space-y-6">
+                <div>
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Avatar do Usuário</h3>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-20 h-20 border-2 border-zinc-800"><AvatarImage src={avatarPreview} /><AvatarFallback className="bg-zinc-900 text-zinc-500 text-2xl font-bold">{currentUser?.displayName?.charAt(0)}</AvatarFallback></Avatar>
+                      <div className="space-y-2">
+                          <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="h-8 text-xs uppercase font-bold tracking-widest"><Upload className="w-3 h-3 mr-2" /> Upload</Button>
+                          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                          <p className="text-[10px] text-zinc-600 font-mono">JPG, PNG ou GIF.</p>
+                      </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple-500" /> Avatares No Sense</h3>
+                    <div className="grid grid-cols-4 gap-2">
+                    {NO_SENSE_AVATARS.map((url, idx) => (
+                        <div key={idx} onClick={() => setAvatarPreview(url)} className={cn("aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all hover:scale-105", avatarPreview === url ? "border-red-600 opacity-100" : "border-transparent opacity-60 hover:opacity-100 hover:border-zinc-700")}>
+                        <img src={url} alt={`Avatar ${idx}`} className="w-full h-full object-cover" />
+                        </div>
+                    ))}
+                    </div>
+                </div>
+              </div>
+          </div>
+          <div className="p-4 border-t border-zinc-900 bg-zinc-950 flex justify-end gap-2">
+            <Button variant="ghost" onClick={onClose} className="text-xs font-bold uppercase">Cancelar</Button>
+            <Button onClick={handleSave} className="bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-bold uppercase">Salvar</Button>
+          </div>
+        </div>
+      </div>
+    </Dialog>
   );
 }
