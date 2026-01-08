@@ -1,113 +1,63 @@
 # Meu Brickflow
 
-A Brickflow project configured for deployment on Railway.
+Projeto full-stack com frontend em Vite e backend em Express, preparado para rodar localmente e com banco no Railway.
 
-## Overview
+## Requisitos
 
-This project is set up to run on [Railway](https://railway.app/), a modern deployment platform that simplifies infrastructure management.
+- Node.js 18+
+- pnpm (recomendado) ou npm
 
-## Prerequisites
+## Instalação
 
-- Python 3.8 or higher
-- A Railway account
-- Git for version control
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/Gpanazio/meu-brickflow.git
-cd meu-brickflow
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-## Railway Deployment
-
-### Setup Instructions
-
-1. **Create a Railway Project**
-   - Go to [railway.app](https://railway.app/)
-   - Click "New Project" and select "Deploy from GitHub"
-   - Authorize Railway to access your GitHub repositories
-   - Select the `Gpanazio/meu-brickflow` repository
-
-2. **Configure Environment Variables**
-   - In your Railway project dashboard, navigate to "Variables"
-   - Add any required environment variables for your Brickflow application
-   - Common variables might include:
-     - `BRICKFLOW_ENV`: Production/Development environment
-     - `LOG_LEVEL`: Logging level configuration
-     - Database or API credentials as needed
-
-3. **Deploy**
-   - Railway automatically deploys when you push changes to your main branch
-   - Monitor deployment progress in the Railway dashboard
-   - View logs in the "Logs" tab
-
-### Environment Configuration
-
-Create a `.railwayrc` file in the project root if you need custom Railway configuration:
-
-```json
-{
-  "railwayIgnorePatterns": ["node_modules", ".git", "__pycache__", "*.pyc"]
-}
-```
-
-## Running Locally
-
-To test your application before deploying:
+Escolha **pnpm** ou **npm**:
 
 ```bash
-python -m brickflow run
+pnpm install
 ```
 
-## Project Structure
+ou
 
-```
-meu-brickflow/
-├── README.md
-├── requirements.txt
-├── Dockerfile
-├── railway.toml (optional)
-└── src/
-    └── brickflow/
-        └── workflows/
+```bash
+npm install
 ```
 
-## Monitoring and Logs
+## Executar localmente (frontend + backend)
 
-Once deployed on Railway:
-- View real-time logs in the Railway dashboard
-- Set up alerts for deployment failures
-- Monitor resource usage (CPU, memory, bandwidth)
+Para subir **frontend e backend** juntos:
 
-## Troubleshooting
+```bash
+npm run dev:full
+```
 
-### Deployment Issues
-- Check the deployment logs in Railway dashboard for error messages
-- Verify all environment variables are properly configured
-- Ensure `requirements.txt` includes all necessary dependencies
+## Build
 
-### Runtime Issues
-- Review the application logs in Railway
-- Check that your Brickflow workflows are properly defined
-- Verify database connections if applicable
+Gere o build de produção:
 
-## Support
+```bash
+npm run build
+```
 
-For Railway-specific issues, refer to [Railway Documentation](https://docs.railway.app/).
+## Variáveis de ambiente
 
-For Brickflow questions, visit the [Brickflow Documentation](https://brickflow.readthedocs.io/).
+Crie um arquivo `.env` na raiz do projeto e defina as variáveis necessárias. Exemplo:
 
-## License
+```bash
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DBNAME"
+```
 
-This project is licensed under the MIT License - see LICENSE file for details.
+### `DATABASE_URL`
 
-## Last Updated
+- **Obrigatória** para o backend Express.
+- A aplicação espera uma URL de conexão válida do PostgreSQL (por exemplo, fornecida pelo Railway).
 
-Generated: 2026-01-08 11:16:11 UTC
+## Proxy do Vite para `/api`
+
+O frontend usa um proxy no `vite.config.js` para encaminhar chamadas feitas para `/api` ao backend Express durante o desenvolvimento. Isso evita problemas de CORS e mantém a mesma origem no browser.
+
+Exemplo de uso no frontend:
+
+```ts
+fetch('/api/health')
+```
+
+O Vite redireciona essa chamada para o servidor Express configurado no proxy.
