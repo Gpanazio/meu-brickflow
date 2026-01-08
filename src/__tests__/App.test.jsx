@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import * as matchers from '@testing-library/jest-dom/matchers'
 import App from '../App.jsx'
+import { __resetSupabaseResponses } from '../lib/supabaseClient'
 
 vi.mock('../lib/supabaseClient', () => {
   const buildSelectResponse = () => {
@@ -31,6 +32,7 @@ expect.extend(matchers)
 
 describe('App', () => {
   beforeEach(() => {
+    __resetSupabaseResponses()
     global.fetch = vi.fn(() => Promise.resolve({ ok: false, json: async () => [] }))
     localStorage.clear()
   })
