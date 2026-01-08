@@ -29,6 +29,13 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
+const formatBackupTimestamp = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+};
+
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 const NO_SENSE_AVATARS = [
@@ -163,6 +170,10 @@ export default function App() {
   const [projectHistory, setProjectHistory] = useState([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(false);
+  const [backups, setBackups] = useState([]);
+  const [isBackupsLoading, setIsBackupsLoading] = useState(false);
+  const [backupError, setBackupError] = useState(false);
+  const [isBackupRestoring, setIsBackupRestoring] = useState(false);
 
   const normalizeApiState = (data) => {
     if (!data) return null;
@@ -342,6 +353,64 @@ export default function App() {
     }
   }, [currentProject, currentUser, fetchProjectHistory]);
 
+  const fetchBackups = useCallback(async () => {
+    setIsBackupsLoading(true);
+    setBackupError(false);
+    try {
+      const response = await fetch('/api/backups');
+      if (!response.ok) throw new Error('Falha ao buscar backups');
+      const data = await response.json();
+      setBackups(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Erro ao carregar backups:', err);
+      setBackups([]);
+      setBackupError(true);
+    } finally {
+      setIsBackupsLoading(false);
+    }
+  }, []);
+
+  const handleRestoreBackup = useCallback(async (backupId) => {
+    if (!backupId) return;
+    setIsSyncing(true);
+    setIsBackupRestoring(true);
+    try {
+      const response = await fetch('/api/backups/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backupId, userId: currentUser?.username })
+      });
+      if (!response.ok) throw new Error('Falha ao restaurar backup');
+      const result = await response.json();
+      const normalizedData = normalizeApiState(result.data) ?? INITIAL_STATE;
+      setAppData(normalizedData);
+      appDataRef.current = normalizedData;
+      const updatedProject = normalizedData.projects?.find(project => project.id === currentProject?.id) || null;
+      setCurrentProject(updatedProject);
+      setCurrentSubProject(null);
+      setCurrentBoardType('kanban');
+      setCurrentView(updatedProject ? 'project' : 'home');
+      setConnectionError(false);
+    } catch (err) {
+      console.error('Erro ao restaurar backup:', err);
+      setConnectionError(true);
+    } finally {
+      setIsSyncing(false);
+      setIsBackupRestoring(false);
+    }
+  }, [currentProject, currentUser]);
+
+  const handleExportBackupFromServer = useCallback((backupId) => {
+    const targetBackup = backups.find(backup => backup.id === backupId) || backups[0];
+    if (!targetBackup?.snapshot) return;
+    const dataStr = JSON.stringify(targetBackup.snapshot, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', `brickflow_snapshot_${targetBackup.id}_${new Date(targetBackup.created_at).toISOString().slice(0,10)}.json`);
+    linkElement.click();
+  }, [backups]);
+
   const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } = 
     useFiles(currentProject, currentSubProject, updateProjects);
 
@@ -380,6 +449,12 @@ export default function App() {
       setProjectHistory([]);
     }
   }, [currentProject, currentView, fetchProjectHistory]);
+
+  useEffect(() => {
+    if (showSettingsModal) {
+      fetchBackups();
+    }
+  }, [showSettingsModal, fetchBackups]);
 
   const handleUpdateUser = (updatedUser) => {
     const newUsersList = appData.users.map(u => u.username === updatedUser.username ? updatedUser : u);
@@ -664,14 +739,38 @@ export default function App() {
       )}
 
       {/* COMPONENTE DE MODAL DE USUÁRIO - DEFINIDO ABAIXO */}
-      <UserSettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} currentUser={currentUser} onUpdateUser={handleUpdateUser} />
+      <UserSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        currentUser={currentUser}
+        onUpdateUser={handleUpdateUser}
+        backups={backups}
+        isBackupsLoading={isBackupsLoading}
+        backupError={backupError}
+        isBackupRestoring={isBackupRestoring}
+        onRefreshBackups={fetchBackups}
+        onRestoreBackup={handleRestoreBackup}
+        onExportBackup={handleExportBackupFromServer}
+      />
     </div>
   );
 }
 
 // --- SUB-COMPONENTES AUXILIARES ---
 
-function UserSettingsModal({ isOpen, onClose, currentUser, onUpdateUser }) {
+function UserSettingsModal({
+  isOpen,
+  onClose,
+  currentUser,
+  onUpdateUser,
+  backups,
+  isBackupsLoading,
+  backupError,
+  isBackupRestoring,
+  onRefreshBackups,
+  onRestoreBackup,
+  onExportBackup
+}) {
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar);
   const fileInputRef = useRef(null);
   
@@ -709,17 +808,85 @@ function UserSettingsModal({ isOpen, onClose, currentUser, onUpdateUser }) {
                       </div>
                     </div>
                 </div>
-                <div>
-                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple-500" /> Avatares No Sense</h3>
-                    <div className="grid grid-cols-4 gap-2">
-                    {NO_SENSE_AVATARS.map((url, idx) => (
-                        <div key={idx} onClick={() => setAvatarPreview(url)} className={cn("aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all hover:scale-105", avatarPreview === url ? "border-red-600 opacity-100" : "border-transparent opacity-60 hover:opacity-100 hover:border-zinc-700")}>
-                        <img src={url} alt={`Avatar ${idx}`} className="w-full h-full object-cover" />
-                        </div>
-                    ))}
-                    </div>
-                </div>
+              <div>
+                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple-500" /> Avatares No Sense</h3>
+                  <div className="grid grid-cols-4 gap-2">
+                  {NO_SENSE_AVATARS.map((url, idx) => (
+                      <div key={idx} onClick={() => setAvatarPreview(url)} className={cn("aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all hover:scale-105", avatarPreview === url ? "border-red-600 opacity-100" : "border-transparent opacity-60 hover:opacity-100 hover:border-zinc-700")}>
+                      <img src={url} alt={`Avatar ${idx}`} className="w-full h-full object-cover" />
+                      </div>
+                  ))}
+                  </div>
               </div>
+              <div>
+                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Save className="w-3 h-3 text-red-500" /> Backups na Nuvem</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={onRefreshBackups}
+                      className="h-8 text-xs uppercase font-bold tracking-widest"
+                      disabled={isBackupsLoading}
+                    >
+                      {isBackupsLoading ? 'Atualizando...' : 'Atualizar'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => onExportBackup()}
+                      className="h-8 text-xs uppercase font-bold tracking-widest"
+                      disabled={!backups?.length}
+                    >
+                      Exportar Último
+                    </Button>
+                  </div>
+                  {backupError && (
+                    <p className="mt-3 text-[10px] text-red-500 font-mono">Erro ao carregar backups. Tente novamente.</p>
+                  )}
+                  <div className="mt-4 space-y-3">
+                    {isBackupsLoading && (
+                      <p className="text-[10px] text-zinc-500 font-mono">Carregando snapshots...</p>
+                    )}
+                    {!isBackupsLoading && (!backups || backups.length === 0) && (
+                      <p className="text-[10px] text-zinc-600 font-mono">Nenhum snapshot disponível ainda.</p>
+                    )}
+                    {!isBackupsLoading && backups?.map((backup) => (
+                      <div key={backup.id} className="border border-zinc-900 rounded-md p-3 flex flex-col gap-2 bg-zinc-950/40">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-200">Snapshot #{backup.id}</p>
+                            <p className="text-[10px] text-zinc-500 font-mono">
+                              {formatBackupTimestamp(backup.created_at)} • {backup.kind}
+                            </p>
+                          </div>
+                          <div className="text-[10px] text-zinc-500 font-mono">
+                            {(backup.snapshot && formatFileSize(JSON.stringify(backup.snapshot).length)) || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            className="h-7 text-[10px] uppercase font-bold tracking-widest"
+                            onClick={() => onExportBackup(backup.id)}
+                          >
+                            Exportar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            className="h-7 text-[10px] uppercase font-bold tracking-widest"
+                            disabled={isBackupRestoring}
+                            onClick={() => {
+                              if (window.confirm('Deseja restaurar este snapshot? Isso substituirá o estado atual.')) {
+                                onRestoreBackup(backup.id);
+                              }
+                            }}
+                          >
+                            Restaurar
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+              </div>
+            </div>
           </div>
           <div className="p-4 border-t border-zinc-900 bg-zinc-950 flex justify-end gap-2">
             <Button variant="ghost" onClick={onClose} className="text-xs font-bold uppercase">Cancelar</Button>

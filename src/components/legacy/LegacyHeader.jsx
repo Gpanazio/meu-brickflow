@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '../ui/dropdown-menu';
-import { RotateCcw, LogOut } from 'lucide-react';
+import { RotateCcw, LogOut, Settings } from 'lucide-react';
 
 function LegacyHeader({
   currentView,
@@ -13,7 +13,8 @@ function LegacyHeader({
   isSyncing,
   currentUser,
   handleSwitchUser,
-  handleLogout
+  handleLogout,
+  onOpenSettings
 }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black/95 backdrop-blur">
@@ -48,6 +49,9 @@ function LegacyHeader({
                 <p className="text-[9px] text-zinc-600 font-mono tracking-widest">@{currentUser?.username}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-zinc-900" />
+              <DropdownMenuItem onClick={onOpenSettings} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] tracking-widest h-8">
+                <Settings className="mr-2 h-3 w-3" /> Configurações
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] tracking-widest h-8"><RotateCcw className="mr-2 h-3 w-3" /> Trocar</DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout} className="text-red-900 focus:text-red-600 focus:bg-zinc-900 cursor-pointer uppercase text-[9px] tracking-widest h-8"><LogOut className="mr-2 h-3 w-3" /> Sair</DropdownMenuItem>
             </DropdownMenuContent>
