@@ -26,7 +26,7 @@ function LegacyHome({
            Olá, <span className="text-zinc-700">{currentUser?.displayName}</span>
          </h1>
          <p className="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
-           {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+           {React.useMemo(() => new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), [])}
          </p>
       </div>
 
