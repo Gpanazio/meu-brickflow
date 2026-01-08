@@ -11,7 +11,7 @@ vi.mock('../lib/supabaseClient', () => {
     update: { data: [], error: null },
     insert: { data: [], error: null }
   }
-  const responses = { ...defaultResponses }
+  const responses = structuredClone(defaultResponses)
 
   const buildSelectResponse = () => {
     const response = responses.select
