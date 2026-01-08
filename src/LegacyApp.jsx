@@ -447,6 +447,11 @@ function LegacyApp() {
     if(action === 'save') setModalState({ isOpen: false, type: null });
   };
 
+  const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
+  const boardData = currentEntity ? getCurrentBoardData() : {};
+  const entityName = currentEntity?.name || '';
+  const enabledTabs = currentEntity?.enabledTabs || ['kanban'];
+
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
@@ -478,11 +483,6 @@ function LegacyApp() {
       </div>
     );
   }
-
-  const currentEntity = React.useMemo(() => currentSubProject || currentProject, [currentSubProject, currentProject]);
-  const boardData = currentEntity ? getCurrentBoardData() : {};
-  const entityName = React.useMemo(() => currentEntity?.name || '', [currentEntity]);
-  const enabledTabs = React.useMemo(() => currentEntity?.enabledTabs || ['kanban'], [currentEntity]);
 
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
