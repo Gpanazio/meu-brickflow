@@ -10,13 +10,24 @@ const __dirname = path.dirname(__filename)
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(), // Essencial para o design Brutal
+    tailwindcss(),
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"), // Essencial para corrigir imports
+      "@": path.resolve(__dirname, "./src"),
     },
   },
+  // --- ADIÇÃO CRÍTICA PARA O BACKEND ---
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  },
+  // -------------------------------------
   build: {
     sourcemap: true,
   },
