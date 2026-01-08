@@ -9,6 +9,8 @@ import './App.css';
 
 // Importa o cliente real do Supabase configurado no seu projeto
 import { supabase, hasSupabaseConfig } from './lib/supabaseClient';
+import LegacyProjectView from './components/legacy/LegacyProjectView';
+import { accessProjectNavigation } from './utils/projectNavigation';
 
 // --- UTILS ---
 
@@ -945,7 +947,16 @@ export default function App() {
                     connectionError={connectionError}
                 />
             )}
-            {currentView === 'project' && <LegacyProjectView currentProject={currentProject} setCurrentView={setCurrentView} setModalState={setModalState} handleAccessProject={handleAccessProject} handleDeleteProject={handleDeleteProject} />}
+            {currentView === 'project' && (
+              <LegacyProjectView
+                currentProject={currentProject}
+                setCurrentView={setCurrentView}
+                setModalState={setModalState}
+                handleAccessProject={handleAccessProject}
+                handleDeleteProject={handleDeleteProject}
+                COLOR_VARIANTS={COLOR_VARIANTS}
+              />
+            )}
             {currentView === 'subproject' && <LegacyBoard data={boardData} entityName={currentSubProject.name} enabledTabs={currentSubProject.enabledTabs || ['kanban', 'todo', 'files']} currentBoardType={currentBoardType} setCurrentBoardType={setCurrentBoardType} currentSubProject={currentSubProject} currentProject={currentProject} setCurrentView={setCurrentView} setModalState={setModalState} handleTaskAction={handleTaskAction} isFileDragging={isDragging} setIsFileDragging={setIsDragging} handleFileDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e); }} isUploading={isUploading} handleFileUploadWithFeedback={handleFileUpload} files={files} handleDeleteFile={handleDeleteFile} />}
         </div>
       </main>
