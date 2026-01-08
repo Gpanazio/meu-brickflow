@@ -7,11 +7,12 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-// Importa o cliente real do Supabase configurado no seu projeto
-import { supabase, hasSupabaseConfig } from './lib/supabaseClient';
+// Import hooks e componentes
+// Nota: useRealtimeProjects foi removido pois agora usamos API REST
 import LegacyProjectView from './components/legacy/LegacyProjectView';
-import { useRealtimeProjects } from './hooks/useRealtimeProjects';
 import { accessProjectNavigation } from './utils/projectNavigation';
+import { useUsers } from './hooks/useUsers'; // Mantemos para auth local/híbrida
+import SudokuGame from './components/SudokuGame'; // Mantemos o easter egg
 
 // --- UTILS ---
 
@@ -41,14 +42,14 @@ const absurdPhrases = [
 ];
 
 const NO_SENSE_AVATARS = [
-  "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400&auto=format&fit=crop&q=60", // Gato sério
-  "https://images.unsplash.com/photo-1513245543132-31f507417b26?w=400&auto=format&fit=crop&q=60", // Unicórnio
-  "https://images.unsplash.com/photo-1555685812-4b943f3e99a9?w=400&auto=format&fit=crop&q=60", // Capivara
-  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Felix", // Emoji estranho
-  "https://api.dicebear.com/7.x/bottts/svg?seed=Glitch", // Robô
-  "https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&auto=format&fit=crop&q=60", // Lhama
-  "https://images.unsplash.com/photo-1596727147705-54a9d6ed27e6?w=400&auto=format&fit=crop&q=60", // Pato de borracha
-  "https://images.unsplash.com/photo-1566576912904-68497a097def?w=400&auto=format&fit=crop&q=60", // Avestruz
+  "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400&auto=format&fit=crop&q=60", 
+  "https://images.unsplash.com/photo-1513245543132-31f507417b26?w=400&auto=format&fit=crop&q=60", 
+  "https://images.unsplash.com/photo-1555685812-4b943f3e99a9?w=400&auto=format&fit=crop&q=60", 
+  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Felix", 
+  "https://api.dicebear.com/7.x/bottts/svg?seed=Glitch", 
+  "https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&auto=format&fit=crop&q=60", 
+  "https://images.unsplash.com/photo-1596727147705-54a9d6ed27e6?w=400&auto=format&fit=crop&q=60", 
+  "https://images.unsplash.com/photo-1566576912904-68497a097def?w=400&auto=format&fit=crop&q=60", 
 ];
 
 const generateMegaSenaNumbers = () => {
@@ -65,6 +66,7 @@ const generateMegaSenaNumbers = () => {
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 // --- UI COMPONENTS ---
+// (Mantidos simplificados para não estourar o arquivo, igual ao original)
 
 const Button = React.forwardRef(({ className, variant = "default", size = "default", ...props }, ref) => {
   const variants = {
@@ -106,7 +108,6 @@ const Card = ({ className, ...props }) => (
   <div className={cn("rounded-xl border border-zinc-900 bg-black text-zinc-100 shadow", className)} {...props} />
 );
 
-// Custom Dialog
 const Dialog = ({ open, onOpenChange, children }) => {
   if (!open) return null;
   return (
@@ -185,14 +186,23 @@ const Separator = ({ className, orientation = "horizontal" }) => <div className=
 
 // --- LOGIC ---
 
+function ResponsibleUsersButton({ users }) {
+  const [open, setOpen] = useState(false)
+  if (!users || users.length === 0) return null
+  return (
+    <div className="relative inline-block">
+      <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="flex items-center gap-2 rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors">👤 {users.length}</button>
+      {open && <div className="absolute top-full left-0 mt-2 z-10 w-48 rounded border border-zinc-800 bg-black p-2 shadow-xl">{users.map((user, i) => <div key={i} className="text-xs font-medium text-zinc-300 py-2 px-2 border-b border-zinc-900 last:border-0 hover:bg-zinc-900 transition-colors">👤 {user}</div>)}</div>}
+    </div>
+  )
+}
+
 function useFiles(currentProject, currentSubProject, currentUser) {
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    // Implementar fetch real aqui se necessário
-  }, [currentSubProject]);
-
+  // NOTA: Upload de arquivos ainda precisa ser migrado para o novo backend se não usar Supabase
+  // Por enquanto, mantendo apenas estado local para evitar erros
   const handleFileUpload = async (event) => {
     const uploadedFiles = Array.from(event.target.files);
     if (!uploadedFiles.length || !currentSubProject) return;
@@ -220,78 +230,6 @@ function useFiles(currentProject, currentSubProject, currentUser) {
   return { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile };
 }
 
-// --- GAME COMPONENTS ---
-
-const initialPuzzle = [
-  ['5', '3', '', '', '7', '', '', '', ''],
-  ['6', '', '', '1', '9', '5', '', '', ''],
-  ['', '9', '8', '', '', '', '', '6', ''],
-  ['8', '', '', '', '6', '', '', '', '3'],
-  ['4', '', '', '8', '', '3', '', '', '1'],
-  ['7', '', '', '', '2', '', '', '', '6'],
-  ['', '6', '', '', '', '', '2', '8', ''],
-  ['', '', '', '4', '1', '9', '', '', '5'],
-  ['', '', '', '', '8', '', '', '7', '9']
-]
-const fixedCells = initialPuzzle.map(row => row.map(cell => cell !== ''))
-
-function SudokuGame() {
-  const [board, setBoard] = useState(initialPuzzle.map(row => [...row]))
-  const [showOverlay, setShowOverlay] = useState(false)
-  const [showGame, setShowGame] = useState(true)
-  const [hasInteracted, setHasInteracted] = useState(false)
-  const [showFinalOverlay, setShowFinalOverlay] = useState(false)
-
-  const handleFirstInteraction = e => {
-    if (!hasInteracted) { e.preventDefault(); setShowOverlay(true); setHasInteracted(true); }
-  }
-
-  const handleChange = (row, col, value) => {
-    if (!hasInteracted || showOverlay || showFinalOverlay) return
-    const val = value.replace(/[^1-9]/g, '')
-    if (fixedCells[row][col]) return
-    const emptyCells = board.flat().filter(cell => cell === '').length
-    if (emptyCells === 1 && val !== '') { setShowFinalOverlay(true); return }
-    setBoard(prev => { const newBoard = prev.map(r => [...r]); newBoard[row][col] = val; return newBoard })
-  } 
-
-  const restart = () => { setBoard(initialPuzzle.map(row => [...row])); setShowOverlay(false); setHasInteracted(false); setShowFinalOverlay(false) }
-  const isCellValid = (board, row, col) => {
-    const val = board[row][col]; if (!val) return true;
-    for (let i = 0; i < 9; i++) if ((i !== row && board[i][col] === val) || (i !== col && board[row][i] === val)) return false;
-    const startRow = Math.floor(row / 3) * 3, startCol = Math.floor(col / 3) * 3;
-    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) if ((startRow + r !== row || startCol + c !== col) && board[startRow + r][startCol + c] === val) return false;
-    return true
-  }
-
-  if (!showGame) return <div className="p-6 border border-zinc-800 bg-black text-zinc-500 text-sm font-mono uppercase tracking-widest text-center">Procrastinação derrotada! De volta ao batente! 💪</div>;
-
-  return (
-    <div className="relative border border-zinc-800 bg-black p-6" data-testid="sudoku-game">
-      {showOverlay && <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/90 backdrop-blur-sm p-6 text-center"><div className="space-y-6"><p className="text-zinc-200 text-lg">O trabalho chama, mas o Sudoku é muito mais divertido. Qual é a sua escolha?</p><div className="flex flex-col gap-3"><Button onClick={() => setShowOverlay(false)} className="w-full text-base">Estou ciente que preciso trabalhar, mas escolho jogar</Button><Button variant="secondary" onClick={() => { setShowGame(false); setShowOverlay(false); }} className="w-full text-base">Obrigado por me lembrar, prefiro trabalhar</Button></div></div></div>}
-      {showFinalOverlay && <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/90 p-6 text-center"><p className="text-zinc-200 text-lg">Fracassar tão perto do sucesso é uma arte. Parabéns, você é um artista incompreendido!</p></div>}
-      <h3 className="mb-6 text-base font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2"><Sparkles className="h-5 w-5" /> Sudoku</h3>
-      <div className="grid grid-cols-9 gap-px bg-zinc-800 border border-zinc-800 mb-6" onMouseDown={handleFirstInteraction}>
-        {board.map((row, r) => row.map((cell, c) => (
-            <input key={`${r}-${c}`} className={`aspect-square w-full bg-black text-center text-sm font-mono outline-none focus:bg-zinc-900 ${fixedCells[r][c] ? 'text-zinc-500' : 'text-white'} ${!isCellValid(board, r, c) ? 'text-red-500' : ''}`} value={cell} onChange={e => handleChange(r, c, e.target.value)} maxLength={1} inputMode="numeric" readOnly={fixedCells[r][c]} />
-        )))}
-      </div>
-      <Button variant="outline" size="sm" onClick={restart} className="w-full uppercase text-xs tracking-widest">Reiniciar</Button>
-    </div>
-  )
-}
-
-function ResponsibleUsersButton({ users }) {
-  const [open, setOpen] = useState(false)
-  if (!users || users.length === 0) return null
-  return (
-    <div className="relative inline-block">
-      <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="flex items-center gap-2 rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors">👤 {users.length}</button>
-      {open && <div className="absolute top-full left-0 mt-2 z-10 w-48 rounded border border-zinc-800 bg-black p-2 shadow-xl">{users.map((user, i) => <div key={i} className="text-xs font-medium text-zinc-300 py-2 px-2 border-b border-zinc-900 last:border-0 hover:bg-zinc-900 transition-colors">👤 {user}</div>)}</div>}
-    </div>
-  )
-}
-
 // --- LEGACY COMPONENTS ---
 
 const COLOR_VARIANTS = {
@@ -313,7 +251,7 @@ const ALL_TABS = [
   { id: 'goals', label: 'METAS', icon: Goal }
 ];
 
-function LegacyHeader({ currentView, setCurrentView, currentProject, isSyncing, currentUser, handleSwitchUser, handleLogout, onOpenSettings }) {
+function LegacyHeader({ currentView, setCurrentView, currentProject, isSyncing, currentUser, handleSwitchUser, handleLogout, onOpenSettings, onExportBackup }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black/95 backdrop-blur">
       <div className="container flex h-20 items-center justify-between mx-auto px-6 md:px-10">
@@ -326,7 +264,12 @@ function LegacyHeader({ currentView, setCurrentView, currentProject, isSyncing, 
           </nav>
         </div>
         <div className="flex items-center gap-6">
-          {isSyncing && <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />}
+          {/* Botão de Backup visível para acesso rápido */}
+          <Button variant="ghost" size="sm" onClick={onExportBackup} className="hidden md:flex text-[10px] uppercase tracking-widest text-emerald-500 hover:text-emerald-400 hover:bg-emerald-950/20 border border-emerald-900/50">
+             Backup
+          </Button>
+          
+          {isSyncing && <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" title="Salvando..." />}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-12 w-12 rounded-full p-0 hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
@@ -640,71 +583,74 @@ export default function App() {
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
   const [modalState, setModalState] = useState({ type: null, isOpen: false, data: null, mode: 'create' });
   
-  // NEW STATES: Connection and Loading handling
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(false);
   const [initialLoadSuccess, setInitialLoadSuccess] = useState(false);
 
+  // Hook de arquivos (Nota: ainda usa lógica local ou antiga de Supabase, precisa de migração futura)
   const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile } = useFiles(currentProject, currentSubProject, currentUser || {});
 
-  // Função dedicada para carregar projetos com tratamento de erro e cache
+  // Função dedicada para exportar backup manual
+  const handleExportBackup = useCallback(() => {
+    if (!projects || projects.length === 0) {
+      alert("Nada para exportar!");
+      return;
+    }
+    const dataStr = JSON.stringify(projects, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `brickflow_backup_${new Date().toISOString().slice(0,10)}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  }, [projects]);
+
+  // Função dedicada para carregar projetos da NOVA API RAILWAY
   const loadUserProjects = useCallback(async (user) => {
     if (!user) return;
     setIsLoading(true);
     setConnectionError(false);
     
-    let loadedFromSupabase = false;
+    let loadedFromApi = false;
 
-    // 1. Tentar Supabase
-    if (hasSupabaseConfig) {
-      try {
-        const { data, error } = await supabase
-          .from('brickflow_data')
-          .select('id,data')
-          .order('id', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (error) {
-          console.warn("Erro Supabase:", error);
-          setConnectionError(true);
-        } else if (data && Array.isArray(data.data)) {
-          console.log("Projetos carregados do Supabase:", data.data);
-          setProjects(data.data);
-          loadedFromSupabase = true;
-          setInitialLoadSuccess(true);
-        } else if (data) {
-          setProjects([]);
-          loadedFromSupabase = true;
-          setInitialLoadSuccess(true);
-        } else {
-          setProjects([]);
-          loadedFromSupabase = true;
-          setInitialLoadSuccess(true);
+    // 1. Tentar API do Railway (server/index.js)
+    try {
+      // Nota: o vite.config.js deve ter o proxy configurado para /api -> localhost:3000 em dev
+      const response = await fetch('/api/projects');
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Projetos carregados da API:", data);
+        if (Array.isArray(data)) {
+            setProjects(data);
+            loadedFromApi = true;
+            setInitialLoadSuccess(true);
         }
-      } catch (err) {
-        console.warn("Exceção Supabase:", err);
+      } else {
+        console.warn("Erro API:", response.statusText);
         setConnectionError(true);
       }
-    } else {
-        // Se não tiver config, trata como "erro de conexão" para efeitos de UI
-        setConnectionError(true); 
+    } catch (err) {
+      console.warn("Exceção API:", err);
+      setConnectionError(true);
     }
 
-    // 2. Se falhou o Supabase, tenta Fallback LocalStorage 
-    if (!loadedFromSupabase) {
+    // 2. Fallback LocalStorage se a API falhar
+    if (!loadedFromApi) {
         const userKey = user.userKey || `${user.username}-${user.pin}`;
         const localData = localStorage.getItem(`brickflow-projects-${userKey}`);
         
         if (localData) {
             try {
                 setProjects(JSON.parse(localData));
+                console.log("Carregado do LocalStorage (Fallback)");
             } catch (e) {
                 console.error("Erro parsing local projects", e);
                 setProjects([]);
             }
         } else {
-            setProjects([]); // Começa vazio se não achar nada
+            setProjects([]);
         }
     }
     
@@ -714,7 +660,6 @@ export default function App() {
   // Inicialização
   useEffect(() => {
     const init = async () => {
-      // Carregar User
       const savedUser = localStorage.getItem('brickflow-current-user');
       if (savedUser) {
         try {
@@ -730,24 +675,6 @@ export default function App() {
           setIsLoggedIn(true);
           await loadUserProjects(currentUser);
       }
-      
-      // Carregar Users do banco (se houver)
-      if (hasSupabaseConfig) {
-         try {
-             const { data } = await supabase.from('brickflow_users').select('*');
-             if (data && data.length > 0) {
-                setAllUsers(prev => {
-                    const newUsers = [...prev];
-                    data.forEach(u => {
-                        const idx = newUsers.findIndex(nu => nu.username === u.username);
-                        if (idx >= 0) newUsers[idx] = { ...newUsers[idx], ...u };
-                        else newUsers.push(u);
-                    });
-                    return newUsers;
-                });
-             }
-         } catch(e) { console.warn("Erro ao carregar usuários", e); }
-      }
     };
 
     init();
@@ -755,51 +682,39 @@ export default function App() {
     setMegaSenaNumbers(generateMegaSenaNumbers());
   }, [loadUserProjects]);
 
-  const handleRealtimeProjects = useCallback((updater) => {
-    setProjects(prev => (typeof updater === 'function' ? updater(prev) : updater));
-    setIsLoading(false);
-    setConnectionError(false);
-  }, []);
-
-  useRealtimeProjects(isLoggedIn, handleRealtimeProjects);
-
-  // Sync Automático (Salvar)
+  // Sync Automático (Salvar na NOVA API) - VERSÃO BLINDADA
   useEffect(() => {
-    // 1. Verificações básicas de carregamento
     if (!currentUser || isLoading || !initialLoadSuccess) return;
 
-    // 2. TRAVA DE SEGURANÇA CRÍTICA
-    // Se a lista de projetos estiver vazia, NÃO salva automaticamente.
-    // Isso previne que um erro de carga apague o banco.
-    if (projects.length === 0) {
-        console.warn("[BrickFlow Safety] Tentativa de salvar lista vazia bloqueada.");
+    // TRAVA DE SEGURANÇA: Bloqueia salvamento de lista vazia
+    if (!projects || projects.length === 0) {
+        // Se realmente for para zerar, precisaria de uma ação explícita, não automática
+        console.warn("⛔ Salvamento bloqueado: Lista de projetos vazia.");
         return;
     }
 
     const userKey = currentUser.userKey || `${currentUser.username}-${currentUser.pin}`;
     
-    // Salva Local (mantém como backup secundário)
+    // Backup Local
     localStorage.setItem(`brickflow-projects-${userKey}`, JSON.stringify(projects));
 
-    // Debounce para Salvar no Supabase
+    // Debounce para Salvar na API
     const timeoutId = setTimeout(async () => {
-        if (hasSupabaseConfig && !connectionError) {
+        if (!connectionError) {
             setIsSyncing(true);
             try {
-                const { data: existing } = await supabase
-                  .from('brickflow_data')
-                  .select('id')
-                  .order('id', { ascending: false })
-                  .limit(1);
+                const response = await fetch('/api/projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: projects })
+                });
                 
-                const payload = { data: projects };
+                if (!response.ok) throw new Error('Falha ao salvar na API');
                 
-                if (existing && existing.length > 0) {
-                    await supabase.from('brickflow_data').update(payload).eq('id', existing[0].id);
-                } else {
-                    await supabase.from('brickflow_data').insert(payload);
-                }
-            } catch(e) { console.warn("Erro ao salvar no Supabase", e); }
+            } catch(e) { 
+                console.warn("Erro ao salvar no Servidor", e); 
+                // Opcional: setConnectionError(true) se falhar repetidamente
+            }
             setIsSyncing(false);
         }
     }, 2000);
@@ -807,23 +722,7 @@ export default function App() {
     return () => clearTimeout(timeoutId);
   }, [projects, currentUser, isLoading, connectionError, initialLoadSuccess]);
 
-  const handleExportBackup = () => {
-    if (!projects || projects.length === 0) {
-      alert("Nada para exportar!");
-      return;
-    }
-    const dataStr = JSON.stringify(projects, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `brickflow_backup_${new Date().toISOString().slice(0,10)}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-  };
-
   const handleLogin = (username, pin) => {
-    // Procura no estado atual de usuários (que pode ter vindo do banco)
     const user = allUsers.find(u => u.username === username && u.pin === pin);
     if (user) {
         const userData = { ...user, userKey: `${user.username}-${user.pin}` };
@@ -840,11 +739,7 @@ export default function App() {
     setCurrentUser(updatedUser);
     localStorage.setItem('brickflow-current-user', JSON.stringify(updatedUser));
     setAllUsers(prev => prev.map(u => u.username === updatedUser.username ? updatedUser : u));
-    if (hasSupabaseConfig) { 
-        try {
-            await supabase.from('brickflow_users').update({ avatar: updatedUser.avatar }).eq('username', updatedUser.username); 
-        } catch(e) { console.warn("Erro ao atualizar avatar no banco", e); }
-    }
+    // Nota: Atualização de avatar no banco desativada até migração da tabela de users
   };
 
   const initializeBoardData = () => ({ todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'FEITO', tasks: [] }] }, kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] }, files: { files: [] }, goals: { objectives: [] } });
@@ -934,7 +829,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
-      <LegacyHeader currentView={currentView} setCurrentView={setCurrentView} currentProject={currentProject} isSyncing={isSyncing} currentUser={currentUser} handleSwitchUser={() => setIsLoggedIn(false)} handleLogout={() => { setIsLoggedIn(false); localStorage.removeItem('brickflow-current-user'); }} onOpenSettings={() => setShowSettingsModal(true)} />
+      <LegacyHeader 
+        currentView={currentView} 
+        setCurrentView={setCurrentView} 
+        currentProject={currentProject} 
+        isSyncing={isSyncing} 
+        currentUser={currentUser} 
+        handleSwitchUser={() => setIsLoggedIn(false)} 
+        handleLogout={() => { setIsLoggedIn(false); localStorage.removeItem('brickflow-current-user'); }} 
+        onOpenSettings={() => setShowSettingsModal(true)} 
+        onExportBackup={handleExportBackup}
+      />
       <main className="flex-1 container mx-auto p-0 md:p-8 pt-6 h-[calc(100vh-4rem)] overflow-hidden">
         <div className="h-full overflow-y-auto pr-2 custom-scrollbar">
             {currentView === 'home' && (
@@ -965,13 +870,6 @@ export default function App() {
       </main>
       <LegacyModal modalState={modalState} setModalState={setModalState} handlePasswordSubmit={() => {}} handleSaveProject={handleSaveProject} handleTaskAction={handleTaskAction} allUsers={allUsers} currentUser={currentUser} />
       <UserSettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} currentUser={currentUser} onUpdateUser={handleUpdateUser} />
-      {/* Botão de Emergência para Backup */}
-      <button 
-        onClick={handleExportBackup}
-        className="fixed bottom-4 right-4 z-[9999] bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded shadow-lg font-bold text-xs uppercase tracking-widest"
-      >
-        💾 Backup Manual
-      </button>
     </div>
   );
 }
