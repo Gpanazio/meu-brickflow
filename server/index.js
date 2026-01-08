@@ -220,6 +220,9 @@ app.get('/api/projects', async (req, res) => {
     }
   } catch (err) {
     console.error('Erro no banco:', err);
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
     // Se o erro for de tabela inexistente (caso raro de race condition), tenta inicializar
     if (err.code === '42P01') {
        await initDB();
@@ -253,6 +256,9 @@ app.get('/api/trash', async (req, res) => {
     res.json({ projects: deletedProjects, subProjects: deletedSubProjects });
   } catch (err) {
     console.error('Erro ao listar lixeira:', err);
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
     res.status(500).json({ error: 'Erro interno ao listar lixeira' });
   }
 });
@@ -264,7 +270,16 @@ app.post('/api/trash/restore', async (req, res) => {
     return res.status(400).json({ error: 'Tipo e ID são obrigatórios' });
   }
 
-  const client = await getClient();
+  let client;
+  try {
+    client = await getClient();
+  } catch (err) {
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
+    console.error('Erro ao conectar no banco:', err);
+    return res.status(500).json({ error: 'Erro ao conectar no banco' });
+  }
 
   try {
     await client.query('BEGIN');
@@ -348,7 +363,16 @@ app.post('/api/projects', async (req, res) => {
     return res.status(400).json({ error: 'Dados inválidos' });
   }
 
-  const client = await getClient();
+  let client;
+  try {
+    client = await getClient();
+  } catch (err) {
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
+    console.error('Erro ao conectar no banco:', err);
+    return res.status(500).json({ error: 'Erro ao conectar no banco' });
+  }
 
   try {
     await client.query('BEGIN');
@@ -399,6 +423,9 @@ app.post('/api/projects', async (req, res) => {
       }
     }
     console.error('Erro ao salvar:', err);
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
     res.status(500).json({ error: 'Erro ao salvar dados' });
   } finally {
     client.release();
@@ -414,6 +441,9 @@ app.get('/api/projects/events', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('Erro ao listar eventos:', err);
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
     if (err.code === '42P01') {
       await initDB();
       res.json([]);
@@ -435,6 +465,9 @@ app.get('/api/backups', async (req, res) => {
     res.json(backups);
   } catch (err) {
     console.error('Erro ao listar backups:', err);
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
     if (err.code === '42P01') {
       await initDB();
       res.json([]);
@@ -451,7 +484,16 @@ app.post('/api/backups/restore', async (req, res) => {
     return res.status(400).json({ error: 'Backup ID é obrigatório' });
   }
 
-  const client = await getClient();
+  let client;
+  try {
+    client = await getClient();
+  } catch (err) {
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
+    console.error('Erro ao conectar no banco:', err);
+    return res.status(500).json({ error: 'Erro ao conectar no banco' });
+  }
 
   try {
     await client.query('BEGIN');
@@ -490,6 +532,9 @@ app.post('/api/backups/restore', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Erro ao restaurar backup:', err);
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
     res.status(500).json({ error: 'Erro ao restaurar backup' });
   } finally {
     client.release();
@@ -506,6 +551,9 @@ app.get('/api/projects/:id/history', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('Erro ao carregar histórico:', err);
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
     res.status(500).json({ error: 'Erro ao carregar histórico' });
   }
 });
@@ -573,6 +621,9 @@ app.post('/api/projects/:id/restore', async (req, res) => {
     res.json({ success: true, data: updatedStateWithVersion });
   } catch (err) {
     console.error('Erro ao restaurar:', err);
+    if (err.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+    }
     res.status(500).json({ error: 'Erro ao restaurar projeto' });
   }
 });
@@ -585,15 +636,19 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-// Inicializa o banco ANTES de abrir a porta do servidor
-initDB().then(async () => {
+const bootstrapDatabase = async () => {
   try {
+    await initDB();
     await ensureInitialBackup();
+    scheduleBackups();
   } catch (err) {
-    console.error('Erro ao criar backup inicial:', err);
+    console.error('Erro ao iniciar rotinas do banco:', err);
   }
-  scheduleBackups();
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando na porta ${PORT} (Limite: 50MB)`);
-  });
+};
+
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT} (Limite: 50MB)`);
 });
+
+// Inicializa o banco em background para não bloquear o boot do servidor
+bootstrapDatabase();
