@@ -426,8 +426,7 @@ function LegacyModal({ modalState, setModalState, handlePasswordSubmit, handleSa
   const [selectedUsers, setSelectedUsers] = useState(modalState.data?.responsibleUsers || []);
   const isCreate = modalState.mode === 'create';
   const initialTabs = modalState.data?.enabledTabs || ['kanban', 'todo', 'files', 'goals'];
-  const isProjectCreator = modalState.data?.createdBy ? modalState.data.createdBy === currentUser?.username : true;
-  const canEditStructure = isCreate || isProjectCreator;
+  const canEditStructure = modalState.type === 'project' || modalState.type === 'subProject';
 
   useEffect(() => { setSelectedUsers(modalState.data?.responsibleUsers || []); }, [modalState.data]);
   const toggleUser = (username) => { setSelectedUsers(prev => prev.includes(username) ? prev.filter(u => u !== username) : [...prev, username]); };
