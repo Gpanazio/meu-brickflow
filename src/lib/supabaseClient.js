@@ -6,49 +6,47 @@ export const VITE_SUPABASE_ANON_KEY_NAME = 'VITE_SUPABASE_ANON_KEY'
 
 const isTestEnv = import.meta.env.MODE === 'test'
 
-const missingVariables = [
-  !import.meta.env.VITE_SUPABASE_URL && VITE_SUPABASE_URL_KEY,
-  !import.meta.env.VITE_SUPABASE_ANON_KEY && VITE_SUPABASE_ANON_KEY_NAME
-].filter(Boolean)
+// Verificação explícita das variáveis
+const envUrl = import.meta.env.VITE_SUPABASE_URL
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL || (isTestEnv ? 'http://localhost:54321' : '')
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY || (isTestEnv ? 'test-anon-key' : '')
+const missingVariables = []
+if (!envUrl) missingVariables.push(VITE_SUPABASE_URL_KEY)
+if (!envKey) missingVariables.push(VITE_SUPABASE_ANON_KEY_NAME)
+
+// Logs de diagnóstico para ajudar a debugar no Railway
+console.log('[Supabase Setup] Ambiente:', import.meta.env.MODE)
+console.log('[Supabase Setup] URL detectada:', envUrl ? 'Sim (********)' : 'NÃO')
+console.log('[Supabase Setup] Key detectada:', envKey ? 'Sim (********)' : 'NÃO')
+
+const supabaseUrl = envUrl || (isTestEnv ? 'http://localhost:54321' : '')
+const supabaseAnonKey = envKey || (isTestEnv ? 'test-anon-key' : '')
 const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey)
 
 if (missingVariables.length > 0) {
-  const message = `Missing environment variable(s): ${missingVariables.join(' and ')}`
-  console.warn(message)
-  if (isTestEnv) {
-    console.warn('Using test defaults for Supabase.')
-  }
+  const message = `⚠️ Erro Crítico: Variáveis de ambiente faltando: ${missingVariables.join(' e ')}. Verifique se no Railway elas começam com VITE_.`
+  console.error(message)
 }
 
 export const supabaseConfigError = hasSupabaseConfig
   ? ''
-  : `Supabase não configurado. Faltando: ${missingVariables.join(' e ')}.`
+  : `Supabase desconectado. Faltando: ${missingVariables.join(' e ')}.`
 
 export { hasSupabaseConfig }
 
 /**
  * Creates a resolved no-op Supabase response object.
- * @param {any[] | null} [data=[]] - Data to return in the response.
- * @returns {Promise<{data: any[] | null, error: {message: string}}>} A resolved response promise.
  */
 export const createNoopResult = (data = []) =>
   Promise.resolve({
     data,
     error: {
-      message: supabaseConfigError || 'Supabase não configurado.'
+      message: supabaseConfigError || 'Supabase não configurado corretamente.'
     }
   })
 
 /**
- * Creates a no-op query builder that mimics the Supabase query builder API.
- * It returns a thenable object so callers can await chained operations safely.
- * @param {any[]} [defaultData=[]] - The default data to resolve the promise with.
- * @returns {object} A no-op builder object.
+ * Creates a no-op query builder mimic.
  */
 export const createNoopBuilder = (defaultData = []) => {
   const result = createNoopResult(defaultData)
@@ -70,8 +68,7 @@ export const createNoopBuilder = (defaultData = []) => {
 }
 
 /**
- * Creates a no-op realtime channel with a chainable API.
- * @returns {{on: Function, subscribe: Function, unsubscribe: Function}} A no-op channel.
+ * Creates a no-op realtime channel.
  */
 export const createNoopChannel = () => {
   const channel = {
@@ -93,6 +90,7 @@ export const supabase = hasSupabaseConfig
 
 export function handleSupabaseError(error, context = 'Supabase') {
   if (error) {
+    console.error(`[${context}] Erro:`, error.message || error)
     debugLog(`⚠️ Erro em ${context}:`, error.message)
   }
 }
