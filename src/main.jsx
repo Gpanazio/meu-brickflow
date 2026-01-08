@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
-import './index.css' // Certifique-se que o CSS global é importado se houver
+import './App.css' // Corrigido: Importa App.css onde estão os estilos globais
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
