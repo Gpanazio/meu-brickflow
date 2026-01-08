@@ -35,7 +35,7 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
     if (currentSubProject) {
       loadFilesFromSupabase()
     }
-  }, [currentSubProject, loadFilesFromSupabase])
+  }, [currentSubProject?.id, loadFilesFromSupabase])
 
   const currentFiles = useMemo(() => {
     if (!currentSubProject || !files) return []
