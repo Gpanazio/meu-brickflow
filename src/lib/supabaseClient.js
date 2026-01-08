@@ -7,7 +7,7 @@ const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL || (isTestEnv ? 'http://localhost:54321' : '')
 const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY || (isTestEnv ? 'test-anon-key' : '')
-const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey)
+export const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey)
 export const missingVariables = [
   !supabaseUrl && 'VITE_SUPABASE_URL',
   !supabaseAnonKey && 'VITE_SUPABASE_ANON_KEY'
