@@ -8,11 +8,11 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-// --- IMPORTS DOS COMPONENTES ---
+// --- IMPORTS OBRIGATÓRIOS ---
 import LegacyHome from './components/legacy/LegacyHome';
 import LegacyProjectView from './components/legacy/LegacyProjectView';
 import LegacyBoard from './components/legacy/LegacyBoard';
-import LegacyHeader from './components/legacy/LegacyHeader'; // <--- O IMPORT QUE FALTAVA
+import LegacyHeader from './components/legacy/LegacyHeader'; // <--- O IMPORT QUE FALTOU
 import { useUsers } from './hooks/useUsers'; 
 import { useFiles } from './hooks/useFiles'; 
 import SudokuGame from './components/SudokuGame';
@@ -49,7 +49,7 @@ const generateMegaSenaNumbers = () => {
   return numbers.sort((a, b) => a - b);
 };
 
-// --- UI COMPONENTS ---
+// --- UI COMPONENTS LOCAIS ---
 const Button = React.forwardRef(({ className, variant = "default", size = "default", ...props }, ref) => {
   const variants = {
     default: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
@@ -69,6 +69,7 @@ const Input = React.forwardRef(({ className, type, ...props }, ref) => (
 ));
 Input.displayName = "Input";
 
+// Dialog Components
 const Dialog = ({ open, onOpenChange, children }) => {
   if (!open) return null;
   return (
@@ -551,13 +552,13 @@ export default function App() {
         </Dialog>
       )}
 
-      {/* COMPONENTE DE MODAL DE USUÁRIO - DEFINIDO NO FINAL DO ARQUIVO */}
+      {/* COMPONENTE DE MODAL DE USUÁRIO - DEFINIDO ABAIXO */}
       <UserSettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} currentUser={currentUser} onUpdateUser={handleUpdateUser} />
     </div>
   );
 }
 
-// --- SUB-COMPONENTES (Para evitar erros de referência se não forem importados) ---
+// --- SUB-COMPONENTES AUXILIARES ---
 
 function UserSettingsModal({ isOpen, onClose, currentUser, onUpdateUser }) {
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar);
