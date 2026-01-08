@@ -3,42 +3,31 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import * as matchers from '@testing-library/jest-dom/matchers'
 import App from '../App.jsx'
-import { __resetSupabaseResponses } from '../lib/supabaseClient'
-
-vi.mock('../lib/supabaseClient', () => {
-  const buildSelectResponse = () => {
-    const response = { data: [], error: null }
-    return {
-      limit: vi.fn(() => Promise.resolve(response)),
-      then: (resolve) => Promise.resolve(response).then(resolve)
-    }
-  }
-
-  return {
-    supabase: {
-      from: vi.fn(() => ({
-        select: vi.fn(() => buildSelectResponse()),
-        update: vi.fn(() => ({
-          eq: vi.fn(() => Promise.resolve({ data: [], error: null }))
-        })),
-        insert: vi.fn(() => Promise.resolve({ data: [], error: null }))
-      }))
-    },
-    hasSupabaseConfig: false
-  }
-})
 
 expect.extend(matchers)
 
+const apiState = {
+  users: [
+    { username: 'admin', pin: '1234', displayName: 'Admin', color: 'red', avatar: '' },
+    { username: 'fran', pin: '1234', displayName: 'Fran', color: 'purple', avatar: '' }
+  ],
+  projects: []
+}
+
 describe('App', () => {
   beforeEach(() => {
-    __resetSupabaseResponses()
-    global.fetch = vi.fn(() => Promise.resolve({ ok: false, json: async () => [] }))
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => apiState
+      })
+    )
     localStorage.clear()
   })
 
   afterEach(() => {
     cleanup()
+    vi.clearAllMocks()
   })
 
   it('should be defined', () => {
@@ -46,19 +35,13 @@ describe('App', () => {
   })
 
   it('shows SudokuGame for user Fran', async () => {
-    localStorage.setItem(
-      'brickflow-current-user',
-      JSON.stringify({ displayName: 'Fran', userKey: '1', username: 'fran' })
-    )
+    localStorage.setItem('brickflow-session-user', JSON.stringify(apiState.users[1]))
     render(<App />)
     expect(await screen.findByTestId('sudoku-game')).toBeInTheDocument()
   })
 
   it('does not show SudokuGame for other users', async () => {
-    localStorage.setItem(
-      'brickflow-current-user',
-      JSON.stringify({ displayName: 'Bob', userKey: '2', username: 'bob' })
-    )
+    localStorage.setItem('brickflow-session-user', JSON.stringify(apiState.users[0]))
     render(<App />)
     await waitFor(() => {
       expect(screen.queryByTestId('sudoku-game')).toBeNull()
