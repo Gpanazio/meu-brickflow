@@ -1,9 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import LegacyApp from './LegacyApp.jsx'
+import App from './App.jsx' // Mudado de LegacyApp para App
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <LegacyApp />
+    <App />
   </StrictMode>,
 )
