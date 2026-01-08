@@ -35,7 +35,7 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
     if (currentSubProject) {
       loadFilesFromSupabase()
     }
-  }, [currentSubProject, loadFilesFromSupabase])
+  }, [currentSubProject?.id, loadFilesFromSupabase])
 
   const currentFiles = useMemo(() => {
     if (!currentSubProject || !files) return []
@@ -44,25 +44,22 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
         file.projectId === currentProject?.id &&
         file.subProjectId === currentSubProject.id
     )
-  }, [currentProject?.id, currentSubProject, files])
+  }, [currentProject?.id, currentSubProject?.id, files])
 
   const getCurrentFiles = useCallback(() => currentFiles, [currentFiles])
 
   const handleFileUpload = useCallback(async (event) => {
     const uploadedFiles = Array.from(event.target.files)
-    const currentSubProjectId = currentSubProject?.id
-    const currentSubProjectName = currentSubProject?.name
-    if (!uploadedFiles.length || !currentSubProjectId) return
+    if (!uploadedFiles.length || !currentSubProject) return
 
     const uploadDate = new Date().toISOString()
 
     try {
-      const results = await Promise.allSettled(
+      await Promise.all(
         uploadedFiles.map(async (file) => {
-          const base64 = await new Promise((resolve, reject) => {
+          const base64 = await new Promise((resolve) => {
             const reader = new FileReader()
             reader.onload = () => resolve(reader.result)
-            reader.onerror = (error) => reject(error)
             reader.readAsDataURL(file)
           })
 
@@ -74,24 +71,20 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
             uploadDate,
             uploadedBy: currentUser.username,
             projectId: currentProject?.id,
-            subProjectId: currentSubProjectId,
+            subProjectId: currentSubProject?.id,
             projectName: currentProject?.name,
-            subProjectName: currentSubProjectName
+            subProjectName: currentSubProject?.name
           }
 
           await saveFileToSupabase(fileData)
         })
       )
-      const failedUploads = results.filter((result) => result.status === 'rejected')
-      if (failedUploads.length > 0) {
-        debugLog(`❌ ${failedUploads.length} arquivo(s) falharam ao enviar.`, failedUploads)
-      }
       await loadFilesFromSupabase()
     } catch (error) {
-      debugLog('❌ Erro inesperado durante o upload em lote:', error.message)
+      debugLog('❌ Erro no upload:', error.message)
     }
     event.target.value = ''
-  }, [currentProject?.id, currentProject?.name, currentSubProject?.id, currentSubProject?.name, currentUser.username, loadFilesFromSupabase, saveFileToSupabase])
+  }, [currentProject?.id, currentProject?.name, currentSubProject, currentUser.username, loadFilesFromSupabase, saveFileToSupabase])
 
   const handlePreviewFile = useCallback((file) => {
     setPreviewFile(file)
