@@ -27,12 +27,25 @@ const initDB = async () => {
       );
     `);
     await query(`
+      ALTER TABLE brickflow_state
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    `);
+    await query(`
       CREATE TABLE IF NOT EXISTS brickflow_events (
         id BIGSERIAL PRIMARY KEY,
         client_request_id TEXT NOT NULL UNIQUE,
         data JSONB NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+    await query(`
+      INSERT INTO brickflow_state (id, data, updated_at)
+      SELECT 1, data, COALESCE(updated_at, created_at, CURRENT_TIMESTAMP)
+      FROM brickflow_state
+      ORDER BY id DESC
+      LIMIT 1
+      ON CONFLICT (id) DO UPDATE
+      SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at;
     `);
     console.log('✅ Banco de dados inicializado: Tabela "brickflow_state" verificada.');
   } catch (err) {
@@ -49,8 +62,13 @@ app.get('/api/projects', async (req, res) => {
     if (rows.length > 0) {
       res.json(rows[0].data);
     } else {
-      // Retorna null para o front saber que é a primeira vez e inicializar
-      res.json(null);
+      const fallback = await query('SELECT data FROM brickflow_state ORDER BY id DESC LIMIT 1');
+      if (fallback.rows.length > 0) {
+        res.json(fallback.rows[0].data);
+      } else {
+        // Retorna null para o front saber que é a primeira vez e inicializar
+        res.json(null);
+      }
     }
   } catch (err) {
     console.error('Erro no banco:', err);
