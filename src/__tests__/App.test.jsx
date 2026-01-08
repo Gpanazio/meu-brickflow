@@ -7,11 +7,10 @@ import App from '../App.jsx'
 vi.mock('../lib/supabaseClient', () => {
   const buildSelectResponse = () => {
     const response = { data: [], error: null }
-    const builder = {
-      limit: vi.fn(() => builder),
+    return {
+      limit: vi.fn(() => Promise.resolve(response)),
       then: (resolve) => Promise.resolve(response).then(resolve)
     }
-    return builder
   }
 
   return {
