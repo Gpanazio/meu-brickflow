@@ -4,7 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, MoreVertical, Lock, Sparkles, Dna } from 'lucide-react';
 import SudokuGame from '../SudokuGame';
 
-// Cores definidas internamente para evitar quebras se a prop falhar
+// Cores definidas internamente para blindagem
 const DEFAULT_COLORS = {
   blue: { bg: 'bg-blue-600', text: 'text-blue-500' },
   red: { bg: 'bg-red-600', text: 'text-red-500' },
@@ -26,7 +26,6 @@ function LegacyHome({
   handleAccessProject,
   handleDeleteProject
 }) {
-  // Blindagem contra dados inválidos
   const safeProjects = Array.isArray(projects) ? projects : [];
   const safeMegaSena = Array.isArray(megaSenaNumbers) ? megaSenaNumbers : [0,0,0,0,0,0];
 
@@ -82,17 +81,17 @@ function LegacyHome({
 
       {/* SUDOKU (APENAS PARA FRAN) */}
       {currentUser?.displayName === 'Fran' && (
-        <div className="border border-zinc-800 p-4 bg-zinc-950/30">
+        <div className="border border-zinc-800 p-4 bg-zinc-950/30 mt-8">
            <SudokuGame />
         </div>
       )}
 
       {/* LISTA DE PROJETOS */}
-      <div className="space-y-4">
+      <div className="space-y-4 mt-8">
         <div className="flex justify-between items-end pb-2 border-b border-zinc-900">
           <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2">Projetos Ativos</h2>
-          {/* Botão Novo com classe 'bg-white text-black' explícita para garantir contraste */}
-          <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white text-black hover:bg-zinc-200 h-8 px-4 text-[10px] uppercase font-bold tracking-widest rounded-none mb-2">
+          {/* Botão Novo corrigido */}
+          <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white text-zinc-950 hover:bg-zinc-200 h-8 px-4 text-[10px] uppercase font-bold tracking-widest rounded-none mb-2">
             <Plus className="mr-1 h-3 w-3" /> Novo
           </Button>
         </div>
