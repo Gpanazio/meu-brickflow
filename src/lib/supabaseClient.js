@@ -7,22 +7,26 @@ const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL || (isTestEnv ? 'http://localhost:54321' : '')
 const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY || (isTestEnv ? 'test-anon-key' : '')
+const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey)
+export const missingVariables = [
+  !supabaseUrl && 'VITE_SUPABASE_URL',
+  !supabaseAnonKey && 'VITE_SUPABASE_ANON_KEY'
+].filter(Boolean)
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  const missing = [
-    !supabaseUrl && 'VITE_SUPABASE_URL',
-    !supabaseAnonKey && 'VITE_SUPABASE_ANON_KEY'
-  ]
-    .filter(Boolean)
-    .join(' and ')
-  const message = `Missing environment variable(s): ${missing}`
+if (!hasSupabaseConfig) {
+  const message = `Missing environment variable(s): ${missingVariables.join(' and ')}`
   console.warn(message)
-  if (!isTestEnv) {
-    throw new Error(message)
-  }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabaseConfigError = hasSupabaseConfig
+  ? ''
+  : `Supabase não configurado. Faltando: ${missingVariables.join(' e ')}.`
+
+export { hasSupabaseConfig }
+
+export const supabase = hasSupabaseConfig
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
 export function handleSupabaseError(error, context = 'Supabase') {
   if (error) {
