@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button } from '../ui/button';
 import { CardTitle } from '../ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
@@ -12,6 +12,12 @@ function LegacyProjectView({
   handleDeleteProject,
   COLOR_VARIANTS
 }) {
+  
+  // CORREÇÃO ERRO #310: Hook elevado para o Top-Level
+  const activeSubProjects = useMemo(() => {
+    return currentProject.subProjects?.filter(s => !s.isArchived) || [];
+  }, [currentProject.subProjects]);
+
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
       <div className="flex flex-col gap-6 border-b border-zinc-900 pb-6">
@@ -30,7 +36,7 @@ function LegacyProjectView({
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-zinc-900 border border-zinc-900">
-        {(React.useMemo(() => currentProject.subProjects?.filter(s => !s.isArchived) || [], [currentProject.subProjects])).map(sub => {
+        {activeSubProjects.map(sub => {
           // Safety check for color variant with fallback
           const colors = COLOR_VARIANTS[sub.color] || COLOR_VARIANTS['zinc'] || COLOR_VARIANTS['blue'];
           
