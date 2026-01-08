@@ -4,14 +4,40 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import * as matchers from '@testing-library/jest-dom/matchers'
 import App from '../App.jsx'
 
-vi.mock('../lib/supabaseClient', () => ({
-  supabase: {
-    from: () => ({
-      select: () => Promise.resolve({ data: [], error: null })
-    })
-  },
-  hasSupabaseConfig: false
-}))
+vi.mock('../lib/supabaseClient', () => {
+  const responses = {
+    select: { data: [], error: null },
+    update: { data: [], error: null },
+    insert: { data: [], error: null }
+  }
+
+  const buildSelectResponse = () => {
+    const response = responses.select
+    const builder = {
+      limit: vi.fn(() => builder),
+      then: (resolve) => Promise.resolve(response).then(resolve)
+    }
+    return builder
+  }
+
+  return {
+    __setSupabaseResponses: (next) => {
+      responses.select = next?.select ?? responses.select
+      responses.update = next?.update ?? responses.update
+      responses.insert = next?.insert ?? responses.insert
+    },
+    supabase: {
+      from: vi.fn(() => ({
+        select: vi.fn(() => buildSelectResponse()),
+        update: vi.fn(() => ({
+          eq: vi.fn(() => Promise.resolve(responses.update))
+        })),
+        insert: vi.fn(() => Promise.resolve(responses.insert))
+      }))
+    },
+    hasSupabaseConfig: false
+  }
+})
 
 expect.extend(matchers)
 
