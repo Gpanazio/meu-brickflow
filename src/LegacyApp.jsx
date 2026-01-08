@@ -4,7 +4,7 @@ import logoImage from './assets/brickflowbranco.png';
 import { debugLog } from './utils/debugLog';
 import { formatFileSize } from './utils/formatFileSize';
 import { absurdPhrases } from './utils/phrases';
-import { supabase } from './lib/supabaseClient';
+import { supabase, hasSupabaseConfig, supabaseConfigError } from './lib/supabaseClient'; // Importado status
 import { motion, AnimatePresence } from 'framer-motion';
 
 import ResponsibleUsersButton from './components/ResponsibleUsersButton';
@@ -32,7 +32,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { 
   MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
   Trash2, Eye, FolderOpen, Lock, RotateCcw,
-  ListTodo, KanbanSquare, FileText, Goal, Sparkles, Dna
+  ListTodo, KanbanSquare, FileText, Goal, Sparkles, Dna, AlertTriangle
 } from 'lucide-react';
 
 // --- CONFIGURAÇÕES & CONSTANTES ---
@@ -86,6 +86,7 @@ function LegacyApp() {
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
   const [pendingAccessItem, setPendingAccessItem] = useState(null); 
+  const [connectionError, setConnectionError] = useState(null);
   
   const [modalState, setModalState] = useState({
     type: null,
@@ -121,6 +122,11 @@ function LegacyApp() {
   };
 
   useEffect(() => {
+    // Verificar se o Supabase está configurado corretamente no início
+    if (!hasSupabaseConfig) {
+      setConnectionError(supabaseConfigError);
+    }
+
     const savedUser = localStorage.getItem('brickflow-current-user');
     if (savedUser) {
       try {
@@ -129,7 +135,7 @@ function LegacyApp() {
         setIsLoggedIn(true);
         loadUserProjects(userData.userKey);
       } catch (e) {
-        console.error("Erro ao carregar usuário salvo:", e);
+        console.error("Erro ao processar usuário salvo:", e);
         localStorage.removeItem('brickflow-current-user');
       }
     }
@@ -143,7 +149,8 @@ function LegacyApp() {
 
   const saveTimeoutRef = useRef(null);
   useEffect(() => {
-    if (projects.length > 0 && isLoggedIn && currentUser) {
+    // Só tenta salvar se tiver dados válidos e user
+    if (Array.isArray(projects) && projects.length > 0 && isLoggedIn && currentUser) {
       localStorage.setItem(`brickflow-projects-${currentUser.userKey}`, JSON.stringify(projects));
       
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -151,6 +158,8 @@ function LegacyApp() {
       saveTimeoutRef.current = setTimeout(async () => {
         setIsSyncing(true);
         try {
+          if (!hasSupabaseConfig) return; // Pula sync se não tiver config
+
           const { data: existing, error: searchError } = await supabase
             .from('brickflow_data')
             .select('id')
@@ -170,9 +179,11 @@ function LegacyApp() {
                  .insert(dataPayload);
              }
              debugLog("✅ Sync OK");
+          } else {
+            console.warn("Erro no Sync:", searchError.message);
           }
         } catch (error) { 
-          console.error("Erro sync:", error); 
+          console.error("Exceção no Sync:", error); 
         } finally { 
           setIsSyncing(false); 
         }
@@ -182,41 +193,54 @@ function LegacyApp() {
 
   const loadAllUsers = async () => {
     try {
+      if (!hasSupabaseConfig) return;
       const { data, error } = await supabase.from('brickflow_users').select('*');
       if (!error && data) setAllUsers(data);
     } catch (error) { debugLog('Erro users', error); }
   };
 
   const loadUserProjects = async (userKey) => {
-    try {
-      const { data, error } = await supabase.from('brickflow_data').select('*');
-      // Correção: Verifica se data[0].data é um array antes de setar
-      if (!error && data && data.length > 0 && Array.isArray(data[0].data)) {
-        setProjects(data[0].data);
-        return;
-      }
-    } catch (e) { console.error("Erro ao carregar do Supabase:", e); }
+    let loaded = false;
     
-    const saved = localStorage.getItem(`brickflow-projects-${userKey}`);
-    if (saved) {
+    // Tenta carregar do Supabase se disponível
+    if (hasSupabaseConfig) {
       try {
-        const parsed = JSON.parse(saved);
-        // Correção: Garante que é array
-        setProjects(Array.isArray(parsed) ? parsed : []);
-      } catch(e) {
+        const { data, error } = await supabase.from('brickflow_data').select('*');
+        // BLINDAGEM: Verifica se é array antes de usar
+        if (!error && data && data.length > 0 && Array.isArray(data[0].data)) {
+          setProjects(data[0].data);
+          loaded = true;
+        } else if (error) {
+          console.warn("Erro ao ler projetos do Supabase:", error.message);
+        }
+      } catch (e) { 
+        console.error("Exceção fatal ao carregar do Supabase:", e); 
+      }
+    }
+    
+    // Fallback para LocalStorage se Supabase falhar ou não tiver dados
+    if (!loaded) {
+      const saved = localStorage.getItem(`brickflow-projects-${userKey}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setProjects(Array.isArray(parsed) ? parsed : []);
+        } catch(e) {
+          console.error("LocalStorage corrompido, resetando projetos.");
+          setProjects([]);
+        }
+      } else {
         setProjects([]);
       }
-    } else {
-      setProjects([]);
     }
   };
 
+  // Função segura para atualizar projetos
   const updateProjectsState = (newData) => {
-    // Correção: Previne setar nulo/undefined
     if (Array.isArray(newData)) {
       setProjects(newData);
     } else {
-      console.warn("Tentativa de definir projetos com valor inválido:", newData);
+      console.error("Tentativa de salvar dados inválidos (não array) em projects:", newData);
     }
   };
 
@@ -477,7 +501,20 @@ function LegacyApp() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
+      <div className="min-h-screen w-full flex items-center justify-center bg-black p-4 relative">
+        {/* Aviso de erro de conexão se houver */}
+        {connectionError && (
+          <div className="absolute top-4 left-0 right-0 max-w-md mx-auto px-4">
+            <div className="bg-red-950/50 border border-red-900 text-red-200 p-4 rounded-md flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 shrink-0 text-red-500" />
+              <div className="text-xs">
+                <p className="font-bold mb-1">Aviso do Sistema</p>
+                <p>{connectionError}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <Card className="w-full max-w-sm border-zinc-900 bg-black shadow-2xl rounded-none">
           <div className="p-8 space-y-6">
             <div className="text-center space-y-2">
@@ -518,6 +555,16 @@ function LegacyApp() {
         handleSwitchUser={handleSwitchUser}
         handleLogout={handleLogout}
       />
+      
+      {/* Indicador de erro de conexão discreto quando logado */}
+      {connectionError && (
+        <div className="bg-red-950/30 border-b border-red-900/30 px-4 py-1 flex items-center justify-center">
+           <span className="text-[10px] text-red-400 uppercase tracking-widest flex items-center gap-2">
+             <AlertTriangle className="h-3 w-3" /> Offline / Erro de Configuração
+           </span>
+        </div>
+      )}
+
       <main className="flex-1 container mx-auto p-0 md:p-8 pt-6 h-[calc(100vh-4rem)] overflow-hidden">
         <div className="h-full overflow-y-auto pr-2 custom-scrollbar">
           <AnimatePresence mode="wait">
