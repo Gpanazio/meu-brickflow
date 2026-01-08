@@ -1,21 +1,19 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
   Trash2, Eye, FolderOpen, Lock, RotateCcw,
   ListTodo, KanbanSquare, FileText, Goal, Sparkles, Dna,
-  X, Check, ChevronDown, Settings, Calendar, WifiOff, Save
+  X, Check, ChevronDown, Settings, Calendar, WifiOff, Save,
+  RefreshCw, Power
 } from 'lucide-react';
 import './App.css';
 
-// --- IMPORTS ---
 import LegacyHome from './components/legacy/LegacyHome';
 import LegacyProjectView from './components/legacy/LegacyProjectView';
 import LegacyBoard from './components/legacy/LegacyBoard';
 import { useUsers } from './hooks/useUsers'; 
 import { useFiles } from './hooks/useFiles'; 
 import SudokuGame from './components/SudokuGame';
-
-// IMPORTANDO SUAS FRASES DO ARQUIVO EXTERNO
 import { absurdPhrases } from './utils/phrases'; 
 
 // --- UTILS ---
@@ -49,42 +47,19 @@ const generateMegaSenaNumbers = () => {
   return numbers.sort((a, b) => a - b);
 };
 
-// --- UI COMPONENTS LOCAIS (COM CORREÇÃO DE CONTRASTE) ---
-
+// --- UI COMPONENTS ---
 const Button = React.forwardRef(({ className, variant = "default", size = "default", ...props }, ref) => {
   const variants = {
-    // Ajustado: Text-white para botões coloridos
     default: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
     destructive: "bg-red-900 text-white hover:bg-red-800",
     outline: "border border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-300",
     secondary: "bg-zinc-800 text-zinc-100 hover:bg-zinc-700",
     ghost: "hover:bg-zinc-900 text-zinc-400 hover:text-white",
-    // Novo variante para botões brancos garantindo texto preto
     white: "bg-white text-zinc-950 hover:bg-zinc-200 font-bold", 
   };
-  const sizes = {
-    default: "h-10 px-4 py-2",
-    sm: "h-9 rounded-md px-3 text-sm",
-    lg: "h-12 rounded-md px-8 text-base",
-    icon: "h-10 w-10",
-  };
-  
-  // Se a classe passada manualmente tiver bg-white, forçamos text-black
+  const sizes = { default: "h-10 px-4 py-2", sm: "h-9 rounded-md px-3 text-sm", lg: "h-12 rounded-md px-8 text-base", icon: "h-10 w-10" };
   const manualContrastFix = className?.includes('bg-white') ? 'text-zinc-950' : '';
-
-  return (
-    <button 
-      ref={ref} 
-      className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700 disabled:pointer-events-none disabled:opacity-50", 
-        variants[variant], 
-        sizes[size], 
-        manualContrastFix, 
-        className
-      )} 
-      {...props} 
-    />
-  );
+  return <button ref={ref} className={cn("inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700 disabled:pointer-events-none disabled:opacity-50", variants[variant], sizes[size], manualContrastFix, className)} {...props} />;
 });
 Button.displayName = "Button";
 
@@ -103,7 +78,6 @@ const Label = React.forwardRef(({ className, ...props }, ref) => (
 ));
 Label.displayName = "Label";
 
-// Custom Dialog
 const Dialog = ({ open, onOpenChange, children }) => {
   if (!open) return null;
   return (
@@ -127,14 +101,8 @@ const DialogTitle = ({ className, ...props }) => <h2 className={cn("text-xl font
 const Select = ({ value, onValueChange, name, defaultValue }) => (
   <div className="relative">
     <select name={name} defaultValue={defaultValue || value} onChange={(e) => onValueChange && onValueChange(e.target.value)} className="flex h-10 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm shadow-sm ring-offset-black placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 text-white appearance-none">
-      <option value="blue">Blue</option>
-      <option value="red">Red</option>
-      <option value="green">Green</option>
-      <option value="purple">Purple</option>
-      <option value="orange">Orange</option>
-      <option value="low">Baixa</option>
-      <option value="medium">Média</option>
-      <option value="high">Alta</option>
+      <option value="blue">Blue</option><option value="red">Red</option><option value="green">Green</option><option value="purple">Purple</option><option value="orange">Orange</option>
+      <option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option>
     </select>
     <ChevronDown className="absolute right-3 top-3 h-4 w-4 opacity-50 text-white pointer-events-none" />
   </div>
@@ -156,22 +124,9 @@ const DropdownMenu = ({ children }) => {
   return <div className="relative inline-block text-left" ref={containerRef}>{React.Children.map(children, child => React.cloneElement(child, { isOpen, setIsOpen }))}</div>;
 };
 
-const DropdownMenuTrigger = ({ asChild, children, isOpen, setIsOpen, ...props }) => {
-  return React.cloneElement(children, {
-    onClick: (e) => { e.stopPropagation(); setIsOpen(!isOpen); if (children.props.onClick) children.props.onClick(e); },
-    ...props
-  });
-};
-
-const DropdownMenuContent = ({ children, isOpen, align = 'start', className }) => {
-  if (!isOpen) return null;
-  return <div className={cn("absolute z-50 min-w-[10rem] overflow-hidden rounded-md border border-zinc-800 bg-black p-1 text-zinc-100 shadow-md animate-in data-[side=bottom]:slide-in-from-top-2", align === 'end' ? 'right-0' : 'left-0', className)}>{children}</div>;
-};
-
-const DropdownMenuItem = ({ children, className, onClick, ...props }) => (
-  <div className={cn("relative flex cursor-default select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-zinc-900 hover:text-zinc-100 focus:bg-zinc-900 focus:text-zinc-100", className)} onClick={(e) => { if(onClick) onClick(e); }} {...props}>{children}</div>
-);
-
+const DropdownMenuTrigger = ({ asChild, children, isOpen, setIsOpen, ...props }) => React.cloneElement(children, { onClick: (e) => { e.stopPropagation(); setIsOpen(!isOpen); if (children.props.onClick) children.props.onClick(e); }, ...props });
+const DropdownMenuContent = ({ children, isOpen, align = 'start', className }) => isOpen ? <div className={cn("absolute z-50 min-w-[10rem] overflow-hidden rounded-md border border-zinc-800 bg-black p-1 text-zinc-100 shadow-md animate-in data-[side=bottom]:slide-in-from-top-2", align === 'end' ? 'right-0' : 'left-0', className)}>{children}</div> : null;
+const DropdownMenuItem = ({ children, className, onClick, ...props }) => <div className={cn("relative flex cursor-default select-none items-center rounded-sm px-3 py-2 text-sm outline-none transition-colors hover:bg-zinc-900 hover:text-zinc-100 cursor-pointer", className)} onClick={(e) => { if(onClick) onClick(e); }} {...props}>{children}</div>;
 const DropdownMenuLabel = ({ className, ...props }) => <div className={cn("px-3 py-2 text-sm font-semibold", className)} {...props} />;
 const DropdownMenuSeparator = ({ className, ...props }) => <div className={cn("-mx-1 my-1 h-px bg-zinc-800", className)} {...props} />;
 
@@ -189,22 +144,6 @@ const INITIAL_STATE = {
   projects: []
 };
 
-const COLOR_VARIANTS = {
-  blue: { bg: 'bg-blue-600', text: 'text-blue-500', border: 'border-blue-900' },
-  red: { bg: 'bg-red-600', text: 'text-red-500', border: 'border-red-900' },
-  green: { bg: 'bg-green-600', text: 'text-green-500', border: 'border-green-900' },
-  purple: { bg: 'bg-purple-600', text: 'text-purple-500', border: 'border-purple-900' },
-  orange: { bg: 'bg-orange-600', text: 'text-orange-500', border: 'border-orange-900' },
-  zinc: { bg: 'bg-zinc-600', text: 'text-zinc-500', border: 'border-zinc-900' }
-};
-
-const ALL_TABS = [
-  { id: 'todo', label: 'LISTA', icon: ListTodo },
-  { id: 'kanban', label: 'KANBAN', icon: KanbanSquare },
-  { id: 'files', label: 'ARQUIVOS', icon: FileText },
-  { id: 'goals', label: 'METAS', icon: Goal }
-];
-
 // --- APP PRINCIPAL ---
 
 export default function App() {
@@ -219,12 +158,12 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
-  const [initialLoadSuccess, setInitialLoadSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSlowLoad, setShowSlowLoad] = useState(false); // Novo estado para mostrar botão de "Demorando..."
 
   // --- CARREGAMENTO ---
   useEffect(() => {
-    // Carrega uma frase aleatória do arquivo externo
+    // Carrega frase aleatória
     if (absurdPhrases && absurdPhrases.length > 0) {
       setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
     } else {
@@ -232,9 +171,18 @@ export default function App() {
     }
     setMegaSenaNumbers(generateMegaSenaNumbers());
     
+    // Timer para mostrar opção de "Forçar Início" se demorar mais que 3s
+    const slowLoadTimer = setTimeout(() => setShowSlowLoad(true), 3000);
+
     const loadData = async () => {
       try {
-        const response = await fetch('/api/projects');
+        // Timeout de 10s para a requisição não ficar presa eternamente
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch('/api/projects', { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (!response.ok) throw new Error("Falha na API");
         let data = await response.json();
         
@@ -246,15 +194,16 @@ export default function App() {
           saveDataToApi(data);
         }
         setAppData(data);
-        setInitialLoadSuccess(true);
       } catch (err) {
         console.error("Erro:", err);
         setConnectionError(true);
       } finally {
         setIsLoading(false);
+        clearTimeout(slowLoadTimer);
       }
     };
     loadData();
+    return () => clearTimeout(slowLoadTimer);
   }, []);
 
   // --- SYNC ---
@@ -311,6 +260,13 @@ export default function App() {
     linkElement.click();
   };
 
+  // Função para "descongelar" manualmente se o servidor estiver off
+  const forceOfflineMode = () => {
+    setAppData(INITIAL_STATE);
+    setConnectionError(true); // Marca erro para avisar que não está salvando
+    setIsLoading(false);
+  };
+
   const handleAccessProject = (item, type = 'project') => {
     if (type === 'project') {
       const freshProject = appData.projects.find(p => p.id === item.id) || item;
@@ -324,12 +280,10 @@ export default function App() {
   };
 
   const handleUpdateUser = (updatedUser) => {
-    // Atualiza no estado global para persistir
     const newUsersList = appData.users.map(u => u.username === updatedUser.username ? updatedUser : u);
     updateUsers(newUsersList);
   };
 
-  // Funções dummy para o LegacyHome (se necessário)
   const handleDragStart = () => {};
   const handleDragOver = (e) => e.preventDefault();
   const handleDrop = () => {};
@@ -337,17 +291,34 @@ export default function App() {
 
   // --- RENDER ---
 
+  // Tela de Carregamento com Escape Hatch
   if (!appData && !connectionError) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500 font-mono animate-pulse uppercase tracking-widest">Iniciando Sistema...</div>;
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+        <div className="text-zinc-500 font-mono animate-pulse uppercase tracking-widest">Iniciando Sistema...</div>
+        {showSlowLoad && (
+          <div className="animate-in fade-in zoom-in duration-500 flex flex-col items-center gap-2">
+            <p className="text-zinc-700 text-xs font-mono">O servidor está demorando...</p>
+            <Button variant="outline" onClick={forceOfflineMode} className="text-xs h-8 border-red-900 text-red-500 hover:bg-red-950 hover:text-white">
+              <Power className="w-3 h-3 mr-2" /> Forçar Início Offline
+            </Button>
+          </div>
+        )}
+      </div>
+    );
   }
 
+  // Tela de Erro de Conexão (agora permite usar o app mesmo assim se tiver dados)
   if (connectionError && !appData) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center text-red-600 gap-4 p-8 text-center">
         <WifiOff className="w-16 h-16" />
         <h1 className="text-2xl font-black uppercase">Falha na Conexão</h1>
         <p className="text-zinc-500">Não foi possível carregar os dados do servidor.</p>
-        <Button onClick={() => window.location.reload()} className="bg-white text-zinc-950 font-bold">Tentar Novamente</Button>
+        <div className="flex gap-4">
+          <Button onClick={() => window.location.reload()} className="bg-white text-zinc-950 font-bold">Tentar Novamente</Button>
+          <Button variant="outline" onClick={forceOfflineMode} className="border-zinc-700 text-zinc-400 hover:text-white">Modo Offline (Temporário)</Button>
+        </div>
       </div>
     );
   }
@@ -405,6 +376,17 @@ export default function App() {
 
       <main className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-6 custom-scrollbar">
+          {connectionError && (
+            <div className="mb-4 mx-auto max-w-2xl bg-red-950/30 border border-red-900/50 p-3 rounded flex items-center justify-between">
+              <div className="flex items-center gap-2 text-red-400 text-xs font-bold uppercase tracking-wide">
+                <WifiOff className="w-4 h-4" /> Modo Offline
+              </div>
+              <button onClick={() => saveDataToApi(appData)} className="text-xs text-white hover:underline flex items-center gap-1">
+                <RefreshCw className="w-3 h-3" /> Tentar Reconectar
+              </button>
+            </div>
+          )}
+
           {currentView === 'home' && (
             <LegacyHome 
               currentUser={currentUser}
@@ -446,10 +428,8 @@ export default function App() {
               setCurrentView={setCurrentView} 
               setModalState={setModalState} 
               handleTaskAction={(action, data) => {
-                 // Wrapper para compatibilidade com o LegacyBoard
                  if (action === 'save') { /* Lógica movida para o Modal Global */ }
                  else if (action === 'delete') {
-                    // Implementar lógica de delete de tarefa aqui se necessário, ou passar a função direta
                     updateProjects(prev => {
                         return prev.map(p => {
                             if (p.id !== currentProject.id) return p;
@@ -481,7 +461,6 @@ export default function App() {
            <div className="bg-black text-white p-2">
              <h2 className="text-xl font-black uppercase mb-6">{modalState.mode === 'create' ? 'Novo' : 'Editar'} {modalState.type === 'project' ? 'Projeto' : 'Item'}</h2>
              
-             {/* Lógica do formulário adaptada para usar estado global */}
              <form onSubmit={(e) => {
                e.preventDefault();
                const fd = new FormData(e.target);
@@ -504,24 +483,65 @@ export default function App() {
                  } else {
                     updateProjects(prev => prev.map(p => p.id === modalState.data.id ? { ...p, ...data, isProtected: data.isProtected === 'on' } : p));
                  }
+               } else if (modalState.type === 'subProject') {
+                  const targetProjId = currentProject.id;
+                  if (modalState.mode === 'create') {
+                      const newSub = {
+                          id: generateId('sub'),
+                          ...data,
+                          boardData: { 
+                            todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'CONCLUÍDO', tasks: [] }] }, 
+                            kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] }, 
+                            files: { files: [] }
+                          },
+                          isArchived: false
+                      };
+                      updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: [...(p.subProjects || []), newSub] } : p));
+                  }
+               } else if (modalState.type === 'task') {
+                  const listId = modalState.listId || modalState.data.listId;
+                  const taskData = { ...data, id: modalState.mode === 'create' ? generateId('task') : modalState.data.id, responsibleUsers: [] }; // Simplificado
+                  
+                  updateProjects(prev => {
+                      return prev.map(p => {
+                          if (p.id !== currentProject.id) return p;
+                          return {
+                              ...p,
+                              subProjects: p.subProjects.map(sp => {
+                                  if (sp.id !== currentSubProject.id) return sp;
+                                  const board = sp.boardData[currentBoardType];
+                                  const newLists = board.lists.map(l => {
+                                      if (l.id !== listId) return l;
+                                      return { ...l, tasks: modalState.mode === 'create' ? [...l.tasks, taskData] : l.tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t) };
+                                  });
+                                  return { ...sp, boardData: { ...sp.boardData, [currentBoardType]: { ...board, lists: newLists } } };
+                              })
+                          };
+                      });
+                  });
                }
-               // Adicionar lógicas para subProject e task aqui conforme necessário
-               // (Para manter o código enxuto, estou focando no contraste e estrutura, 
-               // mas a lógica completa do LegacyModal anterior pode ser reintegrada aqui ou mantida separada)
+
                setModalState({ isOpen: false, type: null });
              }} className="space-y-6">
                
-               {/* Exemplo de Campos Genéricos - Adapte conforme o LegacyModal */}
+               {/* Formulário Genérico Simplificado */}
                <div className="space-y-2">
-                 <Label>Nome</Label>
-                 <Input name="name" defaultValue={modalState.data?.name} required autoFocus className="bg-zinc-950 border-zinc-800" />
+                 <Label>Nome / Título</Label>
+                 <Input name="name" defaultValue={modalState.data?.name || modalState.data?.title} required autoFocus className="bg-zinc-950 border-zinc-800" />
                </div>
-               <div className="space-y-2">
-                 <Label>Descrição</Label>
-                 <textarea name="description" defaultValue={modalState.data?.description} className="w-full bg-zinc-950 border border-zinc-800 p-3 text-sm text-white rounded-md focus:outline-none focus:ring-1 focus:ring-red-600 min-h-[100px]" />
-               </div>
+               {modalState.type !== 'task' && (
+                   <div className="space-y-2">
+                     <Label>Descrição</Label>
+                     <textarea name="description" defaultValue={modalState.data?.description} className="w-full bg-zinc-950 border border-zinc-800 p-3 text-sm text-white rounded-md focus:outline-none focus:ring-1 focus:ring-red-600 min-h-[100px]" />
+                   </div>
+               )}
+               {modalState.type === 'project' && (
+                   <div className="space-y-2">
+                       <Label>Cor</Label>
+                       <Select name="color" defaultValue={modalState.data?.color || 'blue'} />
+                   </div>
+               )}
                
-               {/* Botão com contraste corrigido */}
                <Button type="submit" className="w-full bg-white text-zinc-950 font-bold uppercase hover:bg-zinc-200">Salvar</Button>
              </form>
            </div>
