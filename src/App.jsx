@@ -663,7 +663,7 @@ export default function App() {
            setConnectionError(true);
         } else if (data && data.length > 0) {
           const remoteProjects = data[0].data || [];
-          console.debug("Projetos carregados do Supabase:", remoteProjects);
+          console.log("Projetos carregados do Supabase:", remoteProjects);
           setProjects(Array.isArray(remoteProjects) ? remoteProjects : []);
           loadedFromSupabase = true;
         } else {
