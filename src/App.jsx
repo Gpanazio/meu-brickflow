@@ -1,5 +1,5 @@
 import './App.css'
-import React, { useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { useUsers } from './hooks/useUsers'
 import { useFiles } from './hooks/useFiles'
 import { useBoards } from './hooks/useBoards'
@@ -15,17 +15,9 @@ export default function App() {
   const [currentBoardType, setCurrentBoardType] = useState('kanban')
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const updateProjects = (fn) => setProjects(prev => fn(prev))
+  const updateProjects = useCallback((fn) => setProjects(prev => fn(prev)), [])
 
-  const { currentUser, isLoggedIn, showLoginModal, setShowLoginModal, showCreateUserModal, setShowCreateUserModal, handleLogin, handleCreateUser, handleLogout } = useUsers((key) => loadUserProjects(key))
-
-  const { files, handleFileUpload } = useFiles(currentProject, currentSubProject, currentUser || {})
-
-  const { getCurrentBoardData, updateCurrentBoardData } = useBoards(currentView, currentProject, currentSubProject, currentBoardType, updateProjects, setCurrentSubProject, setRefreshKey)
-
-  useRealtimeProjects(isLoggedIn, updateProjects)
-
-  async function loadUserProjects(userKey) {
+  const loadUserProjects = useCallback(async (userKey) => {
     try {
       const { data, error } = await supabase.from('brickflow_data').select('*')
       if (error) {
@@ -46,7 +38,15 @@ export default function App() {
       updateProjects(() => initialProjects)
       localStorage.setItem(`brickflow-projects-${userKey}`, JSON.stringify(initialProjects))
     }
-  }
+  }, [updateProjects])
+
+  const { currentUser, isLoggedIn, showLoginModal, setShowLoginModal, showCreateUserModal, setShowCreateUserModal, handleLogin, handleCreateUser, handleLogout } = useUsers(loadUserProjects)
+
+  const { files, handleFileUpload } = useFiles(currentProject, currentSubProject, currentUser || {})
+
+  const { getCurrentBoardData, updateCurrentBoardData } = useBoards(currentView, currentProject, currentSubProject, currentBoardType, updateProjects, setCurrentSubProject, setRefreshKey)
+
+  useRealtimeProjects(isLoggedIn, updateProjects)
 
   return (
     <div className="app">
