@@ -164,11 +164,7 @@ export default function App() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(false);
 
-  useEffect(() => {
-    appDataRef.current = appData;
-  }, [appData]);
-
-  const normalizeApiState = useCallback((data) => {
+  const normalizeApiState = (data) => {
     if (!data) return null;
     if (Array.isArray(data)) {
       return { ...INITIAL_STATE, projects: data };
@@ -178,17 +174,62 @@ export default function App() {
       ...data,
       version: typeof data.version === 'number' ? data.version : 0
     };
-  }, []);
+  };
 
-  const createRequestId = useCallback(() => {
+  const createRequestId = () => {
     if (crypto?.randomUUID) {
       return crypto.randomUUID();
     }
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
+
+  // --- CARREGAMENTO ---
+  useEffect(() => {
+    // Carrega frase
+    if (absurdPhrases && absurdPhrases.length > 0) {
+      setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
+    } else {
+      setDailyPhrase("O servidor comeu sua frase motivacional.");
+    }
+    setMegaSenaNumbers(generateMegaSenaNumbers());
+    
+    // Timer para "Servidor Dormindo"
+    const slowLoadTimer = setTimeout(() => setShowSlowLoad(true), 3000);
+
+    const loadData = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
+        const response = await fetch('/api/projects', { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error("Falha na API");
+        let data = await response.json();
+        
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          data = INITIAL_STATE;
+          await saveDataToApi(data);
+        } else if (Array.isArray(data)) {
+          data = { ...INITIAL_STATE, projects: data };
+          await saveDataToApi(data);
+        }
+        setAppData(normalizeApiState(data));
+        setInitialLoadSuccess(true);
+      } catch (err) {
+        console.error("Erro:", err);
+        setConnectionError(true);
+      } finally {
+        setIsLoading(false);
+        clearTimeout(slowLoadTimer);
+      }
+    };
+    loadData();
+    return () => clearTimeout(slowLoadTimer);
   }, []);
 
   // --- SYNC ---
-  const saveDataToApi = useCallback(async (newData) => {
+  const saveDataToApi = async (newData) => {
     setIsSyncing(true);
     try {
       const requestId = createRequestId();
@@ -196,7 +237,7 @@ export default function App() {
         data: newData,
         version: newData?.version ?? 0,
         client_request_id: requestId,
-        userId: currentUserRef.current?.username
+        userId: currentUser?.username
       };
       const response = await fetch('/api/projects', {
         method: 'POST',
@@ -227,60 +268,7 @@ export default function App() {
     } finally {
       setIsSyncing(false);
     }
-  }, [createRequestId, normalizeApiState]);
-
-  const enqueueSave = useCallback((explicitData) => {
-    saveQueueRef.current = saveQueueRef.current.then(async () => {
-      const dataToSave = explicitData ?? appDataRef.current;
-      if (!dataToSave) return;
-      await saveDataToApi(dataToSave);
-    });
-  }, [saveDataToApi]);
-
-  // --- CARREGAMENTO ---
-  useEffect(() => {
-    // Carrega frase
-    if (absurdPhrases && absurdPhrases.length > 0) {
-      setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
-    } else {
-      setDailyPhrase("O servidor comeu sua frase motivacional.");
-    }
-    setMegaSenaNumbers(generateMegaSenaNumbers());
-    
-    // Timer para "Servidor Dormindo"
-    const slowLoadTimer = setTimeout(() => setShowSlowLoad(true), 3000);
-
-    const loadData = async () => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
-
-        const response = await fetch('/api/projects', { signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) throw new Error("Falha na API");
-        let data = await response.json();
-        
-        if (!data || (Array.isArray(data) && data.length === 0)) {
-          data = INITIAL_STATE;
-          enqueueSave(data);
-        } else if (Array.isArray(data)) {
-          data = { ...INITIAL_STATE, projects: data };
-          enqueueSave(data);
-        }
-        setAppData(normalizeApiState(data));
-        setInitialLoadSuccess(true);
-      } catch (err) {
-        console.error("Erro:", err);
-        setConnectionError(true);
-      } finally {
-        setIsLoading(false);
-        clearTimeout(slowLoadTimer);
-      }
-    };
-    loadData();
-    return () => clearTimeout(slowLoadTimer);
-  }, [enqueueSave, normalizeApiState]);
+  };
 
   const updateGlobalState = useCallback((updater) => {
     setAppData(prev => {
