@@ -30,7 +30,7 @@ vi.mock('../lib/supabaseClient', () => {
       }
     },
     __resetSupabaseResponses: () => {
-      Object.assign(responses, defaultResponses)
+      Object.assign(responses, structuredClone(defaultResponses))
     },
     supabase: {
       from: vi.fn(() => ({
