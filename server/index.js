@@ -49,6 +49,19 @@ const initDB = async () => {
       );
     `);
     await query(`
+      CREATE TABLE IF NOT EXISTS brickflow_backups (
+        id BIGSERIAL PRIMARY KEY,
+        snapshot JSONB NOT NULL,
+        kind TEXT NOT NULL DEFAULT 'hourly',
+        source TEXT NOT NULL DEFAULT 'scheduler',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_brickflow_backups_created_at
+      ON brickflow_backups (created_at DESC, id DESC);
+    `);
+    await query(`
       INSERT INTO brickflow_state (id, data, updated_at, version)
       SELECT 1, data, COALESCE(updated_at, created_at, CURRENT_TIMESTAMP), COALESCE(version, 1)
       FROM brickflow_state
@@ -60,6 +73,48 @@ const initDB = async () => {
     console.log('✅ Banco de dados inicializado: Tabela "brickflow_state" verificada.');
   } catch (err) {
     console.error('❌ Erro crítico ao criar tabela:', err);
+  }
+};
+
+const createBackupSnapshot = async ({ kind, source }) => {
+  const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
+  if (rows.length === 0) return null;
+  const normalized = normalizeStateData(rows[0].data) ?? { projects: [] };
+  const snapshot = { ...normalized, version: rows[0].version ?? 1 };
+  const { rows: backupRows } = await query(
+    'INSERT INTO brickflow_backups (snapshot, kind, source) VALUES ($1, $2, $3) RETURNING id, created_at',
+    [JSON.stringify(snapshot), kind, source]
+  );
+  return backupRows[0];
+};
+
+const ensureInitialBackup = async () => {
+  const { rows } = await query('SELECT id FROM brickflow_backups LIMIT 1');
+  if (rows.length === 0) {
+    await createBackupSnapshot({ kind: 'startup', source: 'system' });
+  }
+};
+
+const scheduleBackups = () => {
+  const hourlyIntervalMinutes = Number(process.env.BACKUP_HOURLY_INTERVAL_MINUTES ?? 60);
+  const dailyIntervalHours = Number(process.env.BACKUP_DAILY_INTERVAL_HOURS ?? 24);
+  const hourlyIntervalMs = hourlyIntervalMinutes > 0 ? hourlyIntervalMinutes * 60 * 1000 : 0;
+  const dailyIntervalMs = dailyIntervalHours > 0 ? dailyIntervalHours * 60 * 60 * 1000 : 0;
+
+  if (hourlyIntervalMs) {
+    setInterval(() => {
+      createBackupSnapshot({ kind: 'hourly', source: 'scheduler' }).catch(err => {
+        console.error('Erro ao criar backup horário:', err);
+      });
+    }, hourlyIntervalMs);
+  }
+
+  if (dailyIntervalMs) {
+    setInterval(() => {
+      createBackupSnapshot({ kind: 'daily', source: 'scheduler' }).catch(err => {
+        console.error('Erro ao criar backup diário:', err);
+      });
+    }, dailyIntervalMs);
   }
 };
 
@@ -237,6 +292,79 @@ app.get('/api/projects/events', async (req, res) => {
   }
 });
 
+app.get('/api/backups', async (req, res) => {
+  try {
+    const { rows } = await query(
+      'SELECT id, snapshot, kind, source, created_at FROM brickflow_backups ORDER BY created_at DESC, id DESC'
+    );
+    const backups = rows.map(row => ({
+      ...row,
+      snapshot: normalizeStateData(row.snapshot)
+    }));
+    res.json(backups);
+  } catch (err) {
+    console.error('Erro ao listar backups:', err);
+    if (err.code === '42P01') {
+      await initDB();
+      res.json([]);
+    } else {
+      res.status(500).json({ error: 'Erro interno ao buscar backups' });
+    }
+  }
+});
+
+app.post('/api/backups/restore', async (req, res) => {
+  const { backupId, userId } = req.body;
+
+  if (!backupId) {
+    return res.status(400).json({ error: 'Backup ID é obrigatório' });
+  }
+
+  const client = await getClient();
+
+  try {
+    await client.query('BEGIN');
+    const backupResult = await client.query(
+      'SELECT snapshot FROM brickflow_backups WHERE id = $1',
+      [backupId]
+    );
+
+    if (backupResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Backup não encontrado' });
+    }
+
+    const stateResult = await client.query(
+      'SELECT version FROM brickflow_state WHERE id = 1 FOR UPDATE'
+    );
+    const currentVersion = stateResult.rows.length > 0 ? stateResult.rows[0].version ?? 0 : 0;
+    const nextVersion = currentVersion + 1;
+    const normalizedSnapshot = normalizeStateData(backupResult.rows[0].snapshot) ?? { projects: [] };
+    const updatedSnapshot = { ...normalizedSnapshot, version: nextVersion };
+
+    await client.query(
+      `INSERT INTO brickflow_state (id, data, updated_at, version)
+       VALUES (1, $1, CURRENT_TIMESTAMP, $2)
+       ON CONFLICT (id) DO UPDATE
+       SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP, version = EXCLUDED.version`,
+      [JSON.stringify(updatedSnapshot), nextVersion]
+    );
+    await client.query(
+      'INSERT INTO brickflow_events (client_request_id, data) VALUES ($1, $2)',
+      [`backup-restore-${Date.now()}`, JSON.stringify(updatedSnapshot)]
+    );
+    await client.query('COMMIT');
+
+    res.json({ success: true, data: updatedSnapshot });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Erro ao restaurar backup:', err);
+    res.status(500).json({ error: 'Erro ao restaurar backup' });
+  } finally {
+    client.release();
+  }
+});
+
 app.get('/api/projects/:id/history', async (req, res) => {
   const { id } = req.params;
   try {
@@ -327,7 +455,13 @@ app.get('*', (req, res) => {
 });
 
 // Inicializa o banco ANTES de abrir a porta do servidor
-initDB().then(() => {
+initDB().then(async () => {
+  try {
+    await ensureInitialBackup();
+  } catch (err) {
+    console.error('Erro ao criar backup inicial:', err);
+  }
+  scheduleBackups();
   app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando na porta ${PORT} (Limite: 50MB)`);
   });
