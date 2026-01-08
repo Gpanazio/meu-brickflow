@@ -144,6 +144,9 @@ const ALL_TABS = [
 
 export default function App() {
   const [appData, setAppData] = useState(null); 
+  const appDataRef = useRef(null);
+  const currentUserRef = useRef(null);
+  const saveQueueRef = useRef(Promise.resolve());
   const [currentView, setCurrentView] = useState('home');
   const [currentProject, setCurrentProject] = useState(null);
   const [currentSubProject, setCurrentSubProject] = useState(null);
@@ -270,10 +273,11 @@ export default function App() {
   const updateGlobalState = useCallback((updater) => {
     setAppData(prev => {
       const newState = typeof updater === 'function' ? updater(prev) : updater;
-      saveDataToApi(newState); 
+      appDataRef.current = newState;
+      enqueueSave();
       return newState;
     });
-  }, []);
+  }, [enqueueSave]);
 
   const updateProjects = (updater) => {
     updateGlobalState(prev => ({ 
@@ -290,6 +294,10 @@ export default function App() {
     currentUser, isLoggedIn, handleLogin, handleCreateUser, handleLogout, handleSwitchUser,
     showLoginModal, setShowLoginModal, showCreateUserModal, setShowCreateUserModal
   } = useUsers(appData?.users, updateUsers);
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
 
   const fetchProjectHistory = useCallback(async (projectId) => {
     if (!projectId) return;
