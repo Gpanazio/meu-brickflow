@@ -75,7 +75,7 @@ function LegacyHome({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-l border-zinc-900">
-            {projects.filter(p => !p.isArchived).map(project => {
+            {React.useMemo(() => projects.filter(p => !p.isArchived), [projects]).map(project => {
               const colors = COLOR_VARIANTS[project.color || 'blue'];
               return (
                 <div 
