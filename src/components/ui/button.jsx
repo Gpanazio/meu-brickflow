@@ -9,7 +9,6 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // CORREÇÃO: Força texto branco no botão primário (vermelho)
         default:
           "bg-primary text-white shadow-xs hover:bg-primary/90",
         destructive:
@@ -21,6 +20,8 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground text-zinc-400 hover:text-white",
         link: "text-primary underline-offset-4 hover:underline",
+        white:
+          "bg-white text-zinc-950 font-bold hover:bg-zinc-200 shadow-sm", // Nova variante segura
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
