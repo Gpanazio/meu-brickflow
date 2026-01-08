@@ -17,7 +17,6 @@ import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
 import { Card, CardContent } from './components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './components/ui/dialog';
-import { Badge } from './components/ui/badge';
 import { Separator } from './components/ui/separator';
 import { Avatar, AvatarFallback } from './components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
@@ -28,7 +27,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { 
   MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
   Trash2, Eye, FolderOpen, Lock, RotateCcw,
-  ListTodo, KanbanSquare, FileText, Goal
+  ListTodo, KanbanSquare, FileText, Goal, Sparkles, Dna
 } from 'lucide-react';
 
 // --- CONFIGURAÇÕES & CONSTANTES ---
@@ -41,7 +40,6 @@ const ALL_TABS = [
 
 const USER_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'cyan', 'pink', 'yellow'];
 
-// Mapeamento de cores para o Tailwind (Evita que o purge do CSS remova as cores dinâmicas)
 const COLOR_VARIANTS = {
   blue: { bg: 'bg-blue-600', text: 'text-blue-500', border: 'border-blue-900' },
   red: { bg: 'bg-red-600', text: 'text-red-500', border: 'border-red-900' },
@@ -198,7 +196,6 @@ function LegacyApp() {
     const target = currentView === 'subproject' ? currentSubProject : currentProject;
     if (!target) return {};
     
-    // Fallback se o boardData não existir (projetos antigos)
     if (!target.boardData) {
         return initializeBoardData()[currentBoardType];
     }
@@ -522,48 +519,61 @@ function LegacyApp() {
   const renderHome = () => (
     <div className="space-y-12 animate-in fade-in duration-500 pb-20">
       
-      {/* HEADER DE BOAS VINDAS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-zinc-900 pb-8">
-        <div>
-           <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-2">
-             Olá, <span className="text-zinc-500">{currentUser?.displayName}</span>
-           </h1>
-           <p className="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
-             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+      {/* HEADER: Boas Vindas e Data */}
+      <div className="border-b border-zinc-900 pb-8">
+         <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight mb-2">
+           Olá, <span className="text-zinc-700">{currentUser?.displayName}</span>
+         </h1>
+         <p className="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
+           {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+         </p>
+      </div>
+
+      {/* DASHBOARD WIDGETS: Separados e Geométricos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-zinc-900 border border-zinc-900">
+        
+        {/* Widget Sorte do Dia - Maior Destaque */}
+        <div className="md:col-span-2 bg-black p-8 flex flex-col justify-between min-h-[160px] group hover:bg-zinc-950/30 transition-colors">
+           <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-3 h-3 text-red-600" />
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">Sorte do Dia</span>
+           </div>
+           <p className="text-lg md:text-xl text-zinc-300 font-light italic leading-relaxed">
+             "{dailyPhrase}"
            </p>
         </div>
-        <div className="flex flex-col items-end justify-between gap-4">
-           <div className="text-right">
-              <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest mb-1">Sorte Diária</p>
-              <p className="text-sm text-zinc-300 italic max-w-md">"{dailyPhrase}"</p>
+
+        {/* Widget Mega Sena - Lateral */}
+        <div className="bg-black p-8 flex flex-col justify-between min-h-[160px] group hover:bg-zinc-950/30 transition-colors">
+           <div className="flex items-center gap-2 mb-4">
+              <Dna className="w-3 h-3 text-emerald-600" />
+              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">Probabilidade</span>
            </div>
-           <div className="flex items-center gap-2">
-              <span className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">Mega Sena</span>
-              <div className="flex gap-1">
-                {megaSenaNumbers.map(n => (
-                  <div key={n} className="w-6 h-6 flex items-center justify-center bg-zinc-900 text-zinc-300 text-[10px] font-mono border border-zinc-800">
-                    {n.toString().padStart(2, '0')}
-                  </div>
-                ))}
-              </div>
+           <div className="grid grid-cols-3 gap-2">
+              {megaSenaNumbers.map(n => (
+                <div key={n} className="aspect-square flex items-center justify-center border border-zinc-800 text-zinc-400 font-mono text-xs group-hover:border-emerald-900 group-hover:text-emerald-500 transition-colors cursor-default">
+                  {n.toString().padStart(2, '0')}
+                </div>
+              ))}
            </div>
         </div>
       </div>
 
       {currentUser?.displayName === 'Fran' && <SudokuGame />}
 
+      {/* LISTA DE PROJETOS */}
       <div className="space-y-4">
-        <div className="flex justify-between items-end pb-2">
-          <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">Projetos</h2>
-          <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black h-8 px-4 text-[10px] uppercase font-bold tracking-widest rounded-none"><Plus className="mr-1 h-3 w-3" /> Novo</Button>
+        <div className="flex justify-between items-end pb-2 border-b border-zinc-900">
+          <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] mb-2">Projetos Ativos</h2>
+          <Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black h-8 px-4 text-[10px] uppercase font-bold tracking-widest rounded-none mb-2"><Plus className="mr-1 h-3 w-3" /> Novo</Button>
         </div>
 
         {projects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 opacity-30 border-t border-b border-zinc-900">
+          <div className="flex flex-col items-center justify-center py-24 opacity-30">
             <h1 className="text-4xl font-black text-zinc-800 uppercase tracking-tighter">VAZIO</h1>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-zinc-900">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-l border-zinc-900">
             {projects.filter(p => !p.isArchived).map(project => {
               const colors = COLOR_VARIANTS[project.color || 'blue'];
               return (
@@ -582,7 +592,7 @@ function LegacyApp() {
                   </div>
 
                   <div className="space-y-2 relative z-10">
-                    <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight leading-none group-hover:translate-x-1 transition-transform">
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none group-hover:translate-x-1 transition-transform">
                       {project.name}
                     </h3>
                     <p className="text-zinc-600 text-[10px] font-mono leading-tight line-clamp-2">
@@ -619,7 +629,7 @@ function LegacyApp() {
         </div>
         
         <div>
-          <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+          <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
             {currentProject.name} 
             {currentProject.isProtected && <Lock className="h-6 w-6 text-zinc-800"/>}
           </h1>
@@ -650,7 +660,6 @@ function LegacyApp() {
             </div>
           );
         })}
-        {/* Botão de Adicionar - Integrado */}
         <div 
           onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })}
           className="bg-black flex flex-col items-center justify-center cursor-pointer group hover:bg-zinc-900/30 transition-colors h-48"
