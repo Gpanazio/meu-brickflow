@@ -32,48 +32,51 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
   
-  /* Animação do Monolito */
-  --animate-monolith-pulse: monolith-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  /* Animação do Monolito - Pulsação Lenta e Hipnótica */
+  --animate-monolith-pulse: monolith-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
   @keyframes monolith-pulse {
-    0%, 100% { opacity: 1; transform: scaleY(1); }
-    50% { opacity: 0.5; transform: scaleY(0.95); }
+    0%, 100% { opacity: 1; transform: scaleY(1); box-shadow: 0 0 20px rgba(220, 38, 38, 0.1); }
+    50% { opacity: 0.8; transform: scaleY(0.98); box-shadow: 0 0 5px rgba(220, 38, 38, 0); }
   }
 }
 
 @layer base {
   :root {
-    /* PRETO ABSOLUTO - CINEMA */
+    /* UNIVERSO: Preto Absoluto para imersão total (Oled Black) */
     --background: 0 0% 0%; 
-    --foreground: 0 0% 98%;
+    --foreground: 0 0% 90%; /* Branco levemente recuado (Off-white) para leitura prolongada */
     
-    --card: 0 0% 3%;
+    /* MATÉRIA ESCURA: Elementos de superfície não são cinzas, são pretos com textura */
+    --card: 0 0% 2%;
     --card-foreground: 0 0% 98%;
     
-    --popover: 0 0% 3%;
+    --popover: 0 0% 2%;
     --popover-foreground: 0 0% 98%;
     
-    /* VERMELHO BRICK INTENSO */
-    --primary: 0 72% 51%;
-    --primary-foreground: 0 0% 98%;
+    /* LUZ: O Vermelho Brick (356) saturado para cortar a escuridão como laser */
+    --primary: 356 85% 55%;
+    --primary-foreground: 0 0% 100%;
     
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 0 0% 90%;
     
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 50%; /* Texto secundário bem apagado para contraste dramático */
     
-    --accent: 0 0% 12%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
     
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 0 0% 12%;
-    --input: 0 0% 12%;
-    --ring: 0 72% 51%; /* Anel de foco vermelho */
+    /* ESTRUTURA: Bordas quase invisíveis, apenas sugerindo o grid matemático */
+    --border: 0 0% 9%;
+    --input: 0 0% 9%;
+    --ring: 356 85% 55%;
     
-    --radius: 0px; /* Bordas retas (Monolito Style) ou levemente arredondadas */
+    /* FORMA: O Monolito não tem curvas. A rejeição ao orgânico. */
+    --radius: 0px;
   }
 
   * {
@@ -86,9 +89,11 @@
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow-x: hidden;
+    /* Fonte padrão para corpo */
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   
-  /* Efeito de Ruído de Película (Film Grain) */
+  /* ATMOSFERA: Ruído de Película (Film Grain) para textura cinematográfica */
   body::before {
     content: "";
     position: fixed;
@@ -98,7 +103,7 @@
     height: 100%;
     pointer-events: none;
     z-index: 9999;
-    opacity: 0.04; /* Sutil */
+    opacity: 0.035;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
     mix-blend-mode: overlay;
   }
@@ -106,50 +111,76 @@
 
 @layer utilities {
   .glass-panel {
-    @apply bg-zinc-950/80 backdrop-blur-md border border-zinc-800 shadow-2xl;
+    /* Redefinido para "Superfície Monolito" - Menos vidro, mais pedra polida */
+    @apply bg-black border border-zinc-900 shadow-2xl;
   }
   
-  /* Efeito de Luz de Cinema no Hover */
+  /* CARD CINEMATOGRÁFICO: Hover revela a luz vermelha */
   .cinema-card {
-    @apply relative overflow-hidden transition-all duration-500 border border-zinc-900 bg-zinc-950;
+    @apply relative overflow-hidden transition-all duration-700 border-r border-b border-zinc-900 bg-black;
   }
   
+  /* Brilho especular sutil no centro */
+  .cinema-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+
+  .cinema-card:hover::before {
+    opacity: 1;
+  }
+  
+  /* O "Laser Scanner" vermelho na base */
   .cinema-card::after {
     content: "";
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 0%;
-    background: linear-gradient(to top, rgba(220, 38, 38, 0.15), transparent);
-    transition: height 0.5s ease;
-    pointer-events: none;
+    height: 2px;
+    background: var(--color-primary);
+    box-shadow: 0 -2px 10px 1px var(--color-primary);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .cinema-card:hover::after {
-    height: 60%;
+    transform: scaleX(1);
   }
   
   .cinema-card:hover {
-    @apply border-zinc-700 -translate-y-1;
-    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.8);
+    @apply bg-zinc-950/30;
   }
 
-  /* Tipografia Brick */
+  /* Tipografia Brick: Títulos técnicos e massivos */
   .brick-title {
-    @apply font-bold uppercase tracking-widest;
+    @apply font-black uppercase tracking-tighter leading-[0.85];
+  }
+  
+  /* Tipografia de Dados: Para metadados, datas, IDs */
+  .tech-font {
+    font-family: 'Courier New', Courier, monospace; 
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 }
 
+/* Custom Scrollbar - Minimalista e Escura */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: #000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: #222;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #DC2626; /* Vermelho no hover */
