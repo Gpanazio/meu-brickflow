@@ -31,7 +31,9 @@ function LegacyProjectView({
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-zinc-900 border border-zinc-900">
         {(React.useMemo(() => currentProject.subProjects?.filter(s => !s.isArchived) || [], [currentProject.subProjects])).map(sub => {
-          const colors = COLOR_VARIANTS[sub.color || 'zinc'];
+          // Safety check for color variant with fallback
+          const colors = COLOR_VARIANTS[sub.color] || COLOR_VARIANTS['zinc'] || COLOR_VARIANTS['blue'];
+          
           return (
             <div key={sub.id} onClick={() => handleAccessProject(sub, 'subproject')} className="group cursor-pointer bg-black hover:bg-zinc-950 transition-colors p-6 flex flex-col justify-between h-48">
               <div className="flex justify-between items-start">
