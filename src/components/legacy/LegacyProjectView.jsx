@@ -30,7 +30,7 @@ function LegacyProjectView({
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-zinc-900 border border-zinc-900">
-        {currentProject.subProjects?.filter(s => !s.isArchived).map(sub => {
+        {(React.useMemo(() => currentProject.subProjects?.filter(s => !s.isArchived) || [], [currentProject.subProjects])).map(sub => {
           const colors = COLOR_VARIANTS[sub.color || 'zinc'];
           return (
             <div key={sub.id} onClick={() => handleAccessProject(sub, 'subproject')} className="group cursor-pointer bg-black hover:bg-zinc-950 transition-colors p-6 flex flex-col justify-between h-48">

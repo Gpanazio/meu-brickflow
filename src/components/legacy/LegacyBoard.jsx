@@ -7,12 +7,6 @@ import { Checkbox } from '../ui/checkbox';
 import { Upload, ArrowLeft, Plus, Trash2, Eye, FileText } from 'lucide-react';
 import { formatFileSize } from '../../utils/formatFileSize';
 
-const FormattedDate = React.memo(({ dateString }) => {
-  if (!dateString) return null;
-  const formatted = new Date(dateString).toLocaleDateString().slice(0, 5);
-  return <span className="text-[9px] text-zinc-600 font-mono">{formatted}</span>;
-});
-
 function LegacyBoard({
   data,
   entityName,
@@ -64,7 +58,7 @@ function LegacyBoard({
                      onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, list.id, 'list')}>
                   <div className="p-4 border-b border-zinc-900 flex justify-between items-center">
                     <span className="font-bold text-[10px] uppercase tracking-[0.2em] text-zinc-500">{list.title}</span>
-                    <span className="text-zinc-700 text-[10px] font-mono">{list.tasks?.length.toString().padStart(2, '0') || '00'}</span>
+                    <span className="text-zinc-700 text-[10px] font-mono">{(list.tasks?.length ?? 0).toString().padStart(2, '0')}</span>
                   </div>
                   <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black">
                     {list.tasks?.map(task => (
@@ -78,7 +72,7 @@ function LegacyBoard({
                         </div>
                         <div className="flex items-center justify-between pt-2 border-t border-zinc-900/50 mt-2">
                           {task.responsibleUsers?.length > 0 && <ResponsibleUsersButton users={task.responsibleUsers} />}
-                          <FormattedDate dateString={task.endDate} />
+                          {task.endDate && <span className="text-[9px] text-zinc-600 font-mono">{new Date(task.endDate).toLocaleDateString().slice(0,5)}</span>}
                         </div>
                     </div>
                   ))}
@@ -162,7 +156,7 @@ function LegacyBoard({
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-px bg-zinc-900 border border-zinc-900">
-                {files?.filter(f => f.subProjectId === (currentSubProject?.id || null)).map(file => (
+                {(React.useMemo(() => files?.filter(f => f.subProjectId === (currentSubProject?.id || null)) || [], [files, currentSubProject?.id])).map(file => (
                   <div key={file.id} className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4">
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                         <Button size="icon" variant="ghost" className="h-6 w-6 text-zinc-600 hover:text-red-600 rounded-none" onClick={() => handleDeleteFile(file.id)}>
