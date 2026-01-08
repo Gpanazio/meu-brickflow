@@ -156,7 +156,7 @@ function LegacyBoard({
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-px bg-zinc-900 border border-zinc-900">
-                {files?.filter(f => f.subProjectId === (currentSubProject?.id || null)).map(file => (
+                {(React.useMemo(() => files?.filter(f => f.subProjectId === (currentSubProject?.id || null)) || [], [files, currentSubProject?.id])).map(file => (
                   <div key={file.id} className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4">
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                         <Button size="icon" variant="ghost" className="h-6 w-6 text-zinc-600 hover:text-red-600 rounded-none" onClick={() => handleDeleteFile(file.id)}>
