@@ -156,6 +156,9 @@ export default function App() {
   const [initialLoadSuccess, setInitialLoadSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showSlowLoad, setShowSlowLoad] = useState(false);
+  const [projectHistory, setProjectHistory] = useState([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
 
   // --- CARREGAMENTO ---
   useEffect(() => {
@@ -209,7 +212,7 @@ export default function App() {
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: newData })
+        body: JSON.stringify({ data: newData, userId: currentUser?.username })
       });
       if (response.ok) setConnectionError(false); 
     } catch (e) {
@@ -244,6 +247,51 @@ export default function App() {
     showLoginModal, setShowLoginModal, showCreateUserModal, setShowCreateUserModal
   } = useUsers(appData?.users, updateUsers);
 
+  const fetchProjectHistory = useCallback(async (projectId) => {
+    if (!projectId) return;
+    setIsHistoryLoading(true);
+    setHistoryError(false);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/history`);
+      if (!response.ok) throw new Error('Falha ao buscar histórico');
+      const data = await response.json();
+      setProjectHistory(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Erro ao carregar histórico:", err);
+      setProjectHistory([]);
+      setHistoryError(true);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  }, []);
+
+  const handleRestoreProject = useCallback(async (eventId) => {
+    if (!currentProject?.id) return;
+    setIsSyncing(true);
+    try {
+      const response = await fetch(`/api/projects/${currentProject.id}/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId, userId: currentUser?.username })
+      });
+      if (!response.ok) throw new Error('Falha ao restaurar');
+      const result = await response.json();
+      const normalizedData = Array.isArray(result.data)
+        ? { ...INITIAL_STATE, projects: result.data }
+        : result.data;
+      setAppData(normalizedData);
+      const nextProjects = normalizedData?.projects || [];
+      const updatedProject = nextProjects.find(project => project.id === currentProject.id) || null;
+      setCurrentProject(updatedProject);
+      await fetchProjectHistory(currentProject.id);
+    } catch (err) {
+      console.error("Erro ao restaurar:", err);
+      setConnectionError(true);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [currentProject, currentUser, fetchProjectHistory]);
+
   const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } = 
     useFiles(currentProject, currentSubProject, updateProjects);
 
@@ -274,6 +322,14 @@ export default function App() {
       setCurrentBoardType(item.enabledTabs ? item.enabledTabs[0] : 'kanban');
     }
   };
+
+  useEffect(() => {
+    if (currentView === 'project' && currentProject?.id) {
+      fetchProjectHistory(currentProject.id);
+    } else {
+      setProjectHistory([]);
+    }
+  }, [currentProject, currentView, fetchProjectHistory]);
 
   const handleUpdateUser = (updatedUser) => {
     const newUsersList = appData.users.map(u => u.username === updatedUser.username ? updatedUser : u);
@@ -406,6 +462,11 @@ export default function App() {
               handleAccessProject={handleAccessProject}
               handleDeleteProject={(sub) => updateProjects(prev => prev.map(p => p.id === currentProject.id ? {...p, subProjects: p.subProjects.filter(s => s.id !== sub.id)} : p))}
               COLOR_VARIANTS={COLOR_VARIANTS}
+              history={projectHistory}
+              isHistoryLoading={isHistoryLoading}
+              historyError={historyError}
+              onRestoreEvent={handleRestoreProject}
+              users={appData.users}
             />
           )}
 
