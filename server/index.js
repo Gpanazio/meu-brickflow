@@ -10,48 +10,48 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Aumentamos o limite para 50mb para aceitar seus uploads de arquivos (base64)
+// --- CONFIGURAÇÃO DE LIMITES (50MB) ---
 app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
-// --- API: Carregar Dados ---
+// --- API ROUTES ---
+
+// Rota para buscar o estado atual
 app.get('/api/projects', async (req, res) => {
   try {
-    // Pega o último backup salvo
     const { rows } = await query('SELECT data FROM brickflow_state ORDER BY id DESC LIMIT 1');
     if (rows.length > 0) {
       res.json(rows[0].data);
     } else {
-      res.json([]); // Começa vazio se não tiver nada
+      // Retorna null para o front saber que é a primeira vez e inicializar
+      res.json(null);
     }
   } catch (err) {
-    console.error('Erro ao buscar projetos:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('Erro no banco:', err);
+    res.status(500).json({ error: 'Erro interno ao buscar dados' });
   }
 });
 
-// --- API: Salvar Dados (COM TRAVA DE SEGURANÇA) ---
+// Rota para salvar (Cria novo registro = Backup automático)
 app.post('/api/projects', async (req, res) => {
   const { data } = req.body;
 
-  // TRAVA DE SEGURANÇA DO BACKEND
-  if (!data || !Array.isArray(data) || data.length === 0) {
-    console.warn("Tentativa de salvar dados vazios bloqueada pelo servidor.");
-    return res.status(400).json({ error: 'SEGURANÇA: O servidor recusou salvar uma lista vazia.' });
+  // Trava de segurança no backend
+  if (!data) {
+    return res.status(400).json({ error: 'Dados inválidos' });
   }
 
   try {
-    // Salva uma NOVA linha (histórico eterno = backup infinito)
     await query('INSERT INTO brickflow_state (data) VALUES ($1)', [JSON.stringify(data)]);
     res.json({ success: true });
   } catch (err) {
     console.error('Erro ao salvar:', err);
-    res.status(500).json({ error: 'Erro ao salvar' });
+    res.status(500).json({ error: 'Erro ao salvar dados' });
   }
 });
 
-// --- SERVIR O FRONTEND (React) ---
-// Qualquer rota que não seja /api, entrega o site
+// --- FRONTEND (Produção) ---
 const distPath = path.resolve(__dirname, '../dist');
 app.use(express.static(distPath));
 
@@ -60,5 +60,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 BrickFlow Server rodando na porta ${PORT}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT} (Limite: 50MB)`);
 });
