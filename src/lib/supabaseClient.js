@@ -4,7 +4,7 @@ import { debugLog } from '../utils/debugLog'
 export const VITE_SUPABASE_URL_KEY = 'VITE_SUPABASE_URL'
 export const VITE_SUPABASE_ANON_KEY_NAME = 'VITE_SUPABASE_ANON_KEY'
 
-const isTestEnv = import.meta.env.MODE === 'test' || process.env.NODE_ENV === 'test'
+const isTestEnv = import.meta.env.MODE === 'test'
 
 const missingVariables = [
   !import.meta.env.VITE_SUPABASE_URL && VITE_SUPABASE_URL_KEY,
@@ -31,9 +31,50 @@ export const supabaseConfigError = hasSupabaseConfig
 
 export { hasSupabaseConfig }
 
+const createNoopResult = (data = []) =>
+  Promise.resolve({
+    data,
+    error: {
+      message: supabaseConfigError || 'Supabase não configurado.'
+    }
+  })
+
+const createNoopBuilder = (defaultData = []) => {
+  const result = createNoopResult(defaultData)
+  const builder = {
+    select: () => builder,
+    insert: () => builder,
+    update: () => builder,
+    delete: () => builder,
+    upsert: () => builder,
+    eq: () => builder,
+    limit: () => builder,
+    order: () => builder,
+    maybeSingle: () => createNoopResult(null),
+    then: (...args) => result.then(...args),
+    catch: (...args) => result.catch(...args),
+    finally: (...args) => result.finally(...args)
+  }
+  return builder
+}
+
+const createNoopChannel = () => {
+  const channel = {
+    on: () => channel,
+    subscribe: () => channel,
+    unsubscribe: () => {}
+  }
+  return channel
+}
+
+const noopSupabase = {
+  from: () => createNoopBuilder([]),
+  channel: () => createNoopChannel()
+}
+
 export const supabase = hasSupabaseConfig
   ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
+  : noopSupabase
 
 export function handleSupabaseError(error, context = 'Supabase') {
   if (error) {
