@@ -2,13 +2,13 @@ import { createClient } from '@supabase/supabase-js'
 import { debugLog } from '../utils/debugLog'
 
 export const VITE_SUPABASE_URL_KEY = 'VITE_SUPABASE_URL'
-export const VITE_SUPABASE_ANON_KEY_KEY = 'VITE_SUPABASE_ANON_KEY'
+export const VITE_SUPABASE_ANON_KEY_NAME = 'VITE_SUPABASE_ANON_KEY'
 
 const isTestEnv = import.meta.env.MODE === 'test' || process.env.NODE_ENV === 'test'
 
 const missingVariables = [
   !import.meta.env.VITE_SUPABASE_URL && VITE_SUPABASE_URL_KEY,
-  !import.meta.env.VITE_SUPABASE_ANON_KEY && VITE_SUPABASE_ANON_KEY_KEY
+  !import.meta.env.VITE_SUPABASE_ANON_KEY && VITE_SUPABASE_ANON_KEY_NAME
 ].filter(Boolean)
 
 const supabaseUrl =
