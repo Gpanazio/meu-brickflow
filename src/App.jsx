@@ -10,6 +10,7 @@ import './App.css';
 // Importa o cliente real do Supabase configurado no seu projeto
 import { supabase, hasSupabaseConfig } from './lib/supabaseClient';
 import LegacyProjectView from './components/legacy/LegacyProjectView';
+import { useRealtimeProjects } from './hooks/useRealtimeProjects';
 import { accessProjectNavigation } from './utils/projectNavigation';
 
 // --- UTILS ---
@@ -642,6 +643,7 @@ export default function App() {
   // NEW STATES: Connection and Loading handling
   const [isLoading, setIsLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(false);
+  const [initialLoadSuccess, setInitialLoadSuccess] = useState(false);
 
   const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile } = useFiles(currentProject, currentSubProject, currentUser || {});
 
@@ -656,20 +658,29 @@ export default function App() {
     // 1. Tentar Supabase
     if (hasSupabaseConfig) {
       try {
-        const { data, error } = await supabase.from('brickflow_data').select('*');
-        
+        const { data, error } = await supabase
+          .from('brickflow_data')
+          .select('id,data')
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
         if (error) {
-           console.warn("Erro Supabase:", error);
-           setConnectionError(true);
-        } else if (data && data.length > 0) {
-          const remoteProjects = data[0].data || [];
-          console.log("Projetos carregados do Supabase:", remoteProjects);
-          setProjects(Array.isArray(remoteProjects) ? remoteProjects : []);
+          console.warn("Erro Supabase:", error);
+          setConnectionError(true);
+        } else if (data && Array.isArray(data.data)) {
+          console.log("Projetos carregados do Supabase:", data.data);
+          setProjects(data.data);
           loadedFromSupabase = true;
+          setInitialLoadSuccess(true);
+        } else if (data) {
+          setProjects([]);
+          loadedFromSupabase = true;
+          setInitialLoadSuccess(true);
         } else {
-           // Conectou mas está vazio
-           setProjects([]);
-           loadedFromSupabase = true;
+          setProjects([]);
+          loadedFromSupabase = true;
+          setInitialLoadSuccess(true);
         }
       } catch (err) {
         console.warn("Exceção Supabase:", err);
@@ -716,7 +727,8 @@ export default function App() {
           setIsLoading(false);
         }
       } else {
-          setIsLoading(false);
+          setIsLoggedIn(true);
+          await loadUserProjects(currentUser);
       }
       
       // Carregar Users do banco (se houver)
@@ -743,9 +755,17 @@ export default function App() {
     setMegaSenaNumbers(generateMegaSenaNumbers());
   }, [loadUserProjects]);
 
+  const handleRealtimeProjects = useCallback((updater) => {
+    setProjects(prev => (typeof updater === 'function' ? updater(prev) : updater));
+    setIsLoading(false);
+    setConnectionError(false);
+  }, []);
+
+  useRealtimeProjects(isLoggedIn, handleRealtimeProjects);
+
   // Sync Automático (Salvar)
   useEffect(() => {
-    if (!currentUser || isLoading) return; // Evita salvar durante o load
+    if (!currentUser || isLoading || !initialLoadSuccess) return; // Evita salvar durante o load
 
     const userKey = currentUser.userKey || `${currentUser.username}-${currentUser.pin}`;
     
@@ -758,7 +778,11 @@ export default function App() {
             setIsSyncing(true);
             try {
                 // Busca ID para update ou cria novo
-                const { data: existing } = await supabase.from('brickflow_data').select('id').limit(1);
+                const { data: existing } = await supabase
+                  .from('brickflow_data')
+                  .select('id')
+                  .order('id', { ascending: false })
+                  .limit(1);
                 const payload = { data: projects };
                 
                 if (existing && existing.length > 0) {
@@ -772,7 +796,7 @@ export default function App() {
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [projects, currentUser, isLoading, connectionError]);
+  }, [projects, currentUser, isLoading, connectionError, initialLoadSuccess]);
 
   const handleLogin = (username, pin) => {
     // Procura no estado atual de usuários (que pode ter vindo do banco)
