@@ -35,7 +35,7 @@
 
 @layer base {
   :root {
-    /* UNIVERSO: Preto Absoluto para imersão total (Oled Black) */
+    /* UNIVERSO: Preto Absoluto para imersão total */
     --background: 0 0% 0%; 
     --foreground: 0 0% 90%; 
     
@@ -45,7 +45,7 @@
     --popover: 0 0% 2%;
     --popover-foreground: 0 0% 98%;
     
-    /* LUZ: O Vermelho Brick (356) saturado para cortar a escuridão como laser */
+    /* LUZ: O Vermelho Brick (356) */
     --primary: 356 85% 55%;
     --primary-foreground: 0 0% 100%;
     
@@ -61,12 +61,12 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     
-    /* ESTRUTURA: Bordas quase invisíveis, apenas sugerindo o grid matemático */
+    /* ESTRUTURA */
     --border: 0 0% 9%;
     --input: 0 0% 9%;
     --ring: 356 85% 55%;
     
-    --radius: 4px; /* Slight rounding for modern feel, was 0px */
+    --radius: 4px;
   }
 
   * {
