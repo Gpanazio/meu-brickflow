@@ -14,7 +14,7 @@ export const missingVariables = [
 ].filter(Boolean)
 
 if (!hasSupabaseConfig) {
-  const message = `Missing environment variable(s): ${missingVariables.join(' and ')}`
+  const message = `Variável(eis) de ambiente ausente(s): ${missingVariables.join(' e ')}`
   console.warn(message)
 }
 
