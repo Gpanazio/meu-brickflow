@@ -5,34 +5,22 @@ import * as matchers from '@testing-library/jest-dom/matchers'
 import App from '../App.jsx'
 
 vi.mock('../lib/supabaseClient', () => {
-  const responses = {
-    select: { data: [], error: null },
-    update: { data: [], error: null },
-    insert: { data: [], error: null }
-  }
-
   const buildSelectResponse = () => {
-    const response = responses.select
-    const builder = {
-      limit: vi.fn(() => builder),
+    const response = { data: [], error: null }
+    return {
+      limit: vi.fn(() => Promise.resolve(response)),
       then: (resolve) => Promise.resolve(response).then(resolve)
     }
-    return builder
   }
 
   return {
-    __setSupabaseResponses: (next) => {
-      responses.select = next?.select ?? responses.select
-      responses.update = next?.update ?? responses.update
-      responses.insert = next?.insert ?? responses.insert
-    },
     supabase: {
       from: vi.fn(() => ({
         select: vi.fn(() => buildSelectResponse()),
         update: vi.fn(() => ({
-          eq: vi.fn(() => Promise.resolve(responses.update))
+          eq: vi.fn(() => Promise.resolve({ data: [], error: null }))
         })),
-        insert: vi.fn(() => Promise.resolve(responses.insert))
+        insert: vi.fn(() => Promise.resolve({ data: [], error: null }))
       }))
     },
     hasSupabaseConfig: false
