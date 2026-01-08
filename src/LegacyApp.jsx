@@ -479,10 +479,10 @@ function LegacyApp() {
     );
   }
 
-  const currentEntity = currentSubProject || currentProject;
+  const currentEntity = React.useMemo(() => currentSubProject || currentProject, [currentSubProject, currentProject]);
   const boardData = currentEntity ? getCurrentBoardData() : {};
-  const entityName = currentEntity?.name || '';
-  const enabledTabs = currentEntity?.enabledTabs || ['kanban'];
+  const entityName = React.useMemo(() => currentEntity?.name || '', [currentEntity]);
+  const enabledTabs = React.useMemo(() => currentEntity?.enabledTabs || ['kanban'], [currentEntity]);
 
   return (
     <div className="min-h-screen bg-black text-foreground flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
