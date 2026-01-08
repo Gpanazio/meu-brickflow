@@ -1,7 +1,0 @@
-[build]
-  command = "npm run build"
-  publish = "dist"
-
-[build.environment]
-  # Esta linha é a mágica: ignora o erro de lockfile desatualizado
-  PNPM_FLAGS = "--no-frozen-lockfile"
