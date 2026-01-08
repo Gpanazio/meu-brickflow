@@ -574,8 +574,24 @@ function LegacyHome({ currentUser, dailyPhrase, megaSenaNumbers, projects, setMo
 
 function LegacyProjectView({ currentProject, setCurrentView, setModalState, handleAccessProject, handleDeleteProject }) {
   const activeSubProjects = useMemo(() => {
-    return currentProject.subProjects?.filter(s => !s.isArchived) || [];
-  }, [currentProject.subProjects]);
+    return currentProject?.subProjects?.filter(s => !s.isArchived) || [];
+  }, [currentProject]);
+
+  if (!currentProject) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500 pb-24">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-10 px-5 uppercase text-xs font-bold tracking-widest">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+          </Button>
+        </div>
+        <div className="border border-zinc-900 bg-black/60 p-8 text-center">
+          <h2 className="text-xl font-bold text-white uppercase tracking-widest">Projeto indisponível</h2>
+          <p className="mt-2 text-xs text-zinc-500 font-mono uppercase tracking-widest">Selecione um projeto válido para continuar.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-500 pb-24">
@@ -872,7 +888,18 @@ export default function App() {
   };
 
   const handleAccessProject = (item, type = 'project') => {
-    if (type === 'project') { setCurrentProject(item); setCurrentView('project'); } else { setCurrentSubProject(item); setCurrentView('subproject'); setCurrentBoardType(item.enabledTabs ? item.enabledTabs[0] : 'kanban'); }
+    if (type === 'project') {
+      const targetProject = projects.find(project => project.id === item?.id) || item;
+      if (!targetProject) return;
+      setCurrentProject({ ...targetProject, subProjects: targetProject.subProjects || [] });
+      setCurrentView('project');
+      return;
+    }
+    const targetSubProject = item;
+    if (!targetSubProject) return;
+    setCurrentSubProject(targetSubProject);
+    setCurrentView('subproject');
+    setCurrentBoardType(targetSubProject.enabledTabs ? targetSubProject.enabledTabs[0] : 'kanban');
   };
 
   const handleDeleteProject = (item, isSub = false) => {

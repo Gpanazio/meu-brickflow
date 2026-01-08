@@ -12,11 +12,26 @@ function LegacyProjectView({
   handleDeleteProject,
   COLOR_VARIANTS
 }) {
-  
   // CORREÇÃO ERRO #310: Hook elevado para o Top-Level
   const activeSubProjects = useMemo(() => {
-    return currentProject.subProjects?.filter(s => !s.isArchived) || [];
-  }, [currentProject.subProjects]);
+    return currentProject?.subProjects?.filter(s => !s.isArchived) || [];
+  }, [currentProject]);
+
+  if (!currentProject) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest">
+            <ArrowLeft className="mr-2 h-3 w-3" /> Voltar
+          </Button>
+        </div>
+        <div className="border border-zinc-900 bg-black/60 p-6 text-center">
+          <h2 className="text-lg font-bold text-white uppercase tracking-widest">Projeto indisponível</h2>
+          <p className="mt-2 text-[10px] text-zinc-500 font-mono uppercase tracking-widest">Selecione um projeto válido para continuar.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
