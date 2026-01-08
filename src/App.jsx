@@ -3,7 +3,7 @@ import {
   MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
   Trash2, Eye, FolderOpen, Lock, RotateCcw,
   ListTodo, KanbanSquare, FileText, Goal, Sparkles, Dna, AlertTriangle,
-  X, Check, ChevronDown, Settings, Image as ImageIcon, Calendar
+  X, Check, ChevronDown, Settings, Image as ImageIcon, Calendar, WifiOff
 } from 'lucide-react';
 import './App.css';
 
@@ -498,7 +498,7 @@ function LegacyModal({ modalState, setModalState, handlePasswordSubmit, handleSa
   );
 }
 
-function LegacyHome({ currentUser, dailyPhrase, megaSenaNumbers, projects, setModalState, handleAccessProject, handleDeleteProject }) {
+function LegacyHome({ currentUser, dailyPhrase, megaSenaNumbers, projects, setModalState, handleAccessProject, handleDeleteProject, isLoading, connectionError }) {
   const currentDate = useMemo(() => new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), []);
   const activeProjects = useMemo(() => projects.filter(p => !p.isArchived), [projects]);
   const myPendingTasks = useMemo(() => {
@@ -536,7 +536,22 @@ function LegacyHome({ currentUser, dailyPhrase, megaSenaNumbers, projects, setMo
       )}
       <div className="space-y-6">
         <div className="flex justify-between items-end pb-4 border-b border-zinc-900"><h2 className="text-sm font-bold text-zinc-500 uppercase tracking-[0.2em] mb-1">Projetos Ativos</h2><Button onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-zinc-950 h-10 px-6 text-xs uppercase font-black tracking-widest rounded-none shadow-none"><Plus className="mr-2 h-4 w-4" /> Novo Projeto</Button></div>
-        {activeProjects.length === 0 ? (
+        
+        {/* NEW LOGIC: Connection Error vs Empty State */}
+        {connectionError && (
+          <div className="border border-red-900/50 bg-red-950/10 p-6 flex flex-col items-center justify-center text-center gap-2">
+            <WifiOff className="w-8 h-8 text-red-600 mb-2" />
+            <h3 className="text-lg font-bold text-red-500 uppercase tracking-widest">Erro de Conexão</h3>
+            <p className="text-zinc-500 text-xs font-mono max-w-md">Não foi possível conectar ao servidor. Exibindo apenas dados locais (se houver).</p>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 opacity-50">
+            <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-zinc-600 font-mono uppercase tracking-widest text-xs">Carregando seus projetos...</p>
+          </div>
+        ) : activeProjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 opacity-20"><h1 className="text-6xl font-black text-zinc-800 uppercase tracking-tighter">VAZIO</h1><p className="text-zinc-600 font-mono uppercase tracking-widest mt-4">Nenhum projeto iniciado</p></div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-l border-zinc-900">
@@ -635,8 +650,8 @@ function LegacyBoard({ data, entityName, enabledTabs, currentBoardType, setCurre
 // --- MAIN APP LOGIC ---
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null); // Inicia null para esperar verificação
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState({ username: 'admin', pin: '1234', displayName: 'Admin', color: 'red', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YXZhdGFyfGVufDB8fDB8fHww' });
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [allUsers, setAllUsers] = useState([
     { username: 'admin', pin: '1234', displayName: 'Admin', color: 'red', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YXZhdGFyfGVufDB8fDB8fHww' },
     { username: 'fran', pin: '1234', displayName: 'Fran', color: 'purple', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YXZhdGFyfGVufDB8fDB8fHww' } 
@@ -652,41 +667,64 @@ export default function App() {
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
   const [modalState, setModalState] = useState({ type: null, isOpen: false, data: null, mode: 'create' });
+  
+  // NEW STATES: Connection and Loading handling
+  const [isLoading, setIsLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(false);
 
   const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile } = useFiles(currentProject, currentSubProject, currentUser || {});
 
-  // Função dedicada para carregar projetos
+  // Função dedicada para carregar projetos com tratamento de erro e cache
   const loadUserProjects = useCallback(async (user) => {
     if (!user) return;
+    setIsLoading(true);
+    setConnectionError(false);
     
+    let loadedFromSupabase = false;
+
     // 1. Tentar Supabase
     if (hasSupabaseConfig) {
       try {
         const { data, error } = await supabase.from('brickflow_data').select('*');
-        if (!error && data && data.length > 0 && Array.isArray(data[0].data)) {
+        
+        if (error) {
+           console.warn("Erro Supabase:", error);
+           setConnectionError(true);
+        } else if (data && data.length > 0 && Array.isArray(data[0].data)) {
           setProjects(data[0].data);
-          return;
+          loadedFromSupabase = true;
+        } else {
+           // Conectou mas está vazio
+           setProjects([]);
+           loadedFromSupabase = true;
         }
       } catch (err) {
-        console.warn("Erro Supabase:", err);
-      }
-    }
-
-    // 2. Fallback LocalStorage (Chave correta: brickflow-projects-{username}-{pin})
-    // Se o objeto user já tiver userKey, usa. Se não, constrói.
-    const userKey = user.userKey || `${user.username}-${user.pin}`;
-    const localData = localStorage.getItem(`brickflow-projects-${userKey}`);
-    
-    if (localData) {
-      try {
-        setProjects(JSON.parse(localData));
-      } catch (e) {
-        console.error("Erro parsing local projects", e);
-        setProjects([]);
+        console.warn("Exceção Supabase:", err);
+        setConnectionError(true);
       }
     } else {
-      setProjects([]); // Começa vazio se não achar nada
+        // Se não tiver config, trata como "erro de conexão" para efeitos de UI
+        setConnectionError(true); 
     }
+
+    // 2. Se falhou o Supabase, tenta Fallback LocalStorage 
+    if (!loadedFromSupabase) {
+        const userKey = user.userKey || `${user.username}-${user.pin}`;
+        const localData = localStorage.getItem(`brickflow-projects-${userKey}`);
+        
+        if (localData) {
+            try {
+                setProjects(JSON.parse(localData));
+            } catch (e) {
+                console.error("Erro parsing local projects", e);
+                setProjects([]);
+            }
+        } else {
+            setProjects([]); // Começa vazio se não achar nada
+        }
+    }
+    
+    setIsLoading(false);
   }, []);
 
   // Inicialização
@@ -702,25 +740,28 @@ export default function App() {
           await loadUserProjects(user);
         } catch (e) {
           localStorage.removeItem('brickflow-current-user');
+          setIsLoading(false);
         }
+      } else {
+          setIsLoading(false);
       }
       
       // Carregar Users do banco (se houver)
       if (hasSupabaseConfig) {
-         const { data } = await supabase.from('brickflow_users').select('*');
-         if (data && data.length > 0) {
-            // Mesclar com os hardcoded para garantir admin/fran existam ou substituir totalmente
-            // Aqui vamos apenas adicionar/atualizar
-            setAllUsers(prev => {
-                const newUsers = [...prev];
-                data.forEach(u => {
-                    const idx = newUsers.findIndex(nu => nu.username === u.username);
-                    if (idx >= 0) newUsers[idx] = { ...newUsers[idx], ...u };
-                    else newUsers.push(u);
+         try {
+             const { data } = await supabase.from('brickflow_users').select('*');
+             if (data && data.length > 0) {
+                setAllUsers(prev => {
+                    const newUsers = [...prev];
+                    data.forEach(u => {
+                        const idx = newUsers.findIndex(nu => nu.username === u.username);
+                        if (idx >= 0) newUsers[idx] = { ...newUsers[idx], ...u };
+                        else newUsers.push(u);
+                    });
+                    return newUsers;
                 });
-                return newUsers;
-            });
-         }
+             }
+         } catch(e) { console.warn("Erro ao carregar usuários", e); }
       }
     };
 
@@ -731,7 +772,7 @@ export default function App() {
 
   // Sync Automático (Salvar)
   useEffect(() => {
-    if (!currentUser || projects.length === 0) return; // Evita salvar vazio em cima de dados se não carregou
+    if (!currentUser || isLoading) return; // Evita salvar durante o load
 
     const userKey = currentUser.userKey || `${currentUser.username}-${currentUser.pin}`;
     
@@ -740,23 +781,25 @@ export default function App() {
 
     // Debounce para Salvar no Supabase
     const timeoutId = setTimeout(async () => {
-        setIsSyncing(true);
-        if (hasSupabaseConfig) {
-            // Busca ID para update ou cria novo
-            const { data: existing } = await supabase.from('brickflow_data').select('id').limit(1);
-            const payload = { data: projects };
-            
-            if (existing && existing.length > 0) {
-                await supabase.from('brickflow_data').update(payload).eq('id', existing[0].id);
-            } else {
-                await supabase.from('brickflow_data').insert(payload);
-            }
+        if (hasSupabaseConfig && !connectionError) {
+            setIsSyncing(true);
+            try {
+                // Busca ID para update ou cria novo
+                const { data: existing } = await supabase.from('brickflow_data').select('id').limit(1);
+                const payload = { data: projects };
+                
+                if (existing && existing.length > 0) {
+                    await supabase.from('brickflow_data').update(payload).eq('id', existing[0].id);
+                } else {
+                    await supabase.from('brickflow_data').insert(payload);
+                }
+            } catch(e) { console.warn("Erro ao salvar no Supabase", e); }
+            setIsSyncing(false);
         }
-        setIsSyncing(false);
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [projects, currentUser]);
+  }, [projects, currentUser, isLoading, connectionError]);
 
   const handleLogin = (username, pin) => {
     // Procura no estado atual de usuários (que pode ter vindo do banco)
@@ -776,7 +819,11 @@ export default function App() {
     setCurrentUser(updatedUser);
     localStorage.setItem('brickflow-current-user', JSON.stringify(updatedUser));
     setAllUsers(prev => prev.map(u => u.username === updatedUser.username ? updatedUser : u));
-    if (hasSupabaseConfig) { await supabase.from('brickflow_users').update({ avatar: updatedUser.avatar }).eq('username', updatedUser.username); }
+    if (hasSupabaseConfig) { 
+        try {
+            await supabase.from('brickflow_users').update({ avatar: updatedUser.avatar }).eq('username', updatedUser.username); 
+        } catch(e) { console.warn("Erro ao atualizar avatar no banco", e); }
+    }
   };
 
   const initializeBoardData = () => ({ todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'FEITO', tasks: [] }] }, kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] }, files: { files: [] }, goals: { objectives: [] } });
@@ -858,7 +905,19 @@ export default function App() {
       <LegacyHeader currentView={currentView} setCurrentView={setCurrentView} currentProject={currentProject} isSyncing={isSyncing} currentUser={currentUser} handleSwitchUser={() => setIsLoggedIn(false)} handleLogout={() => { setIsLoggedIn(false); localStorage.removeItem('brickflow-current-user'); }} onOpenSettings={() => setShowSettingsModal(true)} />
       <main className="flex-1 container mx-auto p-0 md:p-8 pt-6 h-[calc(100vh-4rem)] overflow-hidden">
         <div className="h-full overflow-y-auto pr-2 custom-scrollbar">
-            {currentView === 'home' && <LegacyHome currentUser={currentUser} dailyPhrase={dailyPhrase} megaSenaNumbers={megaSenaNumbers} projects={projects} setModalState={setModalState} handleAccessProject={handleAccessProject} handleDeleteProject={handleDeleteProject} />}
+            {currentView === 'home' && (
+                <LegacyHome 
+                    currentUser={currentUser} 
+                    dailyPhrase={dailyPhrase} 
+                    megaSenaNumbers={megaSenaNumbers} 
+                    projects={projects} 
+                    setModalState={setModalState} 
+                    handleAccessProject={handleAccessProject} 
+                    handleDeleteProject={handleDeleteProject}
+                    isLoading={isLoading} 
+                    connectionError={connectionError}
+                />
+            )}
             {currentView === 'project' && <LegacyProjectView currentProject={currentProject} setCurrentView={setCurrentView} setModalState={setModalState} handleAccessProject={handleAccessProject} handleDeleteProject={handleDeleteProject} />}
             {currentView === 'subproject' && <LegacyBoard data={boardData} entityName={currentSubProject.name} enabledTabs={currentSubProject.enabledTabs || ['kanban', 'todo', 'files']} currentBoardType={currentBoardType} setCurrentBoardType={setCurrentBoardType} currentSubProject={currentSubProject} currentProject={currentProject} setCurrentView={setCurrentView} setModalState={setModalState} handleTaskAction={handleTaskAction} isFileDragging={isDragging} setIsFileDragging={setIsDragging} handleFileDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e); }} isUploading={isUploading} handleFileUploadWithFeedback={handleFileUpload} files={files} handleDeleteFile={handleDeleteFile} />}
         </div>
