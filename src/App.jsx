@@ -13,7 +13,7 @@ import LegacyHome from './components/legacy/LegacyHome';
 import LegacyProjectView from './components/legacy/LegacyProjectView';
 import LegacyBoard from './components/legacy/LegacyBoard';
 import LegacyHeader from './components/legacy/LegacyHeader';
-import { CreateProjectModal } from './components/CreateProjectModal'; // NOVO IMPORT
+import { CreateProjectModal } from './components/CreateProjectModal'; // COMPONENTE IMPORTADO
 import { useUsers } from './hooks/useUsers'; 
 import { useFiles } from './hooks/useFiles'; 
 import SudokuGame from './components/SudokuGame';
@@ -82,13 +82,9 @@ const Dialog = ({ open, onOpenChange, children }) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
-      <div className="relative z-50 grid w-full max-w-lg gap-4 border border-zinc-800 bg-black p-6 shadow-lg duration-200 sm:rounded-lg max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
+      <div className="relative z-50 grid w-full max-w-lg gap-4 border border-zinc-900 bg-black p-0 shadow-2xl duration-200 sm:rounded-none max-h-[90vh] overflow-y-auto custom-scrollbar">
         {children}
-        <button onClick={() => onOpenChange(false)} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-black transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:ring-offset-2 disabled:pointer-events-none bg-zinc-800 text-zinc-400">
-          <X className="h-5 w-5" />
-          <span className="sr-only">Close</span>
-        </button>
       </div>
     </div>
   );
@@ -702,7 +698,7 @@ export default function App() {
         </div>
       </main>
 
-      {/* MODAL GLOBAL RESTAURADO - CRIAÇÃO DE PROJETO */}
+      {/* MODAL GLOBAL - CRIAÇÃO DE PROJETO */}
       {modalState.isOpen && modalState.type === 'project' && modalState.mode === 'create' ? (
         <CreateProjectModal 
           isOpen={modalState.isOpen}
