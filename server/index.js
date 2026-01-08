@@ -39,7 +39,15 @@ app.get('/api/projects', async (req, res) => {
   try {
     const { rows } = await query('SELECT data FROM brickflow_state ORDER BY id DESC LIMIT 1');
     if (rows.length > 0) {
-      res.json(rows[0].data);
+      let payload = rows[0].data;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch (parseError) {
+          console.warn('⚠️ Falha ao interpretar JSON salvo, retornando string bruta.');
+        }
+      }
+      res.json(payload);
     } else {
       // Retorna null para o front saber que é a primeira vez e inicializar
       res.json(null);
@@ -65,7 +73,7 @@ app.post('/api/projects', async (req, res) => {
   }
 
   try {
-    await query('INSERT INTO brickflow_state (data) VALUES ($1)', [JSON.stringify(data)]);
+    await query('INSERT INTO brickflow_state (data) VALUES ($1)', [data]);
     res.json({ success: true });
   } catch (err) {
     console.error('Erro ao salvar:', err);
