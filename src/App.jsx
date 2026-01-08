@@ -765,11 +765,20 @@ export default function App() {
 
   // Sync Automático (Salvar)
   useEffect(() => {
-    if (!currentUser || isLoading || !initialLoadSuccess) return; // Evita salvar durante o load
+    // 1. Verificações básicas de carregamento
+    if (!currentUser || isLoading || !initialLoadSuccess) return;
+
+    // 2. TRAVA DE SEGURANÇA CRÍTICA
+    // Se a lista de projetos estiver vazia, NÃO salva automaticamente.
+    // Isso previne que um erro de carga apague o banco.
+    if (projects.length === 0) {
+        console.warn("[BrickFlow Safety] Tentativa de salvar lista vazia bloqueada.");
+        return;
+    }
 
     const userKey = currentUser.userKey || `${currentUser.username}-${currentUser.pin}`;
     
-    // Salva Local
+    // Salva Local (mantém como backup secundário)
     localStorage.setItem(`brickflow-projects-${userKey}`, JSON.stringify(projects));
 
     // Debounce para Salvar no Supabase
@@ -777,12 +786,12 @@ export default function App() {
         if (hasSupabaseConfig && !connectionError) {
             setIsSyncing(true);
             try {
-                // Busca ID para update ou cria novo
                 const { data: existing } = await supabase
                   .from('brickflow_data')
                   .select('id')
                   .order('id', { ascending: false })
                   .limit(1);
+                
                 const payload = { data: projects };
                 
                 if (existing && existing.length > 0) {
@@ -797,6 +806,21 @@ export default function App() {
 
     return () => clearTimeout(timeoutId);
   }, [projects, currentUser, isLoading, connectionError, initialLoadSuccess]);
+
+  const handleExportBackup = () => {
+    if (!projects || projects.length === 0) {
+      alert("Nada para exportar!");
+      return;
+    }
+    const dataStr = JSON.stringify(projects, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `brickflow_backup_${new Date().toISOString().slice(0,10)}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
 
   const handleLogin = (username, pin) => {
     // Procura no estado atual de usuários (que pode ter vindo do banco)
@@ -941,6 +965,13 @@ export default function App() {
       </main>
       <LegacyModal modalState={modalState} setModalState={setModalState} handlePasswordSubmit={() => {}} handleSaveProject={handleSaveProject} handleTaskAction={handleTaskAction} allUsers={allUsers} currentUser={currentUser} />
       <UserSettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} currentUser={currentUser} onUpdateUser={handleUpdateUser} />
+      {/* Botão de Emergência para Backup */}
+      <button 
+        onClick={handleExportBackup}
+        className="fixed bottom-4 right-4 z-[9999] bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded shadow-lg font-bold text-xs uppercase tracking-widest"
+      >
+        💾 Backup Manual
+      </button>
     </div>
   );
 }
