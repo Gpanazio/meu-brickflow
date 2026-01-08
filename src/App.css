@@ -45,9 +45,8 @@
   :root {
     /* UNIVERSO: Preto Absoluto para imersão total (Oled Black) */
     --background: 0 0% 0%; 
-    --foreground: 0 0% 90%; /* Branco levemente recuado (Off-white) para leitura prolongada */
+    --foreground: 0 0% 90%; 
     
-    /* MATÉRIA ESCURA: Elementos de superfície não são cinzas, são pretos com textura */
     --card: 0 0% 2%;
     --card-foreground: 0 0% 98%;
     
@@ -62,7 +61,7 @@
     --secondary-foreground: 0 0% 90%;
     
     --muted: 0 0% 9%;
-    --muted-foreground: 0 0% 50%; /* Texto secundário bem apagado para contraste dramático */
+    --muted-foreground: 0 0% 50%; 
     
     --accent: 0 0% 15%;
     --accent-foreground: 0 0% 100%;
@@ -75,7 +74,6 @@
     --input: 0 0% 9%;
     --ring: 356 85% 55%;
     
-    /* FORMA: O Monolito não tem curvas. A rejeição ao orgânico. */
     --radius: 0px;
   }
 
@@ -89,85 +87,14 @@
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow-x: hidden;
-    /* Fonte padrão para corpo */
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
-  
-  /* ATMOSFERA: Ruído de Película (Film Grain) para textura cinematográfica */
-  body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    mix-blend-mode: overlay;
   }
 }
 
 @layer utilities {
-  .glass-panel {
-    /* Redefinido para "Superfície Monolito" - Menos vidro, mais pedra polida */
-    @apply bg-black border border-zinc-900 shadow-2xl;
-  }
-  
-  /* CARD CINEMATOGRÁFICO: Hover revela a luz vermelha */
-  .cinema-card {
-    @apply relative overflow-hidden transition-all duration-700 border-r border-b border-zinc-900 bg-black;
-  }
-  
-  /* Brilho especular sutil no centro */
-  .cinema-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 70%);
-    opacity: 0;
-    transition: opacity 0.5s ease;
-    pointer-events: none;
-  }
-
-  .cinema-card:hover::before {
-    opacity: 1;
-  }
-  
-  /* O "Laser Scanner" vermelho na base */
-  .cinema-card::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: var(--color-primary);
-    box-shadow: 0 -2px 10px 1px var(--color-primary);
-    transform: scaleX(0);
-    transform-origin: center;
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  
-  .cinema-card:hover::after {
-    transform: scaleX(1);
-  }
-  
-  .cinema-card:hover {
-    @apply bg-zinc-950/30;
-  }
-
-  /* Tipografia Brick: Títulos técnicos e massivos */
-  .brick-title {
-    @apply font-black uppercase tracking-tighter leading-[0.85];
-  }
-  
-  /* Tipografia de Dados: Para metadados, datas, IDs */
-  .tech-font {
-    font-family: 'Courier New', Courier, monospace; 
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+  /* Utilitários específicos do tema */
+  .text-shadow {
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
   }
 }
 
