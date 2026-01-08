@@ -23,12 +23,22 @@ const initDB = async () => {
       CREATE TABLE IF NOT EXISTS brickflow_state (
         id INTEGER PRIMARY KEY,
         data JSONB NOT NULL,
+        version INTEGER DEFAULT 1,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     await query(`
       ALTER TABLE brickflow_state
       ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    `);
+    await query(`
+      ALTER TABLE brickflow_state
+      ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;
+    `);
+    await query(`
+      UPDATE brickflow_state
+      SET version = COALESCE(version, 1)
+      WHERE version IS NULL;
     `);
     await query(`
       CREATE TABLE IF NOT EXISTS brickflow_events (
@@ -39,18 +49,30 @@ const initDB = async () => {
       );
     `);
     await query(`
-      INSERT INTO brickflow_state (id, data, updated_at)
-      SELECT 1, data, COALESCE(updated_at, created_at, CURRENT_TIMESTAMP)
+      INSERT INTO brickflow_state (id, data, updated_at, version)
+      SELECT 1, data, COALESCE(updated_at, created_at, CURRENT_TIMESTAMP), COALESCE(version, 1)
       FROM brickflow_state
       ORDER BY id DESC
       LIMIT 1
       ON CONFLICT (id) DO UPDATE
-      SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at;
+      SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at, version = EXCLUDED.version;
     `);
     console.log('✅ Banco de dados inicializado: Tabela "brickflow_state" verificada.');
   } catch (err) {
     console.error('❌ Erro crítico ao criar tabela:', err);
   }
+};
+
+const normalizeStateData = (state) => {
+  if (!state) return null;
+  if (Array.isArray(state)) return { projects: state };
+  if (Array.isArray(state.projects)) return state;
+  return state;
+};
+
+const withVersion = (state, version) => {
+  if (!state) return null;
+  return { ...state, version };
 };
 
 const getProjectsFromState = (state) => {
@@ -110,13 +132,15 @@ const getProjectChanges = (previousState, nextState) => {
 // Rota para buscar o estado atual
 app.get('/api/projects', async (req, res) => {
   try {
-    const { rows } = await query('SELECT data FROM brickflow_state WHERE id = 1');
+    const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
     if (rows.length > 0) {
-      res.json(rows[0].data);
+      const normalized = normalizeStateData(rows[0].data);
+      res.json(withVersion(normalized, rows[0].version ?? 1));
     } else {
-      const fallback = await query('SELECT data FROM brickflow_state ORDER BY id DESC LIMIT 1');
+      const fallback = await query('SELECT data, version FROM brickflow_state ORDER BY id DESC LIMIT 1');
       if (fallback.rows.length > 0) {
-        res.json(fallback.rows[0].data);
+        const normalized = normalizeStateData(fallback.rows[0].data);
+        res.json(withVersion(normalized, fallback.rows[0].version ?? 1));
       } else {
         // Retorna null para o front saber que é a primeira vez e inicializar
         res.json(null);
@@ -136,9 +160,9 @@ app.get('/api/projects', async (req, res) => {
 
 // Rota para salvar (Cria novo registro = Backup automático)
 app.post('/api/projects', async (req, res) => {
-  const { data, client_request_id } = req.body;
+  const { data, client_request_id, version } = req.body;
 
-  if (!data || !client_request_id) {
+  if (!data || !client_request_id || typeof version !== 'number') {
     return res.status(400).json({ error: 'Dados inválidos' });
   }
 
@@ -146,19 +170,33 @@ app.post('/api/projects', async (req, res) => {
 
   try {
     await client.query('BEGIN');
+    const stateResult = await client.query(
+      'SELECT version FROM brickflow_state WHERE id = 1 FOR UPDATE'
+    );
+    const currentVersion = stateResult.rows.length > 0 ? stateResult.rows[0].version ?? 0 : 0;
+
+    if (version !== currentVersion) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Conflito de versão', currentVersion });
+    }
+
+    const normalizedData = normalizeStateData(data) ?? { projects: [] };
+    const nextVersion = currentVersion + 1;
+    const nextState = { ...normalizedData, version: nextVersion };
+
     const insertEvent = await client.query(
       'INSERT INTO brickflow_events (client_request_id, data) VALUES ($1, $2) RETURNING id',
-      [client_request_id, JSON.stringify(data)]
+      [client_request_id, JSON.stringify(nextState)]
     );
     await client.query(
-      `INSERT INTO brickflow_state (id, data, updated_at)
-       VALUES (1, $1, CURRENT_TIMESTAMP)
+      `INSERT INTO brickflow_state (id, data, updated_at, version)
+       VALUES (1, $1, CURRENT_TIMESTAMP, $2)
        ON CONFLICT (id) DO UPDATE
-       SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP`,
-      [JSON.stringify(data)]
+       SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP, version = EXCLUDED.version`,
+      [JSON.stringify(nextState), nextVersion]
     );
     await client.query('COMMIT');
-    res.json({ ack: true, change_id: insertEvent.rows[0].id });
+    res.json({ ack: true, change_id: insertEvent.rows[0].id, version: nextVersion });
   } catch (err) {
     await client.query('ROLLBACK');
     if (err.code === '23505') {
@@ -232,8 +270,9 @@ app.post('/api/projects/:id/restore', async (req, res) => {
     }
 
     const targetSnapshot = eventRows[0].snapshot_after;
-    const { rows: stateRows } = await query('SELECT data FROM brickflow_state ORDER BY id DESC LIMIT 1');
+    const { rows: stateRows } = await query('SELECT data, version FROM brickflow_state ORDER BY id DESC LIMIT 1');
     const latestState = stateRows.length > 0 ? stateRows[0].data : { projects: [] };
+    const currentVersion = stateRows.length > 0 ? stateRows[0].version ?? 0 : 0;
     const projects = getProjectsFromState(latestState);
     let updatedProjects = [];
 
@@ -251,8 +290,16 @@ app.post('/api/projects/:id/restore', async (req, res) => {
     const updatedState = Array.isArray(latestState)
       ? updatedProjects
       : { ...latestState, projects: updatedProjects };
+    const nextVersion = currentVersion + 1;
+    const updatedStateWithVersion = { ...normalizeStateData(updatedState), version: nextVersion };
 
-    await query('INSERT INTO brickflow_state (data) VALUES ($1)', [JSON.stringify(updatedState)]);
+    await query(
+      `INSERT INTO brickflow_state (id, data, updated_at, version)
+       VALUES (1, $1, CURRENT_TIMESTAMP, $2)
+       ON CONFLICT (id) DO UPDATE
+       SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP, version = EXCLUDED.version`,
+      [JSON.stringify(updatedStateWithVersion), nextVersion]
+    );
     await query(
       'INSERT INTO brickflow_events (project_id, user_id, action_type, payload, snapshot_after) VALUES ($1, $2, $3, $4, $5)',
       [
@@ -264,7 +311,7 @@ app.post('/api/projects/:id/restore', async (req, res) => {
       ]
     );
 
-    res.json({ success: true, data: updatedState });
+    res.json({ success: true, data: updatedStateWithVersion });
   } catch (err) {
     console.error('Erro ao restaurar:', err);
     res.status(500).json({ error: 'Erro ao restaurar projeto' });
