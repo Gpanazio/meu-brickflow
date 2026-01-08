@@ -123,10 +123,15 @@ function LegacyApp() {
   useEffect(() => {
     const savedUser = localStorage.getItem('brickflow-current-user');
     if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      setCurrentUser(userData);
-      setIsLoggedIn(true);
-      loadUserProjects(userData.userKey);
+      try {
+        const userData = JSON.parse(savedUser);
+        setCurrentUser(userData);
+        setIsLoggedIn(true);
+        loadUserProjects(userData.userKey);
+      } catch (e) {
+        console.error("Erro ao carregar usuário salvo:", e);
+        localStorage.removeItem('brickflow-current-user');
+      }
     }
     loadAllUsers();
     
@@ -185,17 +190,35 @@ function LegacyApp() {
   const loadUserProjects = async (userKey) => {
     try {
       const { data, error } = await supabase.from('brickflow_data').select('*');
-      if (!error && data && data.length > 0 && data[0].data) {
+      // Correção: Verifica se data[0].data é um array antes de setar
+      if (!error && data && data.length > 0 && Array.isArray(data[0].data)) {
         setProjects(data[0].data);
         return;
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Erro ao carregar do Supabase:", e); }
     
     const saved = localStorage.getItem(`brickflow-projects-${userKey}`);
-    if (saved) setProjects(JSON.parse(saved));
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Correção: Garante que é array
+        setProjects(Array.isArray(parsed) ? parsed : []);
+      } catch(e) {
+        setProjects([]);
+      }
+    } else {
+      setProjects([]);
+    }
   };
 
-  const updateProjectsState = (newData) => setProjects(newData);
+  const updateProjectsState = (newData) => {
+    // Correção: Previne setar nulo/undefined
+    if (Array.isArray(newData)) {
+      setProjects(newData);
+    } else {
+      console.warn("Tentativa de definir projetos com valor inválido:", newData);
+    }
+  };
 
   const getCurrentBoardData = () => {
     const target = currentView === 'subproject' ? currentSubProject : currentProject;
@@ -510,7 +533,7 @@ function LegacyApp() {
                   currentUser={currentUser}
                   dailyPhrase={dailyPhrase}
                   megaSenaNumbers={megaSenaNumbers}
-                  projects={projects}
+                  projects={Array.isArray(projects) ? projects : []} 
                   setModalState={setModalState}
                   handleDragStart={handleDragStart}
                   handleDragOver={handleDragOver}
