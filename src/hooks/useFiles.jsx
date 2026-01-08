@@ -44,7 +44,7 @@ export function useFiles(currentProject, currentSubProject, currentUser) {
         file.projectId === currentProject?.id &&
         file.subProjectId === currentSubProject.id
     )
-  }, [currentProject?.id, currentSubProject, files])
+  }, [currentProject?.id, currentSubProject?.id, files])
 
   const getCurrentFiles = useCallback(() => currentFiles, [currentFiles])
 
