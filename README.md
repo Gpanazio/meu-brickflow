@@ -1,77 +1,113 @@
-# 🧱 BrickFlow - Deploy Simplificado
+# Meu Brickflow
 
-## 🚀 Como Hospedar (SUPER FÁCIL)
+A Brickflow project configured for deployment on Railway.
 
-### 1. Configurar Supabase
-Antes de fazer o deploy, crie um arquivo `.env` (ou copie `.env.example`) e configure estas variáveis no Netlify:
+## Overview
 
+This project is set up to run on [Railway](https://railway.app/), a modern deployment platform that simplifies infrastructure management.
+
+## Prerequisites
+
+- Python 3.8 or higher
+- A Railway account
+- Git for version control
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/Gpanazio/meu-brickflow.git
+cd meu-brickflow
 ```
-VITE_SUPABASE_URL=sua_url_aqui
-VITE_SUPABASE_ANON_KEY=sua_chave_aqui
-VITE_DEBUG_LOG=false
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
 ```
-As variáveis são lidas em `src/lib/supabaseClient.js` e dentro do componente principal `LegacyApp`.
-Um modelo atualizado está disponível em `.env.example`. **Não commit o arquivo `.env` com chaves reais.**
 
-### 2. Deploy no Netlify
-- Faça upload deste repositório no GitHub
-- Conecte com Netlify
-- Configure as variáveis acima
-- Deploy automático!
+## Railway Deployment
 
-### 3. Configurações do Build
-- **Build command:** `pnpm run build`
-- **Publish directory:** `dist`
-- **Node version:** 18
+### Setup Instructions
 
-## 📁 Arquivos Importantes
+1. **Create a Railway Project**
+   - Go to [railway.app](https://railway.app/)
+   - Click "New Project" and select "Deploy from GitHub"
+   - Authorize Railway to access your GitHub repositories
+   - Select the `Gpanazio/meu-brickflow` repository
 
-- `netlify.toml` - Configurações do Netlify
-- `package.json` - Dependências do projeto
-- `src/` - Código fonte do BrickFlow
-- `dist/` - Arquivos compilados (gerados automaticamente)
+2. **Configure Environment Variables**
+   - In your Railway project dashboard, navigate to "Variables"
+   - Add any required environment variables for your Brickflow application
+   - Common variables might include:
+     - `BRICKFLOW_ENV`: Production/Development environment
+     - `LOG_LEVEL`: Logging level configuration
+     - Database or API credentials as needed
 
-## 🔧 Comandos Úteis
+3. **Deploy**
+   - Railway automatically deploys when you push changes to your main branch
+   - Monitor deployment progress in the Railway dashboard
+   - View logs in the "Logs" tab
+
+### Environment Configuration
+
+Create a `.railwayrc` file in the project root if you need custom Railway configuration:
+
+```json
+{
+  "railwayIgnorePatterns": ["node_modules", ".git", "__pycache__", "*.pyc"]
+}
+```
+
+## Running Locally
+
+To test your application before deploying:
 
 ```bash
-# Instalar dependências
-pnpm install
-
-# Executar em desenvolvimento
-pnpm run dev
-
-# Fazer build para produção
-pnpm run build
-
-# Preview do build
-pnpm run preview
+python -m brickflow run
 ```
 
-## 🛡️ Segurança
+## Project Structure
 
-Este projeto está configurado com:
-- ✅ HTTPS automático
-- ✅ Headers de segurança
-- ✅ Cache otimizado
-- ✅ Redirecionamentos SPA
+```
+meu-brickflow/
+├── README.md
+├── requirements.txt
+├── Dockerfile
+├── railway.toml (optional)
+└── src/
+    └── brickflow/
+        └── workflows/
+```
 
-## 💡 Sugestões de Melhorias
+## Monitoring and Logs
 
-- Adicionar testes de ponta a ponta (E2E) para cobrir fluxos críticos do usuário.
-- Configurar uma pipeline de CI/CD (por exemplo, GitHub Actions) para rodar `lint` e `test` a cada commit.
-- Incluir suporte a Docker para padronizar o ambiente de desenvolvimento.
-- Formalizar um guia de contribuição explicando como rodar lint, testes e quais padrões de código seguir.
+Once deployed on Railway:
+- View real-time logs in the Railway dashboard
+- Set up alerts for deployment failures
+- Monitor resource usage (CPU, memory, bandwidth)
 
-## 📞 Suporte
+## Troubleshooting
 
-Se precisar de ajuda, verifique:
-1. Se as variáveis do Supabase estão corretas
-2. Se o build está passando no Netlify
-3. Se não há erros no console do navegador
+### Deployment Issues
+- Check the deployment logs in Railway dashboard for error messages
+- Verify all environment variables are properly configured
+- Ensure `requirements.txt` includes all necessary dependencies
 
----
+### Runtime Issues
+- Review the application logs in Railway
+- Check that your Brickflow workflows are properly defined
+- Verify database connections if applicable
 
-**Versão:** 2.0  
-**Última atualização:** 30/06/2025  
-**Compatível com:** Netlify, Vercel, GitHub Pages
+## Support
 
+For Railway-specific issues, refer to [Railway Documentation](https://docs.railway.app/).
+
+For Brickflow questions, visit the [Brickflow Documentation](https://brickflow.readthedocs.io/).
+
+## License
+
+This project is licensed under the MIT License - see LICENSE file for details.
+
+## Last Updated
+
+Generated: 2026-01-08 11:16:11 UTC
