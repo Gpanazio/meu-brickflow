@@ -15,8 +15,9 @@ import LegacyBoard from './components/legacy/LegacyBoard';
 import LegacyHeader from './components/legacy/LegacyHeader';
 import { CreateProjectModal } from './components/CreateProjectModal'; // COMPONENTE IMPORTADO
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
-import { useUsers } from './hooks/useUsers'; 
-import { useFiles } from './hooks/useFiles'; 
+import { SyncNotificationContainer } from './components/SyncNotification';
+import { useUsers } from './hooks/useUsers';
+import { useFiles } from './hooks/useFiles';
 import SudokuGame from './components/SudokuGame';
 import { absurdPhrases } from './utils/phrases'; 
 
@@ -169,6 +170,16 @@ export default function App() {
   const [trashItems, setTrashItems] = useState({ projects: [], subProjects: [] });
   const [isTrashLoading, setIsTrashLoading] = useState(false);
   const [trashError, setTrashError] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = useCallback((type, message, duration = 3000) => {
+    const id = Date.now() + Math.random();
+    setNotifications(prev => [...prev, { id, type, message, duration }]);
+  }, []);
+
+  const removeNotification = useCallback((id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
 
   const normalizeApiState = (data) => {
     if (!data) return null;
@@ -253,12 +264,42 @@ export default function App() {
       });
       if (response.status === 409) {
         const conflict = await response.json();
-        const refreshResponse = await fetch('/api/projects');
-        if (refreshResponse.ok) {
-          const latest = await refreshResponse.json();
-          const normalized = normalizeApiState(latest) ?? INITIAL_STATE;
-          setAppData(normalized);
-          appDataRef.current = normalized;
+        console.warn('⚠️ CONFLITO DE SINCRONIZAÇÃO DETECTADO:', conflict);
+
+        addNotification('warning', 'Conflito de sincronização detectado!', 0);
+
+        // Mostra alerta ao usuário sobre o conflito
+        const userChoice = window.confirm(
+          'Conflito de Sincronização Detectado!\n\n' +
+          'Outra sessão ou usuário fez alterações enquanto você trabalhava.\n\n' +
+          'Clique em OK para recarregar e ver as mudanças do servidor (suas alterações locais serão perdidas).\n' +
+          'Clique em Cancelar para manter suas alterações locais e tentar salvar novamente.'
+        );
+
+        if (userChoice) {
+          // Usuário escolheu recarregar do servidor
+          const refreshResponse = await fetch('/api/projects');
+          if (refreshResponse.ok) {
+            const latest = await refreshResponse.json();
+            const normalized = normalizeApiState(latest) ?? INITIAL_STATE;
+            setAppData(normalized);
+            appDataRef.current = normalized;
+            addNotification('success', 'Dados atualizados do servidor');
+          }
+        } else {
+          // Usuário escolheu manter mudanças locais
+          // Força retry atualizando a versão
+          const refreshResponse = await fetch('/api/projects');
+          if (refreshResponse.ok) {
+            const latest = await refreshResponse.json();
+            const normalized = normalizeApiState(latest) ?? INITIAL_STATE;
+            // Merge: mantém dados locais mas atualiza versão
+            const merged = { ...newData, version: normalized.version };
+            appDataRef.current = merged;
+            // Tenta salvar novamente
+            addNotification('info', 'Tentando salvar novamente...');
+            setTimeout(() => enqueueSave(), 100);
+          }
         }
         return;
       }
@@ -273,14 +314,16 @@ export default function App() {
           });
         }
         setConnectionError(false);
+        addNotification('success', 'Alterações salvas', 2000);
       }
     } catch (e) {
       console.error("Erro ao salvar:", e);
       setConnectionError(true);
+      addNotification('error', 'Erro ao sincronizar. Verifique sua conexão.');
     } finally {
       setIsSyncing(false);
     }
-  }, []);
+  }, [addNotification]);
 
   const enqueueSave = useCallback(() => {
     saveQueueRef.current = saveQueueRef.current.then(() => {
@@ -1076,6 +1119,12 @@ function TrashView({ trashItems, isLoading, error, onRestoreItem, onReturnHome }
           </div>
         </div>
       )}
+
+      {/* Sistema de Notificações de Sincronização */}
+      <SyncNotificationContainer
+        notifications={notifications}
+        removeNotification={removeNotification}
+      />
     </div>
   );
 }

@@ -116,6 +116,302 @@ app.post('/api/projects', async (req, res) => {
   }
 });
 
+// GET: Histórico de eventos (changelog)
+app.get('/api/history', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+
+    const { rows } = await query(
+      `SELECT id, data, created_at
+       FROM brickflow_events
+       ORDER BY created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    res.json({
+      events: rows.map(row => ({
+        id: row.id,
+        data: row.data,
+        timestamp: row.created_at
+      })),
+      hasMore: rows.length === limit
+    });
+  } catch (err) {
+    console.error('❌ ERRO NA ROTA GET /api/history:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar histórico', details: err.message });
+  }
+});
+
+// GET: Lista de backups
+app.get('/api/backups', async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, kind, source, created_at,
+              octet_length(snapshot::text) as size_bytes
+       FROM brickflow_backups
+       ORDER BY created_at DESC
+       LIMIT 100`
+    );
+
+    res.json({
+      backups: rows.map(row => ({
+        id: row.id,
+        kind: row.kind,
+        source: row.source,
+        timestamp: row.created_at,
+        sizeBytes: parseInt(row.size_bytes)
+      }))
+    });
+  } catch (err) {
+    console.error('❌ ERRO NA ROTA GET /api/backups:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar backups', details: err.message });
+  }
+});
+
+// POST: Criar backup manual
+app.post('/api/backups', async (req, res) => {
+  try {
+    const { rows: stateRows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
+
+    if (stateRows.length === 0) {
+      return res.status(404).json({ error: 'Nenhum estado disponível para backup' });
+    }
+
+    const snapshot = withVersion(stateRows[0].data, stateRows[0].version);
+
+    await query(
+      `INSERT INTO brickflow_backups (snapshot, kind, source)
+       VALUES ($1, $2, $3)
+       RETURNING id, created_at`,
+      [JSON.stringify(snapshot), 'manual', 'user']
+    );
+
+    res.json({ success: true, message: 'Backup criado com sucesso' });
+  } catch (err) {
+    console.error('❌ ERRO AO CRIAR BACKUP:', err.message);
+    res.status(500).json({ error: 'Erro ao criar backup', details: err.message });
+  }
+});
+
+// GET: Restaurar backup específico
+app.get('/api/backups/:id', async (req, res) => {
+  try {
+    const backupId = parseInt(req.params.id);
+    const { rows } = await query(
+      'SELECT snapshot, created_at FROM brickflow_backups WHERE id = $1',
+      [backupId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Backup não encontrado' });
+    }
+
+    res.json({
+      snapshot: rows[0].snapshot,
+      timestamp: rows[0].created_at
+    });
+  } catch (err) {
+    console.error('❌ ERRO AO BUSCAR BACKUP:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar backup', details: err.message });
+  }
+});
+
+// POST: Restaurar backup
+app.post('/api/backups/:id/restore', async (req, res) => {
+  let client;
+  try {
+    const backupId = parseInt(req.params.id);
+    client = await getClient();
+    await client.query('BEGIN');
+
+    const { rows: backupRows } = await client.query(
+      'SELECT snapshot FROM brickflow_backups WHERE id = $1',
+      [backupId]
+    );
+
+    if (backupRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Backup não encontrado' });
+    }
+
+    const snapshot = backupRows[0].snapshot;
+    const { rows: stateRows } = await client.query(
+      'SELECT version FROM brickflow_state WHERE id = 1 FOR UPDATE'
+    );
+
+    const currentVersion = stateRows.length > 0 ? stateRows[0].version ?? 0 : 0;
+    const nextVersion = currentVersion + 1;
+    const restoredState = { ...snapshot, version: nextVersion };
+
+    await client.query(
+      `INSERT INTO brickflow_state (id, data, updated_at, version)
+       VALUES (1, $1, CURRENT_TIMESTAMP, $2)
+       ON CONFLICT (id) DO UPDATE
+       SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP, version = EXCLUDED.version`,
+      [JSON.stringify(restoredState), nextVersion]
+    );
+
+    await client.query('COMMIT');
+    res.json({ success: true, version: nextVersion, message: 'Backup restaurado com sucesso' });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('❌ ERRO AO RESTAURAR BACKUP:', err.message);
+    res.status(500).json({ error: 'Erro ao restaurar backup', details: err.message });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+// GET: Itens na lixeira
+app.get('/api/trash', async (req, res) => {
+  try {
+    const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
+
+    if (rows.length === 0) {
+      return res.json({ projects: [], subProjects: [] });
+    }
+
+    const state = normalizeStateData(rows[0].data);
+    const projects = state?.projects || [];
+
+    const trashedProjects = projects.filter(p => p.deleted_at);
+    const trashedSubProjects = projects.flatMap(p =>
+      (p.subProjects || [])
+        .filter(sp => sp.deleted_at)
+        .map(sp => ({ ...sp, parentProjectId: p.id, parentProjectName: p.name }))
+    );
+
+    res.json({
+      projects: trashedProjects,
+      subProjects: trashedSubProjects
+    });
+  } catch (err) {
+    console.error('❌ ERRO NA ROTA GET /api/trash:', err.message);
+    res.status(500).json({ error: 'Erro ao buscar lixeira', details: err.message });
+  }
+});
+
+// POST: Restaurar item da lixeira
+app.post('/api/trash/restore', async (req, res) => {
+  const { itemId, itemType } = req.body; // itemType: 'project' ou 'subProject'
+
+  if (!itemId || !itemType) {
+    return res.status(400).json({ error: 'itemId e itemType são obrigatórios' });
+  }
+
+  let client;
+  try {
+    client = await getClient();
+    await client.query('BEGIN');
+
+    const { rows: stateRows } = await client.query(
+      'SELECT data, version FROM brickflow_state WHERE id = 1 FOR UPDATE'
+    );
+
+    if (stateRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Estado não encontrado' });
+    }
+
+    const state = normalizeStateData(stateRows[0].data);
+    const currentVersion = stateRows[0].version ?? 0;
+    let projects = state?.projects || [];
+
+    if (itemType === 'project') {
+      projects = projects.map(p =>
+        p.id === itemId ? { ...p, deleted_at: null } : p
+      );
+    } else if (itemType === 'subProject') {
+      projects = projects.map(p => ({
+        ...p,
+        subProjects: (p.subProjects || []).map(sp =>
+          sp.id === itemId ? { ...sp, deleted_at: null } : sp
+        )
+      }));
+    }
+
+    const nextVersion = currentVersion + 1;
+    const nextState = { ...state, projects, version: nextVersion };
+
+    await client.query(
+      `INSERT INTO brickflow_state (id, data, updated_at, version)
+       VALUES (1, $1, CURRENT_TIMESTAMP, $2)
+       ON CONFLICT (id) DO UPDATE
+       SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP, version = EXCLUDED.version`,
+      [JSON.stringify(nextState), nextVersion]
+    );
+
+    await client.query('COMMIT');
+    res.json({ success: true, version: nextVersion });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('❌ ERRO AO RESTAURAR ITEM:', err.message);
+    res.status(500).json({ error: 'Erro ao restaurar item', details: err.message });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+// DELETE: Deletar permanentemente da lixeira
+app.delete('/api/trash/:itemId', async (req, res) => {
+  const { itemId } = req.params;
+  const { itemType } = req.query; // 'project' ou 'subProject'
+
+  if (!itemType) {
+    return res.status(400).json({ error: 'itemType query parameter é obrigatório' });
+  }
+
+  let client;
+  try {
+    client = await getClient();
+    await client.query('BEGIN');
+
+    const { rows: stateRows } = await client.query(
+      'SELECT data, version FROM brickflow_state WHERE id = 1 FOR UPDATE'
+    );
+
+    if (stateRows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Estado não encontrado' });
+    }
+
+    const state = normalizeStateData(stateRows[0].data);
+    const currentVersion = stateRows[0].version ?? 0;
+    let projects = state?.projects || [];
+
+    if (itemType === 'project') {
+      projects = projects.filter(p => p.id !== itemId);
+    } else if (itemType === 'subProject') {
+      projects = projects.map(p => ({
+        ...p,
+        subProjects: (p.subProjects || []).filter(sp => sp.id !== itemId)
+      }));
+    }
+
+    const nextVersion = currentVersion + 1;
+    const nextState = { ...state, projects, version: nextVersion };
+
+    await client.query(
+      `INSERT INTO brickflow_state (id, data, updated_at, version)
+       VALUES (1, $1, CURRENT_TIMESTAMP, $2)
+       ON CONFLICT (id) DO UPDATE
+       SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP, version = EXCLUDED.version`,
+      [JSON.stringify(nextState), nextVersion]
+    );
+
+    await client.query('COMMIT');
+    res.json({ success: true, version: nextVersion });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK');
+    console.error('❌ ERRO AO DELETAR PERMANENTEMENTE:', err.message);
+    res.status(500).json({ error: 'Erro ao deletar item', details: err.message });
+  } finally {
+    if (client) client.release();
+  }
+});
+
 // --- INICIALIZAÇÃO E SERVIDOR ---
 
 const initDB = async () => {
