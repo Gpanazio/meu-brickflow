@@ -16,14 +16,14 @@ function LegacyHeader({
   onOpenSettings
 }) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black/95 backdrop-blur">
-      <div className="container mx-auto flex h-20 items-center justify-between px-6 md:px-10">
+    <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-black">
+      <div className="w-full h-16 flex items-center justify-between px-8">
         
         {/* LADO ESQUERDO */}
         <div className="flex items-center gap-8">
           {/* Logo */}
-          <div onClick={() => setCurrentView('home')} className="cursor-pointer font-black text-white tracking-tighter text-2xl md:text-3xl hover:opacity-80 transition-opacity">
-             BRICKFLOW
+          <div onClick={() => setCurrentView('home')} className="cursor-pointer hover:opacity-80 transition-opacity">
+             <img src={logoImage} alt="BrickFlow" className="h-4 w-auto" />
           </div>
           <Separator orientation="vertical" className="h-8 bg-zinc-800" />
           
