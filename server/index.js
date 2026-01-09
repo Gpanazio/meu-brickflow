@@ -425,6 +425,14 @@ const initDB = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Migração: Garante que a coluna version existe para bancos criados em versões anteriores
+    try {
+      await query(`ALTER TABLE brickflow_state ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;`);
+    } catch (e) {
+      console.log('ℹ️ Verificação de coluna "version" concluída ou já existente.');
+    }
+
     await query(`
       CREATE TABLE IF NOT EXISTS brickflow_events (
         id BIGSERIAL PRIMARY KEY,

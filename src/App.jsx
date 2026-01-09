@@ -221,7 +221,15 @@ export default function App() {
         const response = await fetch('/api/projects', { signal: controller.signal });
         clearTimeout(timeoutId);
 
-        if (!response.ok) throw new Error("Falha na API");
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Erro detalhado da API:', { 
+            status: response.status, 
+            statusText: response.statusText,
+            errorData 
+          });
+          throw new Error(errorData.details || errorData.error || "Falha na API");
+        }
         let data = await response.json();
 
         if (!data || (Array.isArray(data) && data.length === 0)) {
