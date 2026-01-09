@@ -539,6 +539,21 @@ export default function App() {
     }
   };
 
+  const handleTaskClick = (task) => {
+    // Encontra o projeto e sub-projeto corretos
+    const project = appData.projects.find(p => p.id === task.projectId);
+    if (!project) return;
+
+    const subProject = project.subProjects?.find(sp => sp.id === task.subProjectId);
+    if (!subProject) return;
+
+    // Navega para o projeto e sub-projeto
+    setCurrentProject(project);
+    setCurrentSubProject(subProject);
+    setCurrentBoardType(task.boardType);
+    setCurrentView('subproject');
+  };
+
   useEffect(() => {
     if (currentView === 'project' && currentProject?.id) {
       fetchProjectHistory(currentProject.id);
@@ -672,7 +687,7 @@ export default function App() {
           )}
 
           {currentView === 'home' && (
-            <LegacyHome 
+            <LegacyHome
               currentUser={currentUser}
               dailyPhrase={dailyPhrase}
               megaSenaNumbers={megaSenaNumbers}
@@ -680,6 +695,7 @@ export default function App() {
               setModalState={setModalState}
               handleAccessProject={handleAccessProject}
               handleDeleteProject={handleDeleteProject}
+              onTaskClick={handleTaskClick}
               isLoading={isLoading}
               connectionError={connectionError}
               handleDragStart={handleDragStart}

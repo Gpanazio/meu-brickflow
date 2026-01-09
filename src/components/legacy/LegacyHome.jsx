@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { Plus, MoreVertical, Lock, Sparkles, Dna } from 'lucide-react';
+import { Plus, MoreVertical, Lock, Sparkles, Dna, CheckSquare, ChevronRight } from 'lucide-react';
 import SudokuGame from '../SudokuGame';
+import { getUserTasks } from '../../utils/userTasks';
 
 // Cores definidas internamente para blindagem visual
 const DEFAULT_COLORS = {
@@ -24,7 +25,8 @@ function LegacyHome({
   handleDragOver,
   handleDrop,
   handleAccessProject,
-  handleDeleteProject
+  handleDeleteProject,
+  onTaskClick
 }) {
   const safeProjects = Array.isArray(projects) ? projects : [];
   const safeMegaSena = Array.isArray(megaSenaNumbers) ? megaSenaNumbers : [0,0,0,0,0,0];
@@ -38,6 +40,11 @@ function LegacyHome({
   const activeProjects = useMemo(() => {
     return safeProjects.filter(p => !p.isArchived && !p.deleted_at);
   }, [safeProjects]);
+
+  const userTasks = useMemo(() => {
+    if (!currentUser?.username) return [];
+    return getUserTasks(safeProjects, currentUser.username);
+  }, [safeProjects, currentUser]);
 
   return (
     <div className="min-h-screen bg-black text-white pb-20">
@@ -95,6 +102,58 @@ function LegacyHome({
       {currentUser?.displayName === 'Fran' && (
         <div className="border-b border-zinc-900 p-8 bg-zinc-950/30">
            <SudokuGame />
+        </div>
+      )}
+
+      {/* SECTION: MINHAS TAREFAS */}
+      {userTasks.length > 0 && (
+        <div className="border-b border-zinc-900 bg-zinc-950/20">
+          <div className="px-6 md:px-10 py-6">
+            <div className="flex items-center gap-3 mb-4">
+              <CheckSquare className="w-4 h-4 text-red-600" />
+              <h2 className="brick-tech text-[10px] text-zinc-500 uppercase tracking-[0.2em]">
+                Minhas Tarefas
+              </h2>
+              <span className="brick-tech text-[9px] text-zinc-700 uppercase tracking-widest">
+                ({userTasks.length})
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {userTasks.slice(0, 5).map((task) => {
+                const colors = DEFAULT_COLORS[task.projectColor] || DEFAULT_COLORS['blue'];
+
+                return (
+                  <div
+                    key={task.id}
+                    onClick={() => onTaskClick && onTaskClick(task)}
+                    className="group flex items-center justify-between bg-black hover:bg-zinc-950 border border-zinc-900 hover:border-zinc-800 transition-all cursor-pointer p-4"
+                  >
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className={`w-1 h-8 ${colors.bg} flex-shrink-0`}></div>
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="brick-manifesto text-sm text-white uppercase tracking-wide truncate">
+                          {task.title}
+                        </h3>
+                        <p className="brick-tech text-[9px] text-zinc-600 uppercase tracking-widest mt-1">
+                          {task.projectName} / {task.subProjectName}
+                        </p>
+                      </div>
+                    </div>
+
+                    <ChevronRight className="w-4 h-4 text-zinc-800 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
+                  </div>
+                );
+              })}
+            </div>
+
+            {userTasks.length > 5 && (
+              <p className="brick-tech text-[9px] text-zinc-700 uppercase tracking-widest mt-4 text-center">
+                + {userTasks.length - 5} tarefas adicionais
+              </p>
+            )}
+          </div>
         </div>
       )}
 
