@@ -23,12 +23,32 @@ const normalizeStateData = (state) => {
   return state;
 };
 
+// --- MIDDLEWARE DE LOGGING ---
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.url} - ${res.statusCode} (${duration}ms)`);
+  });
+  next();
+});
+
 const withVersion = (state, version) => {
   if (!state) return null;
   return { ...state, version };
 };
 
 // --- ROTAS DA API ---
+
+// Health Check: Verifica se o servidor e o banco estão vivos
+app.get('/api/health', async (req, res) => {
+  try {
+    await query('SELECT 1');
+    res.json({ status: 'ok', database: 'connected', timestamp: new Date() });
+  } catch (err) {
+    res.status(503).json({ status: 'error', database: 'disconnected', message: err.message });
+  }
+});
 
 // GET: Busca estado atual
 app.get('/api/projects', async (req, res) => {
@@ -425,12 +445,16 @@ const initDB = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
-    // Migração: Garante que a coluna version existe para bancos criados em versões anteriores
+    
+    // Migração robusta: Garante que a coluna version existe
     try {
-      await query(`ALTER TABLE brickflow_state ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;`);
+      const checkColumn = await query("SELECT column_name FROM information_schema.columns WHERE table_name='brickflow_state' AND column_name='version'");
+      if (checkColumn.rows.length === 0) {
+        await query('ALTER TABLE brickflow_state ADD COLUMN version INTEGER DEFAULT 1');
+        console.log('✨ Coluna "version" adicionada com sucesso.');
+      }
     } catch (e) {
-      console.log('ℹ️ Verificação de coluna "version" concluída ou já existente.');
+      console.error('⚠️ Erro ao verificar/adicionar coluna version:', e.message);
     }
 
     await query(`

@@ -276,7 +276,8 @@ export default function App() {
       if (response.status === 409) {
         const conflict = await response.json();
         console.warn('⚠️ CONFLITO DE SINCRONIZAÇÃO DETECTADO:', conflict);
-
+        
+        // Notifica o usuário visualmente antes do confirm
         addNotification('warning', 'Conflito de sincronização detectado!', 0);
 
         // Mostra alerta ao usuário sobre o conflito
