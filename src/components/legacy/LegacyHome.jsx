@@ -42,13 +42,14 @@ function LegacyHome({
   return (
     <div className="min-h-screen bg-black text-white pb-20">
       
-      {/* --- SEÇÃO SUPERIOR UNIFICADA (HERO + WIDGETS NA MESMA LINHA) --- */}
-      {/* Ocupa toda a largura, dividido por bordas verticais */}
-      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 h-80">
+      {/* --- SEÇÃO SUPERIOR UNIFICADA (HERO + WIDGETS) --- */}
+      {/* Ajustado de h-80 para lg:h-64 (mais compacto) */}
+      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 lg:h-64">
 
         {/* COLUNA 1: HERO (OLÁ GABRIEL) - 50% da largura */}
         <div className="lg:w-1/2 px-6 md:px-10 py-8 flex flex-col justify-center">
-           <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.8]">
+           {/* Texto ajustado para não quebrar em altura menor */}
+           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.85]">
              Olá, <span className="text-zinc-800">{currentUser?.displayName || 'Visitante'}</span>
            </h1>
            <p className="mt-6 text-[10px] text-zinc-600 font-mono tracking-[0.2em] uppercase">
@@ -62,9 +63,9 @@ function LegacyHome({
                 <Sparkles className="w-3 h-3 text-red-600" />
                 <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
             </div>
-            
+
             <div className="flex-1 flex items-center mt-4 lg:mt-0">
-                <p className="text-xl text-zinc-300 font-medium italic leading-relaxed tracking-tight">
+                <p className="text-lg text-zinc-300 font-medium italic leading-relaxed tracking-tight">
                 "{dailyPhrase || "O silêncio é uma resposta."}"
                 </p>
             </div>
@@ -76,12 +77,12 @@ function LegacyHome({
                 <Dna className="w-3 h-3 text-emerald-600" />
                 <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
             </div>
-            
+
             <div className="flex-1 flex items-center">
                 {/* Grid Compacto de Números */}
-                <div className="grid grid-cols-3 gap-2 w-full">
+                <div className="grid grid-cols-6 lg:grid-cols-3 gap-2 w-full">
                     {safeMegaSena.map((n, i) => (
-                        <div key={i} className="aspect-square flex items-center justify-center border border-zinc-800 text-zinc-400 font-mono text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                        <div key={i} className="aspect-square flex items-center justify-center border border-zinc-900 text-zinc-500 font-mono text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                             {n.toString().padStart(2, '0')}
                         </div>
                     ))}
@@ -102,11 +103,11 @@ function LegacyHome({
         <div className="flex justify-between items-end mb-6 border-b border-zinc-900 pb-4">
           <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Projetos Ativos</h2>
           
-          <Button 
-            onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })} 
+          <Button
+            onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
             className="bg-white text-black hover:bg-zinc-200 h-8 px-6 text-[10px] uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95"
           >
-            <Plus className="mr-2 h-3 w-3" /> Novo
+            <Plus className="mr-2 h-3 w-3" /> Novo Projeto
           </Button>
         </div>
 
@@ -132,12 +133,12 @@ function LegacyHome({
                   className="group relative aspect-video bg-black hover:bg-zinc-950 transition-all cursor-pointer p-8 flex flex-col justify-between"
                 >
                   <div className="flex justify-between items-start w-full">
-                    <div className={`w-1.5 h-1.5 ${colors.bg}`}></div>
+                    <div className={`w-2 h-2 ${colors.bg}`}></div>
                     {project.isProtected && <Lock className="w-3 h-3 text-zinc-800" />}
                   </div>
 
                   <div className="space-y-4 relative z-10 pr-4">
-                    <h3 className="text-2xl font-black text-white uppercase tracking-tight leading-none group-hover:translate-x-1 transition-transform">
+                    <h3 className="text-3xl font-black text-white uppercase tracking-tight leading-none group-hover:translate-x-1 transition-transform">
                       {project.name}
                     </h3>
                     <p className="text-zinc-600 text-[10px] font-mono leading-relaxed line-clamp-2 uppercase tracking-wide">

@@ -17,35 +17,37 @@ function LegacyHeader({
   onOpenSettings
 }) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-black">
-      <div className="w-full h-20 flex items-center justify-between px-6 md:px-10">
+    <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black">
+      {/* Ajustado de h-20 para h-24 para ficar maior como pedido */}
+      <div className="w-full h-24 flex items-center justify-between px-6 md:px-10">
 
         {/* LADO ESQUERDO */}
         <div className="flex items-center gap-8">
           {/* Logo */}
           <div onClick={() => setCurrentView('home')} className="cursor-pointer hover:opacity-80 transition-opacity">
-             <img src={logoImage} alt="BrickFlow" className="h-4 w-auto" />
+             <img src={logoImage} alt="BrickFlow" className="h-5 w-auto" /> {/* Logo levemente maior */}
           </div>
+
           <Separator orientation="vertical" className="h-8 bg-zinc-800" />
-          
+
           {/* Navegação Primária */}
           <nav className="flex items-center gap-4">
             <Button
               variant="ghost"
               onClick={() => setCurrentView('home')}
-              className={`uppercase tracking-widest text-xs font-bold rounded-none h-10 px-4 ${currentView === 'home' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+              className={`uppercase tracking-[0.2em] text-[10px] font-bold rounded-none h-10 px-4 ${currentView === 'home' ? 'text-white' : 'text-zinc-600 hover:text-white'}`}
             >
               Central
             </Button>
-            
+
             {/* Breadcrumb de Projeto */}
             {currentProject && (
               <>
-                <span className="text-zinc-700">/</span>
+                <span className="text-zinc-800">/</span>
                 <Button
                   variant="ghost"
                   onClick={() => setCurrentView('project')}
-                  className="uppercase tracking-widest text-xs font-bold text-zinc-500 hover:text-white rounded-none h-10 px-4"
+                  className="uppercase tracking-[0.2em] text-[10px] font-bold text-zinc-600 hover:text-white rounded-none h-10 px-4"
                 >
                   {currentProject.name}
                 </Button>
@@ -53,19 +55,19 @@ function LegacyHeader({
             )}
           </nav>
         </div>
-        
-        {/* LADO DIREITO */}
+
+        {/* LADO DIREITO - AVATAR DE VOLTA */}
         <div className="flex items-center gap-6">
-          {isSyncing && <div className="h-2 w-2 rounded-full bg-red-600 animate-pulse" />}
-          
+          {isSyncing && <div className="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-12 w-12 rounded-full p-0 hover:bg-zinc-900 border border-transparent hover:border-zinc-800">
-                <Avatar className="h-10 w-10">
+              <Button variant="ghost" className="h-14 w-14 rounded-full p-0 hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-all">
+                <Avatar className="h-12 w-12 border-2 border-zinc-900">
                   {currentUser?.avatar ? (
-                    <AvatarImage src={currentUser.avatar} />
+                    <AvatarImage src={currentUser.avatar} className="object-cover" />
                   ) : (
-                    <AvatarFallback className="bg-zinc-900 text-zinc-400 text-sm font-bold">
+                    <AvatarFallback className="bg-zinc-800 text-zinc-400 text-lg font-bold">
                       {currentUser?.displayName?.charAt(0)}
                     </AvatarFallback>
                   )}
