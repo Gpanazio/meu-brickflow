@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { 
-  MoreVertical, Plus, ArrowLeft, LogOut, Upload, 
-  Trash2, Eye, FolderOpen, Lock, RotateCcw,
-  ListTodo, KanbanSquare, FileText, Goal, Sparkles, Dna,
-  X, Check, ChevronDown, Settings, Calendar, WifiOff, Save,
-  Power
+import {
+  ArrowLeft, Upload, RotateCcw, Sparkles,
+  X, ChevronDown, Settings, WifiOff, Save, Power
 } from 'lucide-react';
 import './App.css';
 
@@ -17,8 +14,7 @@ import { CreateProjectModal } from './components/CreateProjectModal'; // COMPONE
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { SyncNotificationContainer } from './components/SyncNotification';
 import { GuestInviteModal } from './components/GuestInviteModal';
-import { useUsers } from './hooks/useUsers';
-import { useFiles } from './hooks/useFiles';
+import { useUsers, useFiles } from './hooks';
 import SudokuGame from './components/SudokuGame';
 import { absurdPhrases } from './utils/phrases'; 
 

@@ -70,15 +70,15 @@ app.get('/api/projects', async (req, res) => {
       }
     }
   } catch (err) {
-    console.error('❌ ERRO NA ROTA GET /api/projects:', err.message);
+    console.error('❌ ERRO NA ROTA GET /api/projects:', err);
     
     if (err.code === 'MISSING_DATABASE_URL') {
       return res.status(503).json({ error: 'DATABASE_URL não configurada' });
     }
     
-    // Auto-healing: Se a tabela não existe, tenta criar
-    if (err.code === '42P01') {
-       console.log('⚠️ Tabela não encontrada. Tentando inicializar banco...');
+    // Auto-healing: Se a tabela (42P01) ou coluna (42703) não existe, tenta inicializar/migrar
+    if (err.code === '42P01' || err.code === '42703') {
+       console.log(`⚠️ Erro de esquema detectado (${err.code}). Tentando inicializar/migrar banco...`);
        await initDB();
        return res.json(null);
     }
