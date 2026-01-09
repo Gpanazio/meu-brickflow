@@ -43,8 +43,8 @@ function LegacyHome({
     <div className="min-h-screen bg-black text-white pb-20">
       
       {/* --- SEÇÃO SUPERIOR UNIFICADA (HERO + WIDGETS) --- */}
-      {/* Ajustado de h-80 para lg:h-64 (mais compacto) */}
-      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 lg:h-64">
+      {/* Altura reduzida para h-56 (224px) */}
+      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 lg:h-56">
 
         {/* COLUNA 1: HERO (OLÁ GABRIEL) - 50% da largura */}
         <div className="lg:w-1/2 px-6 md:px-10 py-8 flex flex-col justify-center">
@@ -79,10 +79,10 @@ function LegacyHome({
             </div>
 
             <div className="flex-1 flex items-center">
-                {/* Grid Compacto de Números */}
-                <div className="grid grid-cols-6 lg:grid-cols-3 gap-2 w-full">
+                {/* Números em linha única */}
+                <div className="flex gap-2 w-full justify-between">
                     {safeMegaSena.map((n, i) => (
-                        <div key={i} className="aspect-square flex items-center justify-center border border-zinc-900 text-zinc-500 font-mono text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                        <div key={i} className="flex-1 aspect-square flex items-center justify-center border border-zinc-900 text-zinc-500 font-mono text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                             {n.toString().padStart(2, '0')}
                         </div>
                     ))}
