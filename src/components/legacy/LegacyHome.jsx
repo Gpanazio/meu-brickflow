@@ -49,10 +49,10 @@ function LegacyHome({
         {/* COLUNA 1: HERO (OLÁ GABRIEL) - 50% da largura */}
         <div className="lg:w-1/2 px-6 md:px-10 py-8 flex flex-col justify-center">
            {/* Texto ajustado para não quebrar em altura menor */}
-           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.85]">
+           <h1 className="brick-title text-5xl md:text-7xl uppercase leading-[0.85]">
              Olá, <span className="text-zinc-800">{currentUser?.displayName || 'Visitante'}</span>
            </h1>
-           <p className="mt-6 text-[10px] text-zinc-600 font-mono tracking-[0.2em] uppercase">
+           <p className="brick-tech mt-6 text-[10px] text-zinc-600 tracking-[0.2em] uppercase">
              {currentDate}
            </p>
         </div>
@@ -61,11 +61,11 @@ function LegacyHome({
         <div className="lg:w-1/4 px-6 md:px-10 py-8 flex flex-col justify-between bg-black">
             <div className="flex items-center gap-3">
                 <Sparkles className="w-3 h-3 text-red-600" />
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
+                <span className="brick-tech text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
             </div>
 
             <div className="flex-1 flex items-center mt-4 lg:mt-0">
-                <p className="text-lg text-zinc-300 font-medium italic leading-relaxed tracking-tight">
+                <p className="brick-manifesto text-lg text-zinc-300 italic leading-relaxed tracking-tight">
                 "{dailyPhrase || "O silêncio é uma resposta."}"
                 </p>
             </div>
@@ -75,14 +75,14 @@ function LegacyHome({
         <div className="lg:w-1/4 px-6 md:px-10 py-8 flex flex-col justify-between bg-black">
             <div className="flex items-center gap-3 mb-4 lg:mb-0">
                 <Dna className="w-3 h-3 text-emerald-600" />
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
+                <span className="brick-tech text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
             </div>
 
             <div className="flex-1 flex items-center">
                 {/* Números em linha única */}
                 <div className="flex gap-2 w-full justify-between">
                     {safeMegaSena.map((n, i) => (
-                        <div key={i} className="flex-1 aspect-square flex items-center justify-center border border-zinc-900 text-zinc-500 font-mono text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                        <div key={i} className="brick-tech flex-1 aspect-square flex items-center justify-center border border-zinc-900 text-zinc-500 text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                             {n.toString().padStart(2, '0')}
                         </div>
                     ))}
@@ -101,7 +101,7 @@ function LegacyHome({
       {/* SECTION: PROJETOS */}
       <div className="px-8 mt-12">
         <div className="flex justify-between items-end mb-6 border-b border-zinc-900 pb-4">
-          <h2 className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Projetos Ativos</h2>
+          <h2 className="brick-tech text-[10px] text-zinc-600 uppercase tracking-[0.2em]">Projetos Ativos</h2>
           
           <Button
             onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
@@ -138,16 +138,16 @@ function LegacyHome({
                   </div>
 
                   <div className="space-y-4 relative z-10 pr-4">
-                    <h3 className="text-3xl font-black text-white uppercase tracking-tight leading-none group-hover:translate-x-1 transition-transform">
+                    <h3 className="brick-title text-3xl text-white uppercase leading-none group-hover:translate-x-1 transition-transform">
                       {project.name}
                     </h3>
-                    <p className="text-zinc-600 text-[10px] font-mono leading-relaxed line-clamp-2 uppercase tracking-wide">
+                    <p className="brick-manifesto text-zinc-600 text-[10px] leading-relaxed line-clamp-2 uppercase tracking-wide">
                       {project.description || "SEM DESCRIÇÃO"}
                     </p>
                   </div>
 
                   <div className="flex justify-between items-end opacity-60 group-hover:opacity-100 transition-opacity">
-                     <span className="text-[9px] text-zinc-700 font-mono uppercase tracking-widest">
+                     <span className="brick-tech text-[9px] text-zinc-700 uppercase tracking-widest">
                         {project.subProjects?.length || 0} ÁREAS
                      </span>
                      

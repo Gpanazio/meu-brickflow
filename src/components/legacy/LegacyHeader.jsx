@@ -35,7 +35,7 @@ function LegacyHeader({
             <Button
               variant="ghost"
               onClick={() => setCurrentView('home')}
-              className={`uppercase tracking-[0.2em] text-[10px] font-bold rounded-none h-10 px-4 ${currentView === 'home' ? 'text-white' : 'text-zinc-600 hover:text-white'}`}
+              className={`brick-tech uppercase tracking-[0.2em] text-[10px] rounded-none h-10 px-4 ${currentView === 'home' ? 'text-white' : 'text-zinc-600 hover:text-white'}`}
             >
               Central
             </Button>
@@ -43,11 +43,11 @@ function LegacyHeader({
             {/* Breadcrumb de Projeto */}
             {currentProject && (
               <>
-                <span className="text-zinc-800">/</span>
+                <span className="brick-tech text-zinc-800">/</span>
                 <Button
                   variant="ghost"
                   onClick={() => setCurrentView('project')}
-                  className="uppercase tracking-[0.2em] text-[10px] font-bold text-zinc-600 hover:text-white rounded-none h-10 px-4"
+                  className="brick-tech uppercase tracking-[0.2em] text-[10px] text-zinc-600 hover:text-white rounded-none h-10 px-4"
                 >
                   {currentProject.name}
                 </Button>
