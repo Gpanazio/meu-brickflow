@@ -40,12 +40,18 @@ const formatBackupTimestamp = (value) => {
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 const NO_SENSE_AVATARS = [
-  "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400&auto=format&fit=crop&q=60", 
-  "https://images.unsplash.com/photo-1513245543132-31f507417b26?w=400&auto=format&fit=crop&q=60", 
-  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Felix", 
-  "https://api.dicebear.com/7.x/bottts/svg?seed=Glitch", 
-  "https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&auto=format&fit=crop&q=60", 
-  "https://images.unsplash.com/photo-1596727147705-54a9d6ed27e6?w=400&auto=format&fit=crop&q=60", 
+  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Pizza",
+  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Banana",
+  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Ghost",
+  "https://api.dicebear.com/7.x/fun-emoji/svg?seed=Alien",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=Robot",
+  "https://api.dicebear.com/7.x/bottts/svg?seed=Droid",
+  "https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Beep",
+  "https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Boop",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Retro",
+  "https://api.dicebear.com/7.x/pixel-art/svg?seed=Glitch",
+  "https://api.dicebear.com/7.x/big-smile/svg?seed=Happy",
+  "https://api.dicebear.com/7.x/big-smile/svg?seed=Joy",
 ];
 
 const generateMegaSenaNumbers = () => {
@@ -875,10 +881,10 @@ function UserSettingsModal({
                     </div>
                 </div>
               <div>
-                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple-500" /> Avatares No Sense</h3>
-                  <div className="grid grid-cols-4 gap-2">
+                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple-500" /> Avatares Gerados</h3>
+                  <div className="grid grid-cols-6 gap-2">
                   {NO_SENSE_AVATARS.map((url, idx) => (
-                      <div key={idx} onClick={() => setAvatarPreview(url)} className={cn("aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all hover:scale-105", avatarPreview === url ? "border-red-600 opacity-100" : "border-transparent opacity-60 hover:opacity-100 hover:border-zinc-700")}>
+                      <div key={idx} onClick={() => setAvatarPreview(url)} className={cn("aspect-square rounded-full overflow-hidden cursor-pointer border-2 transition-all hover:scale-105", avatarPreview === url ? "border-red-600 opacity-100" : "border-zinc-800 opacity-60 hover:opacity-100 hover:border-zinc-600")}>
                       <img src={url} alt={`Avatar ${idx}`} className="w-full h-full object-cover" />
                       </div>
                   ))}
