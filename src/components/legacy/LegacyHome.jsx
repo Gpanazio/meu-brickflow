@@ -43,10 +43,11 @@ function LegacyHome({
     <div className="min-h-screen bg-black text-white pb-20">
       
       {/* --- SEÇÃO SUPERIOR UNIFICADA (HERO + WIDGETS NA MESMA LINHA) --- */}
-      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900">
+      {/* Ocupa toda a largura, dividido por bordas verticais */}
+      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 min-h-[300px]">
         
-        {/* COLUNA 1: HERO (OLÁ GABRIEL) - Ocupa 50% da largura */}
-        <div className="lg:w-1/2 p-8 pt-12 pb-12 flex flex-col justify-center">
+        {/* COLUNA 1: HERO (OLÁ GABRIEL) - 50% da largura */}
+        <div className="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
            <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.8]">
              Olá, <span className="text-zinc-800">{currentUser?.displayName || 'Visitante'}</span>
            </h1>
@@ -55,37 +56,37 @@ function LegacyHome({
            </p>
         </div>
 
-        {/* COLUNA 2: WIDGET SORTE - Ocupa 25% da largura */}
-        <div className="lg:w-1/4 p-8 flex flex-col justify-between min-h-[200px] lg:min-h-0">
+        {/* COLUNA 2: WIDGET SORTE - 25% da largura */}
+        <div className="lg:w-1/4 p-8 flex flex-col justify-between bg-black">
             <div className="flex items-center gap-3">
                 <Sparkles className="w-3 h-3 text-red-600" />
                 <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
             </div>
             
-            <div className="mt-4 lg:mt-0">
+            <div className="flex-1 flex items-center mt-4 lg:mt-0">
                 <p className="text-xl text-zinc-300 font-medium italic leading-relaxed tracking-tight">
                 "{dailyPhrase || "O silêncio é uma resposta."}"
                 </p>
             </div>
-            <div className="hidden lg:block" /> {/* Spacer apenas desktop */}
         </div>
 
-        {/* COLUNA 3: WIDGET PROBABILIDADE - Ocupa 25% da largura */}
-        <div className="lg:w-1/4 p-8 flex flex-col justify-between bg-black min-h-[200px] lg:min-h-0">
+        {/* COLUNA 3: WIDGET PROBABILIDADE - 25% da largura */}
+        <div className="lg:w-1/4 p-8 flex flex-col justify-between bg-black">
             <div className="flex items-center gap-3 mb-4 lg:mb-0">
                 <Dna className="w-3 h-3 text-emerald-600" />
                 <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
             </div>
             
-            {/* Grid 2x3 pequeno e contido */}
-            <div className="grid grid-cols-3 gap-2 mt-4 lg:mt-0">
-                {safeMegaSena.map((n, i) => (
-                    <div key={i} className="aspect-square flex items-center justify-center border border-zinc-800 text-zinc-400 font-mono text-[10px] hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
-                        {n.toString().padStart(2, '0')}
-                    </div>
-                ))}
+            <div className="flex-1 flex items-center">
+                {/* Grid Compacto de Números */}
+                <div className="grid grid-cols-3 gap-2 w-full">
+                    {safeMegaSena.map((n, i) => (
+                        <div key={i} className="aspect-square flex items-center justify-center border border-zinc-800 text-zinc-400 font-mono text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                            {n.toString().padStart(2, '0')}
+                        </div>
+                    ))}
+                </div>
             </div>
-            <div className="hidden lg:block" /> {/* Spacer apenas desktop */}
         </div>
       </div>
 
