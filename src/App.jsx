@@ -229,7 +229,7 @@ export default function App() {
     return () => clearTimeout(slowLoadTimer);
   }, []);
 
-  const saveDataToApi = async (newData) => {
+  const saveDataToApi = useCallback(async (newData) => {
     setIsSyncing(true);
     try {
       const requestId = createRequestId();
@@ -237,7 +237,7 @@ export default function App() {
         data: newData,
         version: newData?.version ?? 0,
         client_request_id: requestId,
-        userId: currentUser?.username
+        userId: currentUserRef.current?.username
       };
       const response = await fetch('/api/projects', {
         method: 'POST',
@@ -265,7 +265,7 @@ export default function App() {
             return nextState;
           });
         }
-        setConnectionError(false); 
+        setConnectionError(false);
       }
     } catch (e) {
       console.error("Erro ao salvar:", e);
@@ -273,7 +273,7 @@ export default function App() {
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, []);
 
   const enqueueSave = useCallback(() => {
     saveQueueRef.current = saveQueueRef.current.then(() => {
