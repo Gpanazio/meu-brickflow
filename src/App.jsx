@@ -126,8 +126,8 @@ const AvatarFallback = ({ className, children }) => <div className={cn("flex h-f
 // --- CONFIGURAÇÃO INICIAL ---
 const INITIAL_STATE = {
   users: [
-    { username: 'admin', pin: '1234', displayName: 'Admin', color: 'red', avatar: '' },
-    { username: 'fran', pin: '1234', displayName: 'Fran', color: 'purple', avatar: '' }
+    { username: 'admin', pin: '1234', displayName: 'Admin', color: 'red', avatar: '', role: 'owner' },
+    { username: 'fran', pin: '1234', displayName: 'Fran', color: 'purple', avatar: '', role: 'member' }
   ],
   projects: [],
   version: 0
@@ -781,6 +781,7 @@ export default function App() {
                ...projectDataWithoutModules,
                createdAt: new Date().toISOString(),
                createdBy: currentUser.username,
+               members: [], // Lista de membros com acesso ao projeto
                isArchived: false,
                deleted_at: null
              };
