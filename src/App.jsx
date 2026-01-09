@@ -14,6 +14,7 @@ import LegacyProjectView from './components/legacy/LegacyProjectView';
 import LegacyBoard from './components/legacy/LegacyBoard';
 import LegacyHeader from './components/legacy/LegacyHeader';
 import { CreateProjectModal } from './components/CreateProjectModal'; // COMPONENTE IMPORTADO
+import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { useUsers } from './hooks/useUsers'; 
 import { useFiles } from './hooks/useFiles'; 
 import SudokuGame from './components/SudokuGame';
@@ -715,9 +716,10 @@ export default function App() {
           isOpen={modalState.isOpen}
           onClose={() => setModalState({ isOpen: false, type: null })}
           onCreate={(projectData) => {
-             const newProj = { 
-               id: generateId('proj'), 
-               ...projectData, 
+             const { enabledTabs, boardData, ...projectDataWithoutModules } = projectData;
+             const newProj = {
+               id: generateId('proj'),
+               ...projectDataWithoutModules,
                createdAt: new Date().toISOString(),
                createdBy: currentUser.username,
                isArchived: false,
@@ -727,8 +729,25 @@ export default function App() {
              setModalState({ isOpen: false, type: null });
           }}
         />
+      ) : modalState.isOpen && modalState.type === 'subProject' && modalState.mode === 'create' ? (
+        /* MODAL PARA CRIAR SUB-PROJETO */
+        <CreateSubProjectModal
+          isOpen={modalState.isOpen}
+          onClose={() => setModalState({ isOpen: false, type: null })}
+          onCreate={(subProjectData) => {
+             const targetProjId = currentProject.id;
+             const newSub = {
+                 id: generateId('sub'),
+                 ...subProjectData,
+                 isArchived: false,
+                 deleted_at: null
+             };
+             updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: [...(p.subProjects || []), newSub] } : p));
+             setModalState({ isOpen: false, type: null });
+          }}
+        />
       ) : (
-        /* MODAL GENÉRICO PARA SUBPROJETOS E TASKS */
+        /* MODAL GENÉRICO PARA EDITAR SUBPROJETOS E GERENCIAR TASKS */
         modalState.isOpen && (
           <Dialog open={modalState.isOpen} onOpenChange={(open) => setModalState(prev => ({ ...prev, isOpen: open }))}>
              <div className="bg-black text-white p-2">
@@ -737,25 +756,11 @@ export default function App() {
                    e.preventDefault();
                    const fd = new FormData(e.target);
                    const data = Object.fromEntries(fd);
-                   
+
                    if (modalState.type === 'subProject') {
                       const targetProjId = currentProject.id;
-                      if (modalState.mode === 'create') {
-                          const newSub = {
-                              id: generateId('sub'),
-                              ...data,
-                              boardData: { 
-                                todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'CONCLUÍDO', tasks: [] }] }, 
-                                kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] }, 
-                                files: { files: [] }
-                              },
-                              isArchived: false,
-                              deleted_at: null
-                          };
-                          updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: [...(p.subProjects || []), newSub] } : p));
-                      } else {
-                          updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: p.subProjects.map(sp => sp.id === modalState.data.id ? { ...sp, ...data } : sp) } : p));
-                      }
+                      // Only edit mode here, create is handled by CreateSubProjectModal
+                      updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: p.subProjects.map(sp => sp.id === modalState.data.id ? { ...sp, ...data } : sp) } : p));
                    } else if (modalState.type === 'task') {
                       const listId = modalState.listId || modalState.data.listId;
                       const taskData = { ...data, id: modalState.mode === 'create' ? generateId('task') : modalState.data.id, responsibleUsers: [] };

@@ -105,7 +105,7 @@ function LegacyHome({
           
           <Button
             onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-            className="bg-white text-black hover:bg-zinc-200 h-8 px-6 text-[10px] uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95"
+            className="bg-white text-black hover:bg-zinc-200 h-8 px-6 text-[10px] uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer"
           >
             <Plus className="mr-2 h-3 w-3" /> Novo Projeto
           </Button>

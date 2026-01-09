@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  X, ListTodo, KanbanSquare, FileText, Goal, ChevronDown 
+import {
+  ListTodo, KanbanSquare, FileText, Goal, ChevronDown
 } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -54,9 +54,6 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
         {/* HEADER: Minimalista e Tipográfico */}
         <div className="flex justify-between items-center p-6 border-b border-zinc-900 bg-black">
           <h2 className="text-lg font-black uppercase tracking-tighter text-white">Novo Projeto</h2>
-          <button onClick={onClose} className="text-zinc-600 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-8 bg-black">

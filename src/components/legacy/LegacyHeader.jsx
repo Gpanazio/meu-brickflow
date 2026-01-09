@@ -25,7 +25,7 @@ function LegacyHeader({
         <div className="flex items-center gap-8">
           {/* Logo */}
           <div onClick={() => setCurrentView('home')} className="cursor-pointer hover:opacity-80 transition-opacity">
-             <img src={logoImage} alt="BrickFlow" className="h-5 w-auto" /> {/* Logo levemente maior */}
+             <img src={logoImage} alt="BrickFlow" className="h-7 w-auto" />
           </div>
 
           <Separator orientation="vertical" className="h-8 bg-zinc-800" />
