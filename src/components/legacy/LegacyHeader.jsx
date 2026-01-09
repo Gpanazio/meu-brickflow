@@ -18,8 +18,8 @@ function LegacyHeader({
 }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-black">
-      <div className="w-full h-16 flex items-center justify-between px-8">
-        
+      <div className="w-full h-20 flex items-center justify-between px-6 md:px-10">
+
         {/* LADO ESQUERDO */}
         <div className="flex items-center gap-8">
           {/* Logo */}

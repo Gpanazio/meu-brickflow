@@ -44,10 +44,10 @@ function LegacyHome({
       
       {/* --- SEÇÃO SUPERIOR UNIFICADA (HERO + WIDGETS NA MESMA LINHA) --- */}
       {/* Ocupa toda a largura, dividido por bordas verticais */}
-      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 min-h-[300px]">
-        
+      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 h-80">
+
         {/* COLUNA 1: HERO (OLÁ GABRIEL) - 50% da largura */}
-        <div className="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
+        <div className="lg:w-1/2 px-6 md:px-10 py-8 flex flex-col justify-center">
            <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.8]">
              Olá, <span className="text-zinc-800">{currentUser?.displayName || 'Visitante'}</span>
            </h1>
@@ -57,7 +57,7 @@ function LegacyHome({
         </div>
 
         {/* COLUNA 2: WIDGET SORTE - 25% da largura */}
-        <div className="lg:w-1/4 p-8 flex flex-col justify-between bg-black">
+        <div className="lg:w-1/4 px-6 md:px-10 py-8 flex flex-col justify-between bg-black">
             <div className="flex items-center gap-3">
                 <Sparkles className="w-3 h-3 text-red-600" />
                 <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
@@ -71,7 +71,7 @@ function LegacyHome({
         </div>
 
         {/* COLUNA 3: WIDGET PROBABILIDADE - 25% da largura */}
-        <div className="lg:w-1/4 p-8 flex flex-col justify-between bg-black">
+        <div className="lg:w-1/4 px-6 md:px-10 py-8 flex flex-col justify-between bg-black">
             <div className="flex items-center gap-3 mb-4 lg:mb-0">
                 <Dna className="w-3 h-3 text-emerald-600" />
                 <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
