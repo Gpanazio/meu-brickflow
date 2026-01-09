@@ -215,6 +215,7 @@ export default function App() {
       } catch (err) {
         console.error("Erro:", err);
         setConnectionError(true);
+        setAppData(INITIAL_STATE);
       } finally {
         setIsLoading(false);
         clearTimeout(slowLoadTimer);
