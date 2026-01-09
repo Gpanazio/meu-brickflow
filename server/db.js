@@ -5,27 +5,34 @@ dotenv.config();
 
 const { Pool } = pg;
 
-export const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+const publicDatabaseUrl = process.env.DATABASE_PUBLIC_URL;
+const privateDatabaseUrl = process.env.DATABASE_URL;
+
+export const hasDatabaseUrl = Boolean(publicDatabaseUrl || privateDatabaseUrl);
 
 // --- CONFIGURAÇÃO DE SEGURANÇA E CONEXÃO ---
-const connectionString = process.env.DATABASE_URL || '';
+const connectionString = publicDatabaseUrl || privateDatabaseUrl || '';
 // Verifica se é localhost OU se é IP local (192.168...)
 const isLocalConnection = 
   connectionString.includes('localhost') || 
   connectionString.includes('127.0.0.1') ||
   connectionString.includes('@postgres:5432'); // Caso docker interno
 
+const isRailwayInternal = connectionString.includes('.railway.internal');
+
 // Se for conexão remota (Railway/Supabase), forçamos SSL.
-const useSSL = hasDatabaseUrl && !isLocalConnection;
+const useSSL = hasDatabaseUrl && !isLocalConnection && !isRailwayInternal;
 
 if (!hasDatabaseUrl) {
   console.error("❌ ERRO: DATABASE_URL não definida!");
 } else {
   // Mascara a senha para logar a URL e ajudar no debug
   const maskedUrl = connectionString.replace(/:([^:@]+)@/, ':****@');
+  const sourceLabel = publicDatabaseUrl ? 'DATABASE_PUBLIC_URL' : 'DATABASE_URL';
   console.log(`✅ Configurando Banco de Dados...`);
+  console.log(`   - Fonte: ${sourceLabel}`);
   console.log(`   - URL: ${maskedUrl}`);
-  console.log(`   - Modo: ${isLocalConnection ? 'Local' : 'Remoto (Nuvem)'}`);
+  console.log(`   - Modo: ${isLocalConnection ? 'Local' : isRailwayInternal ? 'Railway Internal' : 'Remoto (Nuvem)'}`);
   console.log(`   - SSL: ${useSSL ? 'ATIVO' : 'INATIVO'}`);
 }
 
@@ -60,7 +67,7 @@ if (pool) {
           console.log(`⏳ Aguardando ${waitTime/1000}s...`);
           await new Promise(res => setTimeout(res, waitTime));
         } else {
-          console.error("❌ FALHA CRÍTICA: Verifique se a URL no .env é a 'Public Networking' do Railway.");
+          console.error("❌ FALHA CRÍTICA: Verifique se DATABASE_PUBLIC_URL (ou DATABASE_URL) usa a 'Public Networking' do Railway.");
         }
       }
     }
