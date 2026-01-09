@@ -53,7 +53,7 @@ function LegacyHome({
       </div>
 
       {/* SECTION: WIDGETS (FAIXA HORIZONTAL COMPACTA) */}
-      {/* Altura fixa em lg:h-48 para impedir que fique gigante */}
+      {/* Altura fixa em lg:h-48 força o aspecto "widescreen" */}
       <div className="border-b border-zinc-900 bg-black">
         <div className="flex flex-col lg:flex-row h-auto lg:h-48 divide-y lg:divide-y-0 lg:divide-x divide-zinc-900">
             
@@ -65,7 +65,7 @@ function LegacyHome({
                 </div>
                 
                 <div className="max-w-3xl mt-2">
-                    {/* Texto menor e mais contido */}
+                    {/* Texto com tamanho contido */}
                     <p className="text-xl md:text-2xl text-zinc-300 font-medium italic leading-relaxed tracking-tight">
                     "{dailyPhrase || "O silêncio é uma resposta."}"
                     </p>
@@ -74,15 +74,14 @@ function LegacyHome({
             </div>
 
             {/* WIDGET 2: PROBABILIDADE (Compacto e Horizontal) */}
-            {/* Largura fixa ou auto para conter os números */}
-            <div className="w-full lg:w-auto p-8 flex flex-col justify-between bg-black lg:min-w-[400px]">
+            <div className="w-full lg:w-auto p-8 flex flex-col justify-between bg-black lg:min-w-[420px]">
                 <div className="flex items-center gap-3 mb-4">
                     <Dna className="w-3 h-3 text-emerald-600" />
                     <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
                 </div>
                 
-                {/* Números em LINHA ÚNICA e PEQUENOS */}
-                <div className="flex flex-wrap gap-3">
+                {/* Números em LINHA ÚNICA e QUADRADOS PEQUENOS */}
+                <div className="flex flex-row gap-3">
                     {safeMegaSena.map((n, i) => (
                         <div key={i} className="w-10 h-10 flex items-center justify-center border border-zinc-800 text-zinc-400 font-mono text-[10px] hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                             {n.toString().padStart(2, '0')}
@@ -114,7 +113,7 @@ function LegacyHome({
           </Button>
         </div>
 
-        {/* Lista VAZIA ou COM PROJETOS */}
+        {/* Lista de Projetos */}
         {activeProjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 opacity-20 select-none">
             <h1 className="text-6xl md:text-8xl font-black text-zinc-800 uppercase tracking-tighter">VAZIO</h1>
