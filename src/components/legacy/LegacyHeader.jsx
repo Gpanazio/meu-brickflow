@@ -18,8 +18,8 @@ function LegacyHeader({
 }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black">
-      {/* Ajustado de h-20 para h-24 para ficar maior como pedido */}
-      <div className="w-full h-24 flex items-center justify-between px-6 md:px-10">
+      {/* Header compacto h-16 (64px) */}
+      <div className="w-full h-16 flex items-center justify-between px-6 md:px-10">
 
         {/* LADO ESQUERDO */}
         <div className="flex items-center gap-8">

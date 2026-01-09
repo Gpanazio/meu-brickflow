@@ -43,36 +43,36 @@ function LegacyHome({
     <div className="min-h-screen bg-black text-white pb-20">
       
       {/* --- SEÇÃO SUPERIOR UNIFICADA (HERO + WIDGETS) --- */}
-      {/* Altura reduzida para h-56 (224px) */}
-      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 lg:h-56">
+      {/* Altura compacta h-48 (192px) */}
+      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 lg:h-48">
 
         {/* COLUNA 1: HERO (OLÁ GABRIEL) - 50% da largura */}
-        <div className="lg:w-1/2 px-6 md:px-10 py-8 flex flex-col justify-center">
-           {/* Texto ajustado para não quebrar em altura menor */}
-           <h1 className="brick-title text-5xl md:text-7xl uppercase leading-[0.85]">
+        <div className="lg:w-1/2 px-6 md:px-10 py-6 flex flex-col justify-center">
+           {/* Texto ajustado para altura compacta */}
+           <h1 className="brick-title text-4xl md:text-6xl uppercase leading-[0.85]">
              Olá, <span className="text-zinc-800">{currentUser?.displayName || 'Visitante'}</span>
            </h1>
-           <p className="brick-tech mt-6 text-[10px] text-zinc-600 tracking-[0.2em] uppercase">
+           <p className="brick-tech mt-4 text-[10px] text-zinc-600 tracking-[0.2em] uppercase">
              {currentDate}
            </p>
         </div>
 
         {/* COLUNA 2: WIDGET SORTE - 25% da largura */}
-        <div className="lg:w-1/4 px-6 md:px-10 py-8 flex flex-col justify-between bg-black">
+        <div className="lg:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between bg-black">
             <div className="flex items-center gap-3">
                 <Sparkles className="w-3 h-3 text-red-600" />
                 <span className="brick-tech text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
             </div>
 
-            <div className="flex-1 flex items-center mt-4 lg:mt-0">
-                <p className="brick-manifesto text-lg text-zinc-300 italic leading-relaxed tracking-tight">
+            <div className="flex-1 flex items-center mt-3 lg:mt-0">
+                <p className="brick-manifesto text-base text-zinc-300 italic leading-relaxed tracking-tight">
                 "{dailyPhrase || "O silêncio é uma resposta."}"
                 </p>
             </div>
         </div>
 
         {/* COLUNA 3: WIDGET PROBABILIDADE - 25% da largura */}
-        <div className="lg:w-1/4 px-6 md:px-10 py-8 flex flex-col justify-between bg-black">
+        <div className="lg:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between bg-black">
             <div className="flex items-center gap-3 mb-4 lg:mb-0">
                 <Dna className="w-3 h-3 text-emerald-600" />
                 <span className="brick-tech text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
