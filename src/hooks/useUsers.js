@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
+import { isValidGuestToken, createGuestUser } from '../utils/accessControl'
 
 export function useUsers(globalUsers, updateGlobalUsers) {
   const [currentUser, setCurrentUser] = useState(null)
@@ -9,12 +10,36 @@ export function useUsers(globalUsers, updateGlobalUsers) {
 
   // Tenta recuperar a *Sessão* (quem eu sou) ao recarregar a página
   useEffect(() => {
+    // Verifica se há token de convidado na URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const guestToken = urlParams.get('guest')
+
+    if (guestToken && isValidGuestToken(guestToken)) {
+      // Login automático como convidado
+      const guestUser = createGuestUser(guestToken)
+      setCurrentUser(guestUser)
+      setIsLoggedIn(true)
+      setShowLoginModal(false)
+      // Salva sessão de convidado
+      localStorage.setItem('brickflow-session-user', JSON.stringify(guestUser))
+      toast.success('Você entrou como convidado (somente leitura)')
+      return
+    }
+
     const savedSession = localStorage.getItem('brickflow-session-user')
     if (savedSession && globalUsers && globalUsers.length > 0) {
       const parsedSession = JSON.parse(savedSession)
+
+      // Se for convidado, mantém a sessão sem verificar no banco
+      if (parsedSession.isGuest) {
+        setCurrentUser(parsedSession)
+        setIsLoggedIn(true)
+        return
+      }
+
       // Verifica se o usuário da sessão ainda existe no banco
       const userStillExists = globalUsers.find(u => u.username === parsedSession.username)
-      
+
       if (userStillExists) {
         // Atualiza com os dados mais recentes do banco (caso tenha mudado avatar/cor)
         setCurrentUser(userStillExists)

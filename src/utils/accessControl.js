@@ -6,13 +6,15 @@
  * - ADMIN: Administrador (gerencia usuários e projetos)
  * - MEMBER: Membro comum (acesso aos projetos atribuídos)
  * - VIEWER: Apenas visualização (read-only)
+ * - GUEST: Convidado temporário (read-only via link)
  */
 
 export const ROLES = {
   OWNER: 'owner',
   ADMIN: 'admin',
   MEMBER: 'member',
-  VIEWER: 'viewer'
+  VIEWER: 'viewer',
+  GUEST: 'guest'
 };
 
 export const PERMISSIONS = {
@@ -117,6 +119,11 @@ const ROLE_PERMISSIONS = {
 
   [ROLES.VIEWER]: [
     // Apenas visualização
+    PERMISSIONS.VIEW_PROJECT
+  ],
+
+  [ROLES.GUEST]: [
+    // Convidado: apenas visualização (igual VIEWER)
     PERMISSIONS.VIEW_PROJECT
   ]
 };
@@ -253,7 +260,8 @@ export function getRoleLabel(role) {
     [ROLES.OWNER]: 'Proprietário',
     [ROLES.ADMIN]: 'Administrador',
     [ROLES.MEMBER]: 'Membro',
-    [ROLES.VIEWER]: 'Visualizador'
+    [ROLES.VIEWER]: 'Visualizador',
+    [ROLES.GUEST]: 'Convidado'
   };
 
   return labels[role] || 'Desconhecido';
@@ -269,8 +277,56 @@ export function getRoleColor(role) {
     [ROLES.OWNER]: 'bg-red-600 text-white',
     [ROLES.ADMIN]: 'bg-orange-600 text-white',
     [ROLES.MEMBER]: 'bg-blue-600 text-white',
-    [ROLES.VIEWER]: 'bg-zinc-600 text-white'
+    [ROLES.VIEWER]: 'bg-zinc-600 text-white',
+    [ROLES.GUEST]: 'bg-purple-600 text-white'
   };
 
   return colors[role] || 'bg-zinc-800 text-white';
+}
+
+/**
+ * Gera um token de convidado único
+ * @returns {string} Token único para compartilhar
+ */
+export function generateGuestToken() {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 15);
+  return `guest_${timestamp}_${random}`;
+}
+
+/**
+ * Verifica se um token de convidado é válido
+ * @param {string} token - Token a verificar
+ * @returns {boolean}
+ */
+export function isValidGuestToken(token) {
+  if (!token || typeof token !== 'string') return false;
+  return token.startsWith('guest_');
+}
+
+/**
+ * Cria um usuário convidado a partir de um token
+ * @param {string} token - Token do convidado
+ * @returns {Object} Objeto de usuário convidado
+ */
+export function createGuestUser(token) {
+  return {
+    username: `guest_${token.split('_')[1]}`,
+    displayName: 'Convidado',
+    role: ROLES.GUEST,
+    color: 'purple',
+    avatar: '',
+    isGuest: true,
+    guestToken: token
+  };
+}
+
+/**
+ * Gera URL de convite com token
+ * @returns {string} URL completa com token de convidado
+ */
+export function generateGuestInviteUrl() {
+  const token = generateGuestToken();
+  const baseUrl = window.location.origin;
+  return `${baseUrl}?guest=${token}`;
 }

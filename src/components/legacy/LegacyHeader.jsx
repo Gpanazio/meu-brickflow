@@ -4,7 +4,8 @@ import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '../ui/dropdown-menu';
 import { Separator } from '../ui/separator';
-import { RotateCcw, LogOut, Settings } from 'lucide-react';
+import { RotateCcw, LogOut, Settings, Link2 } from 'lucide-react';
+import { ROLES } from '../../utils/accessControl';
 
 function LegacyHeader({
   currentView,
@@ -14,8 +15,10 @@ function LegacyHeader({
   currentUser,
   handleSwitchUser,
   handleLogout,
-  onOpenSettings
+  onOpenSettings,
+  onOpenGuestInvite
 }) {
+  const canInviteGuests = currentUser?.role === ROLES.OWNER || currentUser?.role === ROLES.ADMIN;
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black">
       {/* Header compacto h-16 (64px) */}
@@ -83,6 +86,11 @@ function LegacyHeader({
               <DropdownMenuItem onClick={onOpenSettings} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] font-bold tracking-widest h-10 rounded-none px-4">
                 <Settings className="mr-3 h-3 w-3" /> Configurações
               </DropdownMenuItem>
+              {canInviteGuests && (
+                <DropdownMenuItem onClick={onOpenGuestInvite} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] font-bold tracking-widest h-10 rounded-none px-4">
+                  <Link2 className="mr-3 h-3 w-3" /> Convidar Convidado
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] font-bold tracking-widest h-10 rounded-none px-4">
                 <RotateCcw className="mr-3 h-3 w-3" /> Trocar Conta
               </DropdownMenuItem>

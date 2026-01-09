@@ -16,6 +16,7 @@ import LegacyHeader from './components/legacy/LegacyHeader';
 import { CreateProjectModal } from './components/CreateProjectModal'; // COMPONENTE IMPORTADO
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { SyncNotificationContainer } from './components/SyncNotification';
+import { GuestInviteModal } from './components/GuestInviteModal';
 import { useUsers } from './hooks/useUsers';
 import { useFiles } from './hooks/useFiles';
 import SudokuGame from './components/SudokuGame';
@@ -127,6 +128,7 @@ const AvatarFallback = ({ className, children }) => <div className={cn("flex h-f
 const INITIAL_STATE = {
   users: [
     { username: 'admin', pin: '1234', displayName: 'Admin', color: 'red', avatar: '', role: 'owner' },
+    { username: 'gabriel', pin: '1234', displayName: 'Gabriel', color: 'blue', avatar: '', role: 'admin' },
     { username: 'fran', pin: '1234', displayName: 'Fran', color: 'purple', avatar: '', role: 'member' }
   ],
   projects: [],
@@ -155,6 +157,7 @@ export default function App() {
   const [modalState, setModalState] = useState({ type: null, isOpen: false, data: null, mode: 'create' });
   const [connectionError, setConnectionError] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showGuestInviteModal, setShowGuestInviteModal] = useState(false);
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
   const [initialLoadSuccess, setInitialLoadSuccess] = useState(false);
@@ -554,6 +557,27 @@ export default function App() {
     setCurrentView('subproject');
   };
 
+  // Atualiza currentProject e currentSubProject quando appData.projects muda
+  useEffect(() => {
+    if (!appData?.projects) return;
+
+    // Atualiza currentProject se ele existir
+    if (currentProject?.id) {
+      const updatedProject = appData.projects.find(p => p.id === currentProject.id);
+      if (updatedProject) {
+        setCurrentProject(updatedProject);
+
+        // Atualiza currentSubProject se ele existir
+        if (currentSubProject?.id) {
+          const updatedSubProject = updatedProject.subProjects?.find(sp => sp.id === currentSubProject.id);
+          if (updatedSubProject) {
+            setCurrentSubProject(updatedSubProject);
+          }
+        }
+      }
+    }
+  }, [appData?.projects, currentProject?.id, currentSubProject?.id]);
+
   useEffect(() => {
     if (currentView === 'project' && currentProject?.id) {
       fetchProjectHistory(currentProject.id);
@@ -661,15 +685,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
-      <LegacyHeader 
-        currentView={currentView} 
-        setCurrentView={setCurrentView} 
-        currentProject={currentProject} 
-        isSyncing={isSyncing} 
-        currentUser={currentUser} 
-        handleSwitchUser={handleSwitchUser} 
-        handleLogout={handleLogout} 
-        onOpenSettings={() => setShowSettingsModal(true)} 
+      <LegacyHeader
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        currentProject={currentProject}
+        isSyncing={isSyncing}
+        currentUser={currentUser}
+        handleSwitchUser={handleSwitchUser}
+        handleLogout={handleLogout}
+        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenGuestInvite={() => setShowGuestInviteModal(true)}
         onExportBackup={handleExportBackup}
       />
 
@@ -891,6 +916,12 @@ export default function App() {
         onRestoreBackup={handleRestoreBackup}
         onExportBackup={handleExportBackupFromServer}
       />
+
+      {showGuestInviteModal && (
+        <GuestInviteModal
+          onClose={() => setShowGuestInviteModal(false)}
+        />
+      )}
     </div>
   );
 }

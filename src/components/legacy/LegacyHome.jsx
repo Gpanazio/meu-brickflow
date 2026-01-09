@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, MoreVertical, Lock, Sparkles, Dna, CheckSquare, ChevronRight } from 'lucide-react';
 import SudokuGame from '../SudokuGame';
 import { getUserTasks } from '../../utils/userTasks';
+import { hasPermission, PERMISSIONS } from '../../utils/accessControl';
 
 // Cores definidas internamente para blindagem visual
 const DEFAULT_COLORS = {
@@ -161,13 +162,15 @@ function LegacyHome({
       <div className="px-8 mt-12">
         <div className="flex justify-between items-end mb-6 border-b border-zinc-900 pb-4">
           <h2 className="brick-tech text-[10px] text-zinc-600 uppercase tracking-[0.2em]">Projetos Ativos</h2>
-          
-          <Button
-            onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-            className="bg-white text-black hover:bg-zinc-200 h-8 px-6 text-[10px] uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer"
-          >
-            <Plus className="mr-2 h-3 w-3" /> Novo Projeto
-          </Button>
+
+          {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
+            <Button
+              onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+              className="bg-white text-black hover:bg-zinc-200 h-8 px-6 text-[10px] uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer"
+            >
+              <Plus className="mr-2 h-3 w-3" /> Novo Projeto
+            </Button>
+          )}
         </div>
 
         {/* Lista de Projetos */}
