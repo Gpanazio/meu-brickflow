@@ -17,13 +17,13 @@ function LegacyHeader({
 }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-black">
-      <div className="w-full h-20 flex items-center justify-between px-8">
+      <div className="w-full h-16 flex items-center justify-between px-8">
         
         {/* LADO ESQUERDO */}
         <div className="flex items-center gap-12">
           {/* Logo */}
           <div onClick={() => setCurrentView('home')} className="cursor-pointer hover:opacity-80 transition-opacity">
-             <img src={logoImage} alt="BrickFlow" className="h-5 w-auto" />
+             <img src={logoImage} alt="BrickFlow" className="h-4 w-auto" />
           </div>
           
           {/* Navegação Primária */}
