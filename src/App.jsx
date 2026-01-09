@@ -195,14 +195,14 @@ export default function App() {
     const loadData = async () => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
 
         const response = await fetch('/api/projects', { signal: controller.signal });
         clearTimeout(timeoutId);
 
         if (!response.ok) throw new Error("Falha na API");
         let data = await response.json();
-        
+
         if (!data || (Array.isArray(data) && data.length === 0)) {
           data = INITIAL_STATE;
           await saveDataToApi(data);
@@ -213,7 +213,11 @@ export default function App() {
         setAppData(normalizeApiState(data));
         setInitialLoadSuccess(true);
       } catch (err) {
-        console.error("Erro:", err);
+        if (err.name === 'AbortError') {
+          console.warn("Timeout ao carregar dados do servidor (30s). Tentando modo offline...");
+        } else {
+          console.error("Erro ao carregar dados:", err);
+        }
         setConnectionError(true);
         setAppData(INITIAL_STATE);
       } finally {
