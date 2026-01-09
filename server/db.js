@@ -5,73 +5,48 @@ dotenv.config();
 
 const { Pool } = pg;
 
-const publicDatabaseUrl = process.env.DATABASE_PUBLIC_URL;
-const privateDatabaseUrl = process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL || '';
+export const hasDatabaseUrl = Boolean(connectionString);
 
-export const hasDatabaseUrl = Boolean(publicDatabaseUrl || privateDatabaseUrl);
+// --- DETECÇÃO DE AMBIENTE ---
+const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const isRailwayInternal = connectionString.includes('railway.internal');
 
-// --- CONFIGURAÇÃO DE SEGURANÇA E CONEXÃO ---
-const connectionString = publicDatabaseUrl || privateDatabaseUrl || '';
-// Verifica se é localhost OU se é IP local (192.168...)
-const isLocalConnection = 
-  connectionString.includes('localhost') || 
-  connectionString.includes('127.0.0.1') ||
-  connectionString.includes('@postgres:5432'); // Caso docker interno
-
-const isRailwayInternal = connectionString.includes('.railway.internal');
-
-// Se for conexão remota (Railway/Supabase), forçamos SSL.
-const useSSL = hasDatabaseUrl && !isLocalConnection && !isRailwayInternal;
+// Lógica de SSL:
+// ATENÇÃO: Nunca usar SSL na rede interna do Railway (causa timeout)
+// Usar SSL apenas se for acesso externo (ex: do seu PC para o Railway)
+const useSSL = hasDatabaseUrl && !isLocal && !isRailwayInternal;
 
 if (!hasDatabaseUrl) {
-  console.error("❌ ERRO: DATABASE_URL não definida!");
+  console.error("❌ ERRO CRÍTICO: DATABASE_URL não encontrada! O servidor não vai conectar.");
 } else {
-  // Mascara a senha para logar a URL e ajudar no debug
   const maskedUrl = connectionString.replace(/:([^:@]+)@/, ':****@');
-  const sourceLabel = publicDatabaseUrl ? 'DATABASE_PUBLIC_URL' : 'DATABASE_URL';
-  console.log(`✅ Configurando Banco de Dados...`);
-  console.log(`   - Fonte: ${sourceLabel}`);
+  console.log(`✅ Inicializando Banco de Dados...`);
   console.log(`   - URL: ${maskedUrl}`);
-  console.log(`   - Modo: ${isLocalConnection ? 'Local' : isRailwayInternal ? 'Railway Internal' : 'Remoto (Nuvem)'}`);
-  console.log(`   - SSL: ${useSSL ? 'ATIVO' : 'INATIVO'}`);
+  console.log(`   - Ambiente: ${isLocal ? 'Local' : isRailwayInternal ? 'Railway (Rede Interna)' : 'Remoto (Rede Pública)'}`);
+  console.log(`   - SSL: ${useSSL ? 'ATIVO (Externo)' : 'INATIVO (Interno/Local)'}`);
 }
 
 const pool = hasDatabaseUrl
   ? new Pool({
       connectionString,
       ssl: useSSL ? { rejectUnauthorized: false } : false,
-      connectionTimeoutMillis: 30000, // 30s
+      connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000,
-      max: 10,
-      // Configuração importante para evitar queda em proxies (Railway Public URL)
-      keepAlive: true 
+      max: 20
     })
   : null;
 
 // --- TESTE DE CONEXÃO AO INICIAR ---
 if (pool) {
-  (async () => {
-    // Tenta até 5 vezes com espera progressiva
-    for (let i = 1; i <= 5; i++) {
-      try {
-        console.log(`🔄 Tentativa de conexão ${i}/5...`);
-        const client = await pool.connect();
-        const res = await client.query('SELECT NOW()');
-        console.log(`✅ CONEXÃO SUCESSO! Data do DB: ${res.rows[0].now}`);
-        client.release();
-        return; // Sai da função se der certo
-      } catch (err) {
-        console.error(`⚠️ Falha na tentativa ${i}: ${err.message}`);
-        if (i < 5) {
-          const waitTime = i * 2000; // 2s, 4s, 6s...
-          console.log(`⏳ Aguardando ${waitTime/1000}s...`);
-          await new Promise(res => setTimeout(res, waitTime));
-        } else {
-          console.error("❌ FALHA CRÍTICA: Verifique se DATABASE_PUBLIC_URL (ou DATABASE_URL) usa a 'Public Networking' do Railway.");
-        }
-      }
-    }
-  })();
+  pool.connect()
+    .then((client) => {
+      console.log('✅ Conexão com o Banco estabelecida com SUCESSO!');
+      client.release();
+    })
+    .catch((err) => {
+      console.error('❌ FALHA AO CONECTAR:', err.message);
+    });
 }
 
 export const query = (text, params) => {
