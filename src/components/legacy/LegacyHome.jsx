@@ -42,54 +42,50 @@ function LegacyHome({
   return (
     <div className="min-h-screen bg-black text-white pb-20">
       
-      {/* SECTION: HERO (OLÁ GABRIEL) */}
-      <div className="pt-12 pb-12 border-b border-zinc-900 px-8">
-         <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.8]">
-           Olá, <span className="text-zinc-800">{currentUser?.displayName || 'Visitante'}</span>
-         </h1>
-         <p className="mt-6 text-[10px] text-zinc-600 font-mono tracking-[0.2em] uppercase">
-           {currentDate}
-         </p>
-      </div>
+      {/* --- SEÇÃO SUPERIOR UNIFICADA (HERO + WIDGETS NA MESMA LINHA) --- */}
+      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900">
+        
+        {/* COLUNA 1: HERO (OLÁ GABRIEL) - Ocupa 50% da largura */}
+        <div className="lg:w-1/2 p-8 pt-12 pb-12 flex flex-col justify-center">
+           <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.8]">
+             Olá, <span className="text-zinc-800">{currentUser?.displayName || 'Visitante'}</span>
+           </h1>
+           <p className="mt-6 text-[10px] text-zinc-600 font-mono tracking-[0.2em] uppercase">
+             {currentDate}
+           </p>
+        </div>
 
-      {/* SECTION: WIDGETS (FAIXA HORIZONTAL COMPACTA) */}
-      {/* Altura fixa em lg:h-48 força o aspecto "widescreen" */}
-      <div className="border-b border-zinc-900 bg-black">
-        <div className="flex flex-col lg:flex-row h-auto lg:h-48 divide-y lg:divide-y-0 lg:divide-x divide-zinc-900">
+        {/* COLUNA 2: WIDGET SORTE - Ocupa 25% da largura */}
+        <div className="lg:w-1/4 p-8 flex flex-col justify-between min-h-[200px] lg:min-h-0">
+            <div className="flex items-center gap-3">
+                <Sparkles className="w-3 h-3 text-red-600" />
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
+            </div>
             
-            {/* WIDGET 1: SORTE DO DIA (Expandido) */}
-            <div className="flex-1 p-8 flex flex-col justify-between">
-                <div className="flex items-center gap-3">
-                    <Sparkles className="w-3 h-3 text-red-600" />
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
-                </div>
-                
-                <div className="max-w-3xl mt-2">
-                    {/* Texto com tamanho contido */}
-                    <p className="text-xl md:text-2xl text-zinc-300 font-medium italic leading-relaxed tracking-tight">
-                    "{dailyPhrase || "O silêncio é uma resposta."}"
-                    </p>
-                </div>
-                <div /> {/* Spacer */}
+            <div className="mt-4 lg:mt-0">
+                <p className="text-xl text-zinc-300 font-medium italic leading-relaxed tracking-tight">
+                "{dailyPhrase || "O silêncio é uma resposta."}"
+                </p>
             </div>
+            <div className="hidden lg:block" /> {/* Spacer apenas desktop */}
+        </div>
 
-            {/* WIDGET 2: PROBABILIDADE (Compacto e Horizontal) */}
-            <div className="w-full lg:w-auto p-8 flex flex-col justify-between bg-black lg:min-w-[420px]">
-                <div className="flex items-center gap-3 mb-4">
-                    <Dna className="w-3 h-3 text-emerald-600" />
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
-                </div>
-                
-                {/* Números em LINHA ÚNICA e QUADRADOS PEQUENOS */}
-                <div className="flex flex-row gap-3">
-                    {safeMegaSena.map((n, i) => (
-                        <div key={i} className="w-10 h-10 flex items-center justify-center border border-zinc-800 text-zinc-400 font-mono text-[10px] hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
-                            {n.toString().padStart(2, '0')}
-                        </div>
-                    ))}
-                </div>
-                <div /> {/* Spacer */}
+        {/* COLUNA 3: WIDGET PROBABILIDADE - Ocupa 25% da largura */}
+        <div className="lg:w-1/4 p-8 flex flex-col justify-between bg-black min-h-[200px] lg:min-h-0">
+            <div className="flex items-center gap-3 mb-4 lg:mb-0">
+                <Dna className="w-3 h-3 text-emerald-600" />
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
             </div>
+            
+            {/* Grid 2x3 pequeno e contido */}
+            <div className="grid grid-cols-3 gap-2 mt-4 lg:mt-0">
+                {safeMegaSena.map((n, i) => (
+                    <div key={i} className="aspect-square flex items-center justify-center border border-zinc-800 text-zinc-400 font-mono text-[10px] hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                        {n.toString().padStart(2, '0')}
+                    </div>
+                ))}
+            </div>
+            <div className="hidden lg:block" /> {/* Spacer apenas desktop */}
         </div>
       </div>
 
