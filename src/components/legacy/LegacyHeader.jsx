@@ -34,6 +34,12 @@ function LegacyHeader({
             >
                 Central
             </button>
+            <button
+              onClick={() => setCurrentView('trash')}
+              className="text-[10px] font-bold text-zinc-600 hover:text-white uppercase tracking-[0.2em] transition-colors"
+            >
+              Lixeira
+            </button>
             
             {/* Breadcrumb de Projeto */}
             {currentProject && (
@@ -57,13 +63,6 @@ function LegacyHeader({
           )}
           
           <div className="flex items-center gap-6">
-            <button 
-              onClick={() => setCurrentView('trash')} 
-              className="text-[10px] font-bold text-zinc-600 hover:text-white uppercase tracking-[0.2em] transition-colors"
-            >
-              Lixeira
-            </button>
-            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <div className="h-8 w-8 bg-zinc-900 flex items-center justify-center cursor-pointer hover:bg-zinc-800 transition-colors border border-zinc-800">
