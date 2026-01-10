@@ -45,12 +45,12 @@ export function useUsers(globalUsers, updateGlobalUsers) {
         // Atualiza com os dados mais recentes do banco (caso tenha mudado avatar/cor)
         setCurrentUser(userStillExists)
         setIsLoggedIn(true)
-      } else {
+      } else if (globalUsers && globalUsers.length > 0) {
         // Se o usuário foi deletado do banco, desloga
         localStorage.removeItem('brickflow-session-user')
         setShowLoginModal(true)
       }
-    } else {
+    } else if (globalUsers && globalUsers.length > 0) {
       setShowLoginModal(true)
     }
   }, [safeUsers]) // Roda sempre que a lista de usuários do banco carregar
