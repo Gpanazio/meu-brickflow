@@ -38,7 +38,7 @@ export function useUsers(globalUsers, updateGlobalUsers) {
       }
 
       // Verifica se o usuário da sessão ainda existe no banco
-      const userStillExists = globalUsers.find(u => u.username === parsedSession.username)
+      const userStillExists = globalUsers.find(u => u.username.toLowerCase() === parsedSession.username.toLowerCase())
 
       if (userStillExists) {
         // Atualiza com os dados mais recentes do banco (caso tenha mudado avatar/cor)
