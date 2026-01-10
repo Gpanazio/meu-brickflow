@@ -81,7 +81,7 @@ function LegacyProjectView({
         </div>
       </div>
       
-      <div className="border border-zinc-900 bg-black/60 p-6 space-y-4">
+      <div className="glass-panel p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
             <History className="h-4 w-4" /> Histórico
@@ -102,7 +102,7 @@ function LegacyProjectView({
         {!historyError && history && history.length > 0 && (
           <div className="space-y-3">
             {history.map(event => (
-              <div key={event.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border border-zinc-900 p-4 bg-black/80">
+              <div key={event.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border border-white/10 p-4 bg-black/20">
                 <div className="space-y-1">
                   <div className="text-xs uppercase tracking-widest text-zinc-300 font-bold">
                     {formatAction(event.action_type)}
@@ -124,37 +124,37 @@ function LegacyProjectView({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-zinc-900 border border-zinc-900">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {activeSubProjects.map(sub => {
           // Safety check for color variant with fallback
           const colors = COLOR_VARIANTS[sub.color] || COLOR_VARIANTS['zinc'] || COLOR_VARIANTS['blue'];
           
           return (
-            <div key={sub.id} onClick={() => handleAccessProject(sub, 'subproject')} className="group cursor-pointer bg-black hover:bg-zinc-950 transition-colors p-6 flex flex-col justify-between h-48">
+            <div key={sub.id} onClick={() => handleAccessProject(sub, 'subproject')} className="group cursor-pointer glass-panel hover:bg-white/5 transition-colors p-6 flex flex-col justify-between h-48">
               <div className="flex justify-between items-start">
                  <FolderOpen className={`h-5 w-5 ${colors.text} opacity-50 group-hover:opacity-100 transition-opacity`} />
                  <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-800 hover:text-white rounded-none"><MoreVertical className="h-3 w-3" /></Button></DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none">
-                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub }); }} className="text-[10px] uppercase tracking-widest h-8 cursor-pointer">Editar</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-900 focus:text-red-600 text-[10px] uppercase tracking-widest h-8 cursor-pointer" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem>
+                  <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white rounded-none"><MoreVertical className="h-3 w-3" /></Button></DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="glass-panel rounded-none">
+                    <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub }); }} className="text-[10px] uppercase tracking-widest h-8 cursor-pointer text-zinc-400 hover:text-white hover:bg-white/10">Editar</DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-900 focus:text-red-600 focus:bg-white/10 text-[10px] uppercase tracking-widest h-8 cursor-pointer" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
               
               <div>
                  <CardTitle className="text-lg font-bold uppercase tracking-tight text-white mb-1">{sub.name}</CardTitle>
-                 <span className="text-zinc-600 text-[9px] font-mono uppercase tracking-widest line-clamp-1">{sub.description || "---"}</span>
+                 <span className="text-zinc-500 text-[9px] font-mono uppercase tracking-widest line-clamp-1">{sub.description || "---"}</span>
               </div>
             </div>
           );
         })}
         <div 
           onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })}
-          className="bg-black flex flex-col items-center justify-center cursor-pointer group hover:bg-zinc-900/30 transition-colors h-48"
+          className="glass-panel flex flex-col items-center justify-center cursor-pointer group hover:bg-white/5 transition-colors h-48"
         >
-          <Plus className="h-6 w-6 text-zinc-800 group-hover:text-zinc-500 mb-2 transition-colors" />
-          <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-800 group-hover:text-zinc-500">Adicionar</span>
+          <Plus className="h-6 w-6 text-zinc-600 group-hover:text-zinc-400 mb-2 transition-colors" />
+          <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">Adicionar</span>
         </div>
       </div>
     </div>

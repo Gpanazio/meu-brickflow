@@ -87,8 +87,8 @@ const Dialog = ({ open, onOpenChange, children }) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
-      <div className="relative z-50 grid w-full max-w-lg gap-4 border border-zinc-900 bg-black p-0 shadow-2xl duration-200 sm:rounded-none max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => onOpenChange(false)} />
+      <div className="relative z-50 grid w-full max-w-lg gap-4 glass-panel p-0 shadow-2xl duration-200 sm:rounded-none max-h-[90vh] overflow-y-auto custom-scrollbar border-0">
         {children}
       </div>
     </div>
@@ -962,9 +962,9 @@ function UserSettingsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div className="relative z-50 w-full max-w-lg border border-zinc-800 bg-black p-0 shadow-2xl rounded-lg overflow-hidden">
-          <div className="p-6 border-b border-zinc-900 flex justify-between items-center">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+        <div className="relative z-50 w-full max-w-lg glass-panel p-0 shadow-2xl sm:rounded-none overflow-hidden border-0">
+          <div className="p-6 border-b border-white/10 flex justify-between items-center">
              <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2"><Settings className="w-5 h-5 text-zinc-500" /> Configurações</h2>
              <button onClick={onClose}><X className="w-5 h-5 text-zinc-500 hover:text-white" /></button>
           </div>

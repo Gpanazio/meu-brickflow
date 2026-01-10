@@ -49,14 +49,14 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md w-full bg-black border border-zinc-800 p-0 gap-0 text-white shadow-2xl overflow-hidden sm:rounded-none">
+      <DialogContent className="max-w-md w-full glass-panel p-0 gap-0 text-white overflow-hidden sm:rounded-none border-0">
         
         {/* HEADER: Minimalista e Tipográfico */}
-        <div className="flex justify-between items-center p-6 border-b border-zinc-900 bg-black">
+        <div className="flex justify-between items-center p-6 border-b border-white/10">
           <h2 className="text-lg font-black uppercase tracking-tighter text-white">Novo Projeto</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-8 bg-black">
+        <form onSubmit={handleSubmit} className="p-6 space-y-8">
           
           {/* NOME DO PROJETO */}
           <div className="space-y-2">

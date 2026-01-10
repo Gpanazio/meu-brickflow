@@ -20,7 +20,7 @@ function LegacyHeader({
 }) {
   const canInviteGuests = currentUser?.role === ROLES.OWNER || currentUser?.role === ROLES.ADMIN;
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-900 bg-black">
+    <header className="sticky top-0 z-50 w-full glass-header">
       {/* Header compacto h-16 (64px) */}
       <div className="w-full h-16 flex items-center justify-between px-6 md:px-10">
 
@@ -65,7 +65,7 @@ function LegacyHeader({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-14 w-14 rounded-full p-0 hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-all">
+              <Button variant="ghost" className="h-14 w-14 rounded-full p-0 hover:bg-white/10 border border-transparent hover:border-white/20 transition-all">
                 <Avatar className="h-12 w-12 border-2 border-zinc-900">
                   {currentUser?.avatar ? (
                     <AvatarImage src={currentUser.avatar} className="object-cover" />
@@ -77,7 +77,7 @@ function LegacyHeader({
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 bg-black border-zinc-800 rounded-none shadow-2xl p-0" align="end">
+            <DropdownMenuContent className="w-56 glass-panel rounded-none p-0" align="end">
               <DropdownMenuLabel className="p-4 pb-2">
                 <p className="text-xs font-black text-white uppercase tracking-tighter">{currentUser?.displayName}</p>
                 <p className="text-[9px] text-zinc-600 font-mono tracking-widest mt-1">@{currentUser?.username}</p>

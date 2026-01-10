@@ -52,7 +52,7 @@ function LegacyHome({
       
       {/* --- SEÇÃO SUPERIOR UNIFICADA (HERO + WIDGETS) --- */}
       {/* Altura compacta h-48 (192px) */}
-      <div className="flex flex-col lg:flex-row border-b border-zinc-900 bg-black divide-y lg:divide-y-0 lg:divide-x divide-zinc-900 lg:h-48">
+      <div className="glass-panel mx-6 md:mx-10 mt-6 flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10 lg:h-48">
 
         {/* COLUNA 1: HERO (OLÁ GABRIEL) - 50% da largura */}
         <div className="lg:w-1/2 px-6 md:px-10 py-6 flex flex-col justify-center">
@@ -66,7 +66,7 @@ function LegacyHome({
         </div>
 
         {/* COLUNA 2: WIDGET SORTE - 25% da largura */}
-        <div className="lg:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between bg-black">
+        <div className="lg:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between">
             <div className="flex items-center gap-3">
                 <Sparkles className="w-3 h-3 text-red-600" />
                 <span className="brick-tech text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
@@ -80,7 +80,7 @@ function LegacyHome({
         </div>
 
         {/* COLUNA 3: WIDGET PROBABILIDADE - 25% da largura */}
-        <div className="lg:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between bg-black">
+        <div className="lg:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between">
             <div className="flex items-center gap-3 mb-4 lg:mb-0">
                 <Dna className="w-3 h-3 text-emerald-600" />
                 <span className="brick-tech text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
@@ -90,7 +90,7 @@ function LegacyHome({
                 {/* Números em linha única */}
                 <div className="flex gap-2 w-full justify-between">
                     {safeMegaSena.map((n, i) => (
-                        <div key={i} className="brick-tech flex-1 aspect-square flex items-center justify-center border border-zinc-900 text-zinc-500 text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                        <div key={i} className="brick-tech flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                             {n.toString().padStart(2, '0')}
                         </div>
                     ))}
@@ -160,13 +160,13 @@ function LegacyHome({
 
       {/* SECTION: PROJETOS */}
       <div className="px-8 mt-12">
-        <div className="flex justify-between items-end mb-6 border-b border-zinc-900 pb-4">
-          <h2 className="brick-tech text-[10px] text-zinc-600 uppercase tracking-[0.2em]">Projetos Ativos</h2>
+        <div className="flex justify-between items-end mb-6 border-b border-white/10 pb-4">
+          <h2 className="brick-tech text-[10px] text-zinc-400 uppercase tracking-[0.2em]">Projetos Ativos</h2>
 
           {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
             <Button
               onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-              className="bg-white text-black hover:bg-zinc-200 h-8 px-6 text-[10px] uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer"
+              className="bg-white text-black hover:bg-zinc-200 h-8 px-6 text-[10px] uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.2)]"
             >
               <Plus className="mr-2 h-3 w-3" /> Novo Projeto
             </Button>
@@ -180,7 +180,7 @@ function LegacyHome({
             <p className="text-zinc-600 text-xs font-mono mt-4 uppercase tracking-widest">Nenhum projeto iniciado</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-zinc-900 border border-zinc-900">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activeProjects.map(project => {
               const colors = DEFAULT_COLORS[project.color] || DEFAULT_COLORS['blue'];
               
@@ -192,38 +192,38 @@ function LegacyHome({
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop && handleDrop(e, project.id, 'project')}
                   onClick={() => handleAccessProject(project)} 
-                  className="group relative aspect-video bg-black hover:bg-zinc-950 transition-all cursor-pointer p-8 flex flex-col justify-between"
+                  className="group relative aspect-video glass-panel hover:bg-white/5 transition-all cursor-pointer p-8 flex flex-col justify-between"
                 >
                   <div className="flex justify-between items-start w-full">
-                    <div className={`w-2 h-2 ${colors.bg}`}></div>
-                    {project.isProtected && <Lock className="w-3 h-3 text-zinc-800" />}
+                    <div className={`w-2 h-2 ${colors.bg} shadow-[0_0_10px_currentColor]`}></div>
+                    {project.isProtected && <Lock className="w-3 h-3 text-zinc-600" />}
                   </div>
 
                   <div className="space-y-4 relative z-10 pr-4">
-                    <h3 className="brick-title text-3xl text-white uppercase leading-none group-hover:translate-x-1 transition-transform">
+                    <h3 className="brick-title text-3xl text-white uppercase leading-none group-hover:translate-x-1 transition-transform drop-shadow-lg">
                       {project.name}
                     </h3>
-                    <p className="brick-manifesto text-zinc-600 text-[10px] leading-relaxed line-clamp-2 uppercase tracking-wide">
+                    <p className="brick-manifesto text-zinc-400 text-[10px] leading-relaxed line-clamp-2 uppercase tracking-wide">
                       {project.description || "SEM DESCRIÇÃO"}
                     </p>
                   </div>
 
                   <div className="flex justify-between items-end opacity-60 group-hover:opacity-100 transition-opacity">
-                     <span className="brick-tech text-[9px] text-zinc-700 uppercase tracking-widest">
+                     <span className="brick-tech text-[9px] text-zinc-500 uppercase tracking-widest">
                         {project.subProjects?.length || 0} ÁREAS
                      </span>
                      
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-800 hover:text-white hover:bg-zinc-900 rounded-none transition-colors">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white hover:bg-white/10 rounded-none transition-colors">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none min-w-[140px]">
-                          <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-[10px] uppercase tracking-widest h-9 cursor-pointer text-zinc-400 hover:text-white hover:bg-zinc-900">
+                        <DropdownMenuContent align="end" className="glass-panel rounded-none min-w-[140px]">
+                          <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-[10px] uppercase tracking-widest h-9 cursor-pointer text-zinc-400 hover:text-white hover:bg-white/10">
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-900 focus:text-red-500 focus:bg-zinc-900 text-[10px] uppercase tracking-widest cursor-pointer h-9" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>
+                          <DropdownMenuItem className="text-red-900 focus:text-red-500 focus:bg-white/10 text-[10px] uppercase tracking-widest cursor-pointer h-9" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>
                             Eliminar
                           </DropdownMenuItem>
                         </DropdownMenuContent>
