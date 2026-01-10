@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { Button } from '../ui/button';
 import { CardTitle } from '../ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { ArrowLeft, Plus, FolderOpen, MoreVertical, Lock, History } from 'lucide-react';
+import { ArrowLeft, Plus, FolderOpen, MoreVertical, Lock, History, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 function LegacyProjectView({
   currentProject,
@@ -81,48 +82,56 @@ function LegacyProjectView({
         </div>
       </div>
       
-      <div className="glass-panel p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
-            <History className="h-4 w-4" /> Histórico
+      <Collapsible>
+        <CollapsibleTrigger className="w-full">
+          <div className="glass-panel p-4 flex items-center justify-between cursor-pointer">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
+              <History className="h-4 w-4" /> Histórico
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+                {isHistoryLoading ? 'Carregando...' : `${history?.length || 0} eventos`}
+              </span>
+              <ChevronDown className="h-4 w-4 text-zinc-600" />
+            </div>
           </div>
-          <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
-            {isHistoryLoading ? 'Carregando...' : `${history?.length || 0} eventos`}
-          </span>
-        </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="glass-panel p-6 space-y-4 mt-2">
+            {historyError && (
+              <div className="text-[10px] text-red-500 font-mono uppercase tracking-widest">Erro ao carregar histórico.</div>
+            )}
 
-        {historyError && (
-          <div className="text-[10px] text-red-500 font-mono uppercase tracking-widest">Erro ao carregar histórico.</div>
-        )}
+            {!historyError && !isHistoryLoading && (!history || history.length === 0) && (
+              <div className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">Nenhuma alteração registrada.</div>
+            )}
 
-        {!historyError && !isHistoryLoading && (!history || history.length === 0) && (
-          <div className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">Nenhuma alteração registrada.</div>
-        )}
-
-        {!historyError && history && history.length > 0 && (
-          <div className="space-y-3">
-            {history.map(event => (
-              <div key={event.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border border-white/10 p-4 bg-black/20">
-                <div className="space-y-1">
-                  <div className="text-xs uppercase tracking-widest text-zinc-300 font-bold">
-                    {formatAction(event.action_type)}
+            {!historyError && history && history.length > 0 && (
+              <div className="space-y-3">
+                {history.map(event => (
+                  <div key={event.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border border-white/10 p-4 bg-black/20">
+                    <div className="space-y-1">
+                      <div className="text-xs uppercase tracking-widest text-zinc-300 font-bold">
+                        {formatAction(event.action_type)}
+                      </div>
+                      <div className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+                        {usersMap.get(event.user_id) || event.user_id || 'Sistema'} • {formatTimestamp(event.timestamp)}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest"
+                      onClick={() => onRestoreEvent && onRestoreEvent(event.id)}
+                    >
+                      Restaurar
+                    </Button>
                   </div>
-                  <div className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
-                    {usersMap.get(event.user_id) || event.user_id || 'Sistema'} • {formatTimestamp(event.timestamp)}
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest"
-                  onClick={() => onRestoreEvent && onRestoreEvent(event.id)}
-                >
-                  Restaurar
-                </Button>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {activeSubProjects.map(sub => {
