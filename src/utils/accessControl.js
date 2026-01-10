@@ -242,12 +242,7 @@ export function filterProjectsByAccess(projects, user) {
   if (!user || !projects) return [];
 
   // Owner e Admin veem todos os projetos
-  if (user.role === ROLES.OWNER || user.role === ROLES.ADMIN) {
-    return projects;
-  }
-
-  // Outros usuários veem apenas projetos com acesso
-  return projects.filter(project => canAccessProject(user, project));
+  return projects;
 }
 
 /**
