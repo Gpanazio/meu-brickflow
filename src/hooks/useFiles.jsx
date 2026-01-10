@@ -9,8 +9,8 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
   const MAX_SIZE_BYTES = 50 * 1024 * 1024;
 
   const files = useMemo(() => {
-    if (!currentSubProject?.boardData?.files?.files) return []
-    return currentSubProject.boardData.files.files
+    const rawFiles = currentSubProject?.boardData?.files?.files
+    return Array.isArray(rawFiles) ? rawFiles : []
   }, [currentSubProject])
 
   const handleFileUpload = useCallback(async (event) => {
