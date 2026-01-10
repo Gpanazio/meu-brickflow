@@ -107,56 +107,67 @@ function LegacyHome({
       )}
 
       {/* SECTION: MINHAS TAREFAS */}
-      {userTasks.length > 0 && (
-        <div className="glass-panel mx-6 md:mx-10 mt-6">
-          <div className="px-6 md:px-10 py-6">
-            <div className="flex items-center gap-3 mb-4">
-              <CheckSquare className="w-4 h-4 text-red-600" />
-              <h2 className="brick-tech text-[10px] text-zinc-500 uppercase tracking-[0.2em]">
-                Minhas Tarefas
-              </h2>
-              <span className="brick-tech text-[9px] text-zinc-700 uppercase tracking-widest">
-                ({userTasks.length})
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              {userTasks.slice(0, 5).map((task) => {
-                const colors = DEFAULT_COLORS[task.projectColor] || DEFAULT_COLORS['blue'];
-
-                return (
-                  <div
-                    key={task.id}
-                    onClick={() => onTaskClick && onTaskClick(task)}
-                    className="group flex items-center justify-between bg-black hover:bg-zinc-950 border border-zinc-900 hover:border-zinc-800 transition-all cursor-pointer p-4"
-                  >
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className={`w-1 h-8 ${colors.bg} flex-shrink-0`}></div>
-
-                      <div className="flex-1 min-w-0">
-                        <h3 className="brick-manifesto text-sm text-white uppercase tracking-wide truncate">
-                          {task.title}
-                        </h3>
-                        <p className="brick-tech text-[9px] text-zinc-600 uppercase tracking-widest mt-1">
-                          {task.projectName} / {task.subProjectName}
-                        </p>
-                      </div>
-                    </div>
-
-                    <ChevronRight className="w-4 h-4 text-zinc-800 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
-                  </div>
-                );
-              })}
-            </div>
-
-            {userTasks.length > 5 && (
-              <p className="brick-tech text-[9px] text-zinc-700 uppercase tracking-widest mt-4 text-center">
-                + {userTasks.length - 5} tarefas adicionais
-              </p>
-            )}
+      <div className="glass-panel mx-6 md:mx-10 mt-6">
+        <div className="px-6 md:px-10 py-6">
+          <div className="flex items-center gap-3 mb-4">
+            <CheckSquare className="w-4 h-4 text-red-600" />
+            <h2 className="brick-tech text-[10px] text-zinc-500 uppercase tracking-[0.2em]">
+              Minhas Tarefas
+            </h2>
+            <span className="brick-tech text-[9px] text-zinc-700 uppercase tracking-widest">
+              ({userTasks.length})
+            </span>
           </div>
+
+          {userTasks.length > 0 ? (
+            <>
+              <div className="space-y-2">
+                {userTasks.slice(0, 5).map((task) => {
+                  const colors = DEFAULT_COLORS[task.projectColor] || DEFAULT_COLORS['blue'];
+
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={() => onTaskClick && onTaskClick(task)}
+                      className="group flex items-center justify-between bg-black hover:bg-zinc-950 border border-zinc-900 hover:border-zinc-800 transition-all cursor-pointer p-4"
+                    >
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className={`w-1 h-8 ${colors.bg} flex-shrink-0`}></div>
+
+                        <div className="flex-1 min-w-0">
+                          <h3 className="brick-manifesto text-sm text-white uppercase tracking-wide truncate">
+                            {task.title}
+                          </h3>
+                          <p className="brick-tech text-[9px] text-zinc-600 uppercase tracking-widest mt-1">
+                            {task.projectName} / {task.subProjectName}
+                          </p>
+                        </div>
+                      </div>
+
+                      <ChevronRight className="w-4 h-4 text-zinc-800 group-hover:text-zinc-600 transition-colors flex-shrink-0" />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {userTasks.length > 5 && (
+                <p className="brick-tech text-[9px] text-zinc-700 uppercase tracking-widest mt-4 text-center">
+                  + {userTasks.length - 5} tarefas adicionais
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12">
+              <p className="brick-manifesto text-2xl text-zinc-800 uppercase tracking-tight mb-2">
+                Tá molezinha demais! 😎
+              </p>
+              <p className="brick-tech text-[9px] text-zinc-600 uppercase tracking-widest">
+                Nenhuma tarefa atribuída... por enquanto
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* SECTION: PROJETOS */}
       <div className="px-8 mt-12">
