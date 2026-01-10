@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { isValidGuestToken, createGuestUser, ROLES } from '../utils/accessControl'
 
 export function useUsers(globalUsers, updateGlobalUsers) {
+  const safeUsers = useMemo(() => (Array.isArray(globalUsers) ? globalUsers : []), [globalUsers])
   const [currentUser, setCurrentUser] = useState(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showCreateUserModal, setShowCreateUserModal] = useState(false)
@@ -38,7 +39,7 @@ export function useUsers(globalUsers, updateGlobalUsers) {
       }
 
       // Verifica se o usuário da sessão ainda existe no banco
-      const userStillExists = globalUsers.find(u => u.username.toLowerCase() === parsedSession.username.toLowerCase())
+      const userStillExists = safeUsers.find(u => u.username.toLowerCase() === parsedSession.username.toLowerCase())
 
       if (userStillExists) {
         // Atualiza com os dados mais recentes do banco (caso tenha mudado avatar/cor)
@@ -52,12 +53,12 @@ export function useUsers(globalUsers, updateGlobalUsers) {
     } else {
       setShowLoginModal(true)
     }
-  }, [globalUsers]) // Roda sempre que a lista de usuários do banco carregar
+  }, [safeUsers]) // Roda sempre que a lista de usuários do banco carregar
 
   const handleLogin = (username, pin) => {
-    if (!globalUsers) return
+    if (!safeUsers.length) return
 
-    const user = globalUsers.find(u => 
+    const user = safeUsers.find(u => 
       u.username.toLowerCase() === username.toLowerCase()
     )
 
@@ -73,9 +74,9 @@ export function useUsers(globalUsers, updateGlobalUsers) {
   }
 
   const handleCreateUser = (userData) => {
-    if (!globalUsers) return
+    if (!safeUsers.length) return
 
-    const existing = globalUsers.find(u => 
+    const existing = safeUsers.find(u => 
       u.username.toLowerCase() === userData.username.toLowerCase()
     )
     if (existing) {
@@ -84,7 +85,7 @@ export function useUsers(globalUsers, updateGlobalUsers) {
     }
     
     // Adiciona verificação extra para garantir que não haja duplicatas
-    if (globalUsers.some(u => u.username.toLowerCase() === userData.username.toLowerCase())) {
+    if (safeUsers.some(u => u.username.toLowerCase() === userData.username.toLowerCase())) {
       toast.error('Usuário já existe.')
       return
     }
@@ -97,7 +98,7 @@ export function useUsers(globalUsers, updateGlobalUsers) {
     }
     
     // Atualiza a lista GLOBAL (que será salva no banco pelo App.jsx)
-    const newUsersList = [...globalUsers, newUser]
+    const newUsersList = [...safeUsers, newUser]
     updateGlobalUsers(newUsersList)
 
     // Loga automaticamente
