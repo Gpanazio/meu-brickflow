@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
+import bcrypt from 'bcrypt';
 import { getClient, hasDatabaseUrl, query } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -111,6 +112,17 @@ app.post('/api/projects', async (req, res) => {
     const normalizedData = normalizeStateData(data) ?? { projects: [] };
     const nextVersion = currentVersion + 1;
     const nextState = { ...normalizedData, version: nextVersion };
+
+    // Criptografa senhas de novos usuários
+    if (nextState.users) {
+      nextState.users = await Promise.all(nextState.users.map(async (user) => {
+        if (user.pin && !user.pin.startsWith('$2b$')) {
+          const salt = await bcrypt.genSalt(10);
+          user.pin = await bcrypt.hash(user.pin, salt);
+        }
+        return user;
+      }));
+    }
 
     // Salva evento e estado
     await client.query(

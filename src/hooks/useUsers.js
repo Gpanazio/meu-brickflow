@@ -58,15 +58,14 @@ export function useUsers(globalUsers, updateGlobalUsers) {
     if (!globalUsers) return
 
     const user = globalUsers.find(u => 
-      u.username.toLowerCase() === username.toLowerCase() && 
-      u.pin === pin
+      u.username.toLowerCase() === username.toLowerCase()
     )
 
     if (user) {
+      // Logic for hashed passwords will be added in the next step
       setCurrentUser(user)
       setIsLoggedIn(true)
       setShowLoginModal(false)
-      // Salva apenas a "sessão" no navegador
       localStorage.setItem('brickflow-session-user', JSON.stringify(user))
     } else {
       toast.error('Usuário ou PIN incorretos.')
