@@ -125,7 +125,7 @@ const AvatarFallback = ({ className, children }) => <div className={cn("flex h-f
 const INITIAL_STATE = {
   users: [
     { username: 'admin', pin: '1234', displayName: 'Admin', color: 'red', avatar: '', role: 'owner' },
-    { username: 'gabriel', pin: '1234', displayName: 'Gabriel', color: 'blue', avatar: '', role: 'admin' },
+    { username: 'gabriel', pin: '1234', displayName: 'Gabriel', color: 'blue', avatar: '', role: 'owner' },
     { username: 'fran', pin: '1234', displayName: 'Fran', color: 'purple', avatar: '', role: 'member' }
   ],
   projects: [],
