@@ -377,10 +377,10 @@ export default function App() {
     setIsHistoryLoading(true);
     setHistoryError(false);
     try {
-      const response = await fetch(`/api/projects/${projectId}/history`);
+      const response = await fetch(`/api/history`);
       if (!response.ok) throw new Error('Falha ao buscar histórico');
       const data = await response.json();
-      setProjectHistory(Array.isArray(data) ? data : []);
+      setProjectHistory(Array.isArray(data.events) ? data.events : []);
     } catch (err) {
       setProjectHistory([]);
       setHistoryError(true);
