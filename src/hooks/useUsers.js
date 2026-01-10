@@ -80,6 +80,12 @@ export function useUsers(globalUsers, updateGlobalUsers) {
       u.username.toLowerCase() === userData.username.toLowerCase()
     )
     if (existing) {
+      toast.error('Este nome de usuário já está em uso.')
+      return
+    }
+    
+    // Adiciona verificação extra para garantir que não haja duplicatas
+    if (globalUsers.some(u => u.username.toLowerCase() === userData.username.toLowerCase())) {
       toast.error('Usuário já existe.')
       return
     }
