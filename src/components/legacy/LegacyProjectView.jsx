@@ -66,10 +66,10 @@ function LegacyProjectView({
 
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
-      <div className="flex flex-col gap-6 border-b border-zinc-900 pb-6">
+      <div className="flex flex-col gap-6 border-b border-white/10 pb-6">
         <div className="flex justify-between items-center">
-           <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
-           <Button onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black rounded-none uppercase text-[10px] font-bold tracking-widest h-8 px-4"><Plus className="mr-2 h-3 w-3" /> Nova Área</Button>
+           <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest cursor-pointer"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
+           <Button onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black rounded-none uppercase text-xs font-bold tracking-widest h-10 px-6 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.2)]"><Plus className="mr-2 h-4 w-4" /> Nova Área</Button>
         </div>
         
         <div>

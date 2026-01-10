@@ -101,14 +101,14 @@ function LegacyHome({
 
       {/* SUDOKU (Apenas Fran) */}
       {currentUser?.displayName === 'Fran' && (
-        <div className="border-b border-zinc-900 p-8 bg-zinc-950/30">
+        <div className="glass-panel mx-6 md:mx-10 mt-6 p-8">
            <SudokuGame />
         </div>
       )}
 
       {/* SECTION: MINHAS TAREFAS */}
       {userTasks.length > 0 && (
-        <div className="border-b border-zinc-900 bg-zinc-950/20">
+        <div className="glass-panel mx-6 md:mx-10 mt-6">
           <div className="px-6 md:px-10 py-6">
             <div className="flex items-center gap-3 mb-4">
               <CheckSquare className="w-4 h-4 text-red-600" />
@@ -166,18 +166,26 @@ function LegacyHome({
           {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
             <Button
               onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-              className="bg-white text-black hover:bg-zinc-200 h-8 px-6 text-[10px] uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+              className="bg-white text-black hover:bg-zinc-200 h-10 px-8 text-xs uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.2)]"
             >
-              <Plus className="mr-2 h-3 w-3" /> Novo Projeto
+              <Plus className="mr-2 h-4 w-4" /> Novo Projeto
             </Button>
           )}
         </div>
 
         {/* Lista de Projetos */}
         {activeProjects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 opacity-20 select-none">
-            <h1 className="text-6xl md:text-8xl font-black text-zinc-800 uppercase tracking-tighter">VAZIO</h1>
-            <p className="text-zinc-600 text-xs font-mono mt-4 uppercase tracking-widest">Nenhum projeto iniciado</p>
+          <div className="flex flex-col items-center justify-center py-24">
+            <h1 className="text-6xl md:text-8xl font-black text-white/10 uppercase tracking-tighter select-none">VAZIO</h1>
+            <p className="text-zinc-500 text-xs font-mono mt-4 uppercase tracking-widest mb-8">Nenhum projeto iniciado</p>
+            {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
+              <Button
+                onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+                className="bg-white text-black hover:bg-zinc-200 h-12 px-10 text-xs uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Criar Primeiro Projeto
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
