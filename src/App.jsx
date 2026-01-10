@@ -778,7 +778,7 @@ export default function App() {
   }
 
   const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
-  const boardData = currentEntity?.boardData?.[currentBoardType] || (currentBoardType === 'files' ? { files: [] } : { lists: [] });
+  const boardData = currentEntity?.boardData?.[currentBoardType] || (currentBoardType === 'files' ? { files: { files: [] } } : { lists: [] });
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">

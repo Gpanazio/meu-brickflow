@@ -163,14 +163,13 @@ function LegacyHome({
         <div className="flex justify-between items-end mb-6 border-b border-white/10 pb-4">
           <h2 className="brick-tech text-[10px] text-zinc-400 uppercase tracking-[0.2em]">Projetos Ativos</h2>
 
-          {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
-            <Button
-              onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-              className="bg-white text-black hover:bg-zinc-200 h-10 px-8 text-xs uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Novo Projeto
-            </Button>
-          )}
+          <Button
+            onClick={() => hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && setModalState({ type: 'project', mode: 'create', isOpen: true })}
+            disabled={!hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT)}
+            className="bg-white text-black hover:bg-zinc-200 h-10 px-8 text-xs uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Novo Projeto
+          </Button>
         </div>
 
         {/* Lista de Projetos */}
