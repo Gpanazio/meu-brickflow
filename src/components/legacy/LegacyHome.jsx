@@ -240,6 +240,19 @@ function LegacyHome({
                 </div>
               );
             })}
+            
+            {/* CARD DE ADICIONAR PROJETO */}
+            {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
+              <div 
+                onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+                className="group relative aspect-video glass-panel hover:bg-white/5 transition-all cursor-pointer p-8 flex flex-col items-center justify-center gap-4 border-dashed border-white/20 hover:border-white/40"
+              >
+                <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center group-hover:border-white/40 group-hover:bg-white/5 transition-colors">
+                  <Plus className="w-6 h-6 text-zinc-500 group-hover:text-white" />
+                </div>
+                <span className="brick-tech text-xs text-zinc-500 uppercase tracking-widest group-hover:text-white transition-colors">Criar Novo Projeto</span>
+              </div>
+            )}
           </div>
         )}
       </div>
