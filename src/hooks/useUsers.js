@@ -27,7 +27,7 @@ export function useUsers(globalUsers, updateGlobalUsers) {
     }
 
     const savedSession = localStorage.getItem('brickflow-session-user')
-    if (savedSession && globalUsers && globalUsers.length > 0) {
+    if (savedSession) {
       const parsedSession = JSON.parse(savedSession)
 
       // Se for convidado, mantém a sessão sem verificar no banco
