@@ -14,6 +14,7 @@ import { CreateProjectModal } from './components/CreateProjectModal'; // COMPONE
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { SyncNotificationContainer } from './components/SyncNotification';
 import { GuestInviteModal } from './components/GuestInviteModal';
+import { Toaster } from './components/ui/sonner';
 import { useUsers, useFiles } from './hooks';
 import SudokuGame from './components/SudokuGame';
 import { absurdPhrases } from './utils/phrases'; 
@@ -655,10 +656,11 @@ export default function App() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
-        <div className="w-full max-w-sm border border-zinc-900 bg-black p-8 space-y-6">
+        <Toaster />
+        <div className="w-full max-w-sm glass-panel p-8 space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-xl font-bold tracking-widest text-white uppercase">BrickFlow OS</h1>
-            <p className="text-xs text-zinc-600 font-mono uppercase tracking-widest">Acesso Restrito</p>
+            <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest">Acesso Restrito</p>
           </div>
           <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); handleLogin(fd.get('username'), fd.get('pin')); }} className="space-y-4">
             <Input name="username" placeholder="ID (admin)" required className="h-12" />
@@ -671,7 +673,7 @@ export default function App() {
         </div>
         
         <Dialog open={showCreateUserModal} onOpenChange={setShowCreateUserModal}>
-          <div className="bg-black text-white p-2">
+          <div className="glass-panel text-white p-6">
             <h2 className="text-lg font-bold mb-4 uppercase">Novo Usuário</h2>
             <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); handleCreateUser(Object.fromEntries(fd)); }} className="space-y-4">
               <Input name="displayName" placeholder="Nome Exibição" required />
@@ -927,6 +929,7 @@ export default function App() {
           onClose={() => setShowGuestInviteModal(false)}
         />
       )}
+      <Toaster />
     </div>
   );
 }
