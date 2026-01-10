@@ -63,6 +63,8 @@ const generateMegaSenaNumbers = () => {
   return numbers.sort((a, b) => a - b);
 };
 
+const VIEW_STORAGE_KEY = 'brickflow:lastViewState';
+
 // --- UI COMPONENTS LOCAIS ---
 const Button = React.forwardRef(({ className, variant = "default", size = "default", ...props }, ref) => {
   const variants = {
@@ -171,6 +173,7 @@ export default function App() {
   const [isTrashLoading, setIsTrashLoading] = useState(false);
   const [trashError, setTrashError] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [restoreViewState, setRestoreViewState] = useState(null);
 
   const addNotification = useCallback((type, message, duration = 3000) => {
     const id = Date.now() + Math.random();
@@ -261,6 +264,64 @@ export default function App() {
     loadData();
     return () => clearTimeout(slowLoadTimer);
   }, []);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(VIEW_STORAGE_KEY);
+      if (stored) {
+        setRestoreViewState(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.warn('Falha ao restaurar visualização salva', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!appData?.projects || !restoreViewState) return;
+    const { view, projectId, subProjectId, boardType } = restoreViewState;
+    let finalView = 'home';
+    let finalProject = null;
+    let finalSubProject = null;
+    let finalBoardType = 'kanban';
+
+    if (view && view !== 'home' && projectId) {
+      const project = appData.projects.find((proj) => proj.id === projectId);
+      if (project) {
+        finalView = 'project';
+        finalProject = project;
+        finalBoardType = boardType || 'kanban';
+
+        if (subProjectId) {
+          const subProject = project.subProjects?.find((sp) => sp.id === subProjectId);
+          if (subProject) {
+            finalView = 'subproject';
+            finalSubProject = subProject;
+            finalBoardType = boardType || subProject.enabledTabs?.[0] || 'kanban';
+          }
+        }
+      }
+    }
+
+    setCurrentView(finalView);
+    setCurrentProject(finalProject);
+    setCurrentSubProject(finalSubProject);
+    setCurrentBoardType(finalBoardType);
+    setRestoreViewState(null);
+  }, [appData?.projects, restoreViewState]);
+
+  useEffect(() => {
+    const payload = {
+      view: currentView,
+      projectId: currentProject?.id || null,
+      subProjectId: currentSubProject?.id || null,
+      boardType: currentBoardType
+    };
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, JSON.stringify(payload));
+    } catch (error) {
+      console.warn('Falha ao salvar visualização', error);
+    }
+  }, [currentView, currentProject?.id, currentSubProject?.id, currentBoardType]);
 
   const saveDataToApi = useCallback(async (newData) => {
     setIsSyncing(true);
