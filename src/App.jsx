@@ -542,6 +542,28 @@ export default function App() {
     }
   };
 
+  const handleSearchNavigation = (result) => {
+    switch (result.type) {
+      case 'Project':
+        setCurrentProject(result);
+        setCurrentView('project');
+        break;
+      case 'SubProject':
+        setCurrentProject(result.parentProject);
+        setCurrentSubProject(result);
+        setCurrentView('subproject');
+        break;
+      case 'Task':
+        setCurrentProject(result.parentProject);
+        setCurrentSubProject(result.parentSubProject);
+        setCurrentBoardType(result.boardType);
+        setCurrentView('subproject');
+        break;
+      default:
+        break;
+    }
+  };
+
   const handleTaskClick = (task) => {
     // Encontra o projeto e sub-projeto corretos
     const project = appData.projects.find(p => p.id === task.projectId);
@@ -693,6 +715,8 @@ export default function App() {
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenGuestInvite={() => setShowGuestInviteModal(true)}
         onExportBackup={handleExportBackup}
+        projects={appData.projects}
+        onSearchNavigate={handleSearchNavigation}
       />
 
       <main className="flex-1 overflow-hidden relative">

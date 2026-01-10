@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Separator } from '../ui/separator';
 import { RotateCcw, LogOut, Settings, Link2 } from 'lucide-react';
 import { ROLES } from '../../utils/accessControl';
+import { Search } from '../Search';
 
 function LegacyHeader({
   currentView,
@@ -16,7 +17,9 @@ function LegacyHeader({
   handleSwitchUser,
   handleLogout,
   onOpenSettings,
-  onOpenGuestInvite
+  onOpenGuestInvite,
+  projects,
+  onSearchNavigate
 }) {
   const canInviteGuests = currentUser?.role === ROLES.OWNER || currentUser?.role === ROLES.ADMIN;
   return (
@@ -61,6 +64,7 @@ function LegacyHeader({
 
         {/* LADO DIREITO - AVATAR DE VOLTA */}
         <div className="flex items-center gap-6">
+          <Search projects={projects} onNavigate={onSearchNavigate} />
           {isSyncing && <div className="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />}
 
           <DropdownMenu>
