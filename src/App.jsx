@@ -279,33 +279,38 @@ export default function App() {
   useEffect(() => {
     if (!appData?.projects || !restoreViewState) return;
     const { view, projectId, subProjectId, boardType } = restoreViewState;
-    let finalView = 'home';
-    let finalProject = null;
-    let finalSubProject = null;
-    let finalBoardType = 'kanban';
+    if (!view || view === 'home') {
+      setCurrentView('home');
+      setRestoreViewState(null);
+      return;
+    }
 
-    if (view && view !== 'home' && projectId) {
+    if (projectId) {
       const project = appData.projects.find((proj) => proj.id === projectId);
       if (project) {
-        finalView = 'project';
-        finalProject = project;
-        finalBoardType = boardType || 'kanban';
-
+        setCurrentProject(project);
         if (subProjectId) {
           const subProject = project.subProjects?.find((sp) => sp.id === subProjectId);
           if (subProject) {
-            finalView = 'subproject';
-            finalSubProject = subProject;
-            finalBoardType = boardType || subProject.enabledTabs?.[0] || 'kanban';
+            setCurrentSubProject(subProject);
+            setCurrentBoardType(boardType || subProject.enabledTabs?.[0] || 'kanban');
+            setCurrentView('subproject');
+            setRestoreViewState(null);
+            return;
           }
         }
+        setCurrentSubProject(null);
+        setCurrentBoardType(boardType || 'kanban');
+        setCurrentView('project');
+        setRestoreViewState(null);
+        return;
       }
     }
 
-    setCurrentView(finalView);
-    setCurrentProject(finalProject);
-    setCurrentSubProject(finalSubProject);
-    setCurrentBoardType(finalBoardType);
+    setCurrentProject(null);
+    setCurrentSubProject(null);
+    setCurrentBoardType('kanban');
+    setCurrentView('home');
     setRestoreViewState(null);
   }, [appData?.projects, restoreViewState]);
 
