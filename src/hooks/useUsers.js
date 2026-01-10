@@ -57,7 +57,10 @@ export function useUsers(globalUsers, updateGlobalUsers) {
   const handleLogin = (username, pin) => {
     if (!globalUsers) return
 
-    const user = globalUsers.find(u => u.username === username && u.pin === pin)
+    const user = globalUsers.find(u => 
+      u.username.toLowerCase() === username.toLowerCase() && 
+      u.pin === pin
+    )
 
     if (user) {
       setCurrentUser(user)
@@ -73,7 +76,9 @@ export function useUsers(globalUsers, updateGlobalUsers) {
   const handleCreateUser = (userData) => {
     if (!globalUsers) return
 
-    const existing = globalUsers.find(u => u.username === userData.username)
+    const existing = globalUsers.find(u => 
+      u.username.toLowerCase() === userData.username.toLowerCase()
+    )
     if (existing) {
       toast.error('Usuário já existe.')
       return

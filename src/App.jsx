@@ -530,12 +530,6 @@ export default function App() {
     linkElement.click();
   };
 
-  const forceOfflineMode = () => {
-    setAppData(INITIAL_STATE);
-    setConnectionError(true);
-    setIsLoading(false);
-  };
-
   const handleAccessProject = (item, type = 'project') => {
     if (type === 'project') {
       const freshProject = appData.projects.find(p => p.id === item.id) || item;
@@ -630,9 +624,6 @@ export default function App() {
         {showSlowLoad && (
           <div className="animate-in fade-in zoom-in duration-500 flex flex-col items-center gap-3">
             <p className="text-zinc-700 text-xs font-mono">O servidor está demorando para acordar...</p>
-            <Button variant="outline" onClick={forceOfflineMode} className="text-xs h-8 border-red-900 text-red-500 hover:bg-red-950 hover:text-white">
-              <Power className="w-3 h-3 mr-2" /> Forçar Início Offline
-            </Button>
           </div>
         )}
       </div>
@@ -647,7 +638,6 @@ export default function App() {
         <p className="text-zinc-500 text-sm max-w-md">Não foi possível carregar os dados. Verifique a internet ou se a variável DATABASE_URL está configurada no Railway.</p>
         <div className="flex gap-4">
           <Button onClick={() => window.location.reload()} className="bg-white text-zinc-950 font-bold">Tentar Novamente</Button>
-          <Button variant="outline" onClick={forceOfflineMode} className="border-zinc-700 text-zinc-400 hover:text-white">Modo Offline (Temporário)</Button>
         </div>
       </div>
     );
