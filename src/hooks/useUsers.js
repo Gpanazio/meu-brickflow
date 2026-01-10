@@ -56,6 +56,8 @@ export function useUsers(globalUsers, updateGlobalUsers) {
   }, [safeUsers]) // Roda sempre que a lista de usuários do banco carregar
 
   const handleLogin = (username, pin) => {
+    if (!safeUsers.length) return
+
     const user = safeUsers.find(u => 
       u.username.toLowerCase() === username.toLowerCase()
     )
@@ -72,11 +74,19 @@ export function useUsers(globalUsers, updateGlobalUsers) {
   }
 
   const handleCreateUser = (userData) => {
+    if (!safeUsers.length) return
+
     const existing = safeUsers.find(u => 
       u.username.toLowerCase() === userData.username.toLowerCase()
     )
     if (existing) {
       toast.error('Este nome de usuário já está em uso.')
+      return
+    }
+    
+    // Adiciona verificação extra para garantir que não haja duplicatas
+    if (safeUsers.some(u => u.username.toLowerCase() === userData.username.toLowerCase())) {
+      toast.error('Usuário já existe.')
       return
     }
 

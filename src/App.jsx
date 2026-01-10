@@ -195,7 +195,7 @@ export default function App() {
       normalized.users = INITIAL_STATE.users;
     }
     if (!Array.isArray(normalized.projects)) {
-      normalized.projects = INITIAL_STATE.projects;
+      normalized.projects = [];
     }
     return normalized;
   };
