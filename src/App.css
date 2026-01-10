@@ -130,3 +130,46 @@
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #DC2626; }
 }
+
+/* Custom styles for larger UI elements */
+@layer utilities {
+  /* LegacyProjectView.jsx */
+  .group.cursor-pointer.glass-panel {
+    height: auto;
+    min-height: 14rem;
+  }
+  .group.cursor-pointer.glass-panel .text-lg {
+    font-size: 1.25rem;
+  }
+  .group.cursor-pointer.glass-panel .text-\[9px\] {
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* LegacyBoard.jsx - Kanban */
+  .w-72 {
+    width: 20rem; 
+  }
+  .text-xs {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+  
+  .text-\[9px\] {
+    font-size: 0.75rem;
+  }
+
+  .text-\[10px\] {
+    font-size: 0.8rem;
+  }
+  
+  /* LegacyBoard.jsx - Todo */
+  .text-sm {
+    font-size: 1rem;
+  }
+
+  /* LegacyBoard.jsx - Files */
+  .text-\[8px\] {
+    font-size: 0.7rem;
+  }
+}
