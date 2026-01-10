@@ -95,6 +95,6 @@ describe('useUsers', () => {
       })
     })
 
-    expect(toast.error).toHaveBeenCalledWith('Usuário já existe.')
+    expect(toast.error).toHaveBeenCalledWith('Este nome de usuário já está em uso.')
   })
 })
