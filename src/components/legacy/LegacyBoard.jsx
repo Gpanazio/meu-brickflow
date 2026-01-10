@@ -32,7 +32,7 @@ function LegacyBoard({
   handleDeleteFile
 }) {
   const filesForSubProject = useMemo(
-    () => files?.filter(file => file.subProjectId === (currentSubProject?.id || null)) || [],
+    () => files?.filter(file => file.subProjectId === (currentSubProject?.id ?? null)) || [],
     [files, currentSubProject?.id]
   );
 
