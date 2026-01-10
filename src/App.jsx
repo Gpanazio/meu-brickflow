@@ -186,11 +186,18 @@ export default function App() {
     if (Array.isArray(data)) {
       return { ...INITIAL_STATE, projects: data };
     }
-    return {
+    const normalized = {
       ...INITIAL_STATE,
       ...data,
       version: typeof data.version === 'number' ? data.version : 0
     };
+    if (!Array.isArray(normalized.users)) {
+      normalized.users = INITIAL_STATE.users;
+    }
+    if (!Array.isArray(normalized.projects)) {
+      normalized.projects = [];
+    }
+    return normalized;
   };
 
   const createRequestId = () => {
