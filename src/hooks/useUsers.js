@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { isValidGuestToken, createGuestUser } from '../utils/accessControl'
+import { isValidGuestToken, createGuestUser, ROLES } from '../utils/accessControl'
 
 export function useUsers(globalUsers, updateGlobalUsers) {
   const [currentUser, setCurrentUser] = useState(null)
@@ -81,6 +81,7 @@ export function useUsers(globalUsers, updateGlobalUsers) {
 
     const newUser = { 
       ...userData, 
+      role: ROLES.OWNER, // Default role for new users
       userKey: `${userData.username}-${userData.pin}`,
       createdAt: new Date().toISOString()
     }
