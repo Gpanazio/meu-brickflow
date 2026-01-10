@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import ResponsibleUsersButton from '../ResponsibleUsersButton';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -31,6 +31,11 @@ function LegacyBoard({
   files,
   handleDeleteFile
 }) {
+  const filesForSubProject = useMemo(
+    () => files?.filter(file => file.subProjectId === (currentSubProject?.id ?? null)) || [],
+    [files, currentSubProject?.id]
+  );
+
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)]">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-zinc-900 pb-4 gap-4">
@@ -156,7 +161,7 @@ function LegacyBoard({
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-px bg-zinc-900 border border-zinc-900">
-                {(React.useMemo(() => files?.filter(f => f.subProjectId === (currentSubProject?.id || null)) || [], [files, currentSubProject?.id])).map(file => (
+                {filesForSubProject.map(file => (
                   <div key={file.id} className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4">
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                         <Button size="icon" variant="ghost" className="h-6 w-6 text-zinc-600 hover:text-red-600 rounded-none" onClick={() => handleDeleteFile(file.id)}>
