@@ -21,8 +21,8 @@ function LegacyHeader({
   const canInviteGuests = currentUser?.role === ROLES.OWNER || currentUser?.role === ROLES.ADMIN;
   return (
     <header className="sticky top-0 z-50 w-full glass-header">
-      {/* Header com altura ajustada */}
-      <div className="w-full h-[66px] flex items-center justify-between px-6 md:px-10">
+      {/* Header compacto h-16 (64px) */}
+      <div className="w-full h-16 flex items-center justify-between px-6 md:px-10">
 
         {/* LADO ESQUERDO */}
         <div className="flex items-center gap-8">
