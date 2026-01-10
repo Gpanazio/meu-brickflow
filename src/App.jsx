@@ -269,7 +269,12 @@ export default function App() {
     try {
       const stored = localStorage.getItem(VIEW_STORAGE_KEY);
       if (stored) {
-        setRestoreViewState(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          setRestoreViewState(parsed);
+        } else {
+          console.warn('Ignorando estado de visualização salvo inválido:', parsed);
+        }
       }
     } catch (error) {
       console.warn('Falha ao restaurar visualização salva', error);
