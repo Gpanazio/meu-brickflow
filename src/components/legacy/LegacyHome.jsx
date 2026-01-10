@@ -51,8 +51,8 @@ function LegacyHome({
     <div className="min-h-screen bg-black text-white pb-20">
       
       {/* --- SEÇÃO SUPERIOR UNIFICADA (HERO + WIDGETS) --- */}
-      {/* Altura compacta h-48 (192px) */}
-      <div className="glass-panel mx-6 md:mx-10 mt-6 flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10 lg:h-48">
+      {/* Altura compacta h-40 (160px) */}
+      <div className="glass-panel mx-6 md:mx-10 mt-6 flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10 lg:h-40">
 
         {/* COLUNA 1: HERO (OLÁ GABRIEL) - 50% da largura */}
         <div className="lg:w-1/2 px-6 md:px-10 py-6 flex flex-col justify-center">
