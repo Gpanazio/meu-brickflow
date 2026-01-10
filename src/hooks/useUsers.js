@@ -56,8 +56,6 @@ export function useUsers(globalUsers, updateGlobalUsers) {
   }, [safeUsers]) // Roda sempre que a lista de usuários do banco carregar
 
   const handleLogin = (username, pin) => {
-    if (!safeUsers.length) return
-
     const user = safeUsers.find(u => 
       u.username.toLowerCase() === username.toLowerCase()
     )
