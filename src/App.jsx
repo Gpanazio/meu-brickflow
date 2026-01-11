@@ -17,7 +17,9 @@ import { SyncNotificationContainer } from './components/SyncNotification';
 import { GuestInviteModal } from './components/GuestInviteModal';
 import { Toaster } from './components/ui/sonner';
 import { useUsers, useFiles } from './hooks';
+import { useProjectStore } from './store/useProjectStore';
 import SudokuGame from './components/SudokuGame';
+
 import { absurdPhrases } from './utils/phrases'; 
 
 // --- UTILS ---
@@ -145,15 +147,64 @@ const COLOR_VARIANTS = {
 };
 
 export default function App() {
-  const [appData, setAppData] = useState(null); 
+  const {
+    appData, setAppData,
+    currentView, setCurrentView,
+    currentProject, setCurrentProject,
+    currentSubProject, setCurrentSubProject,
+    currentBoardType, setCurrentBoardType,
+    updateProjects,
+    handleTaskAction: handleTaskActionStore,
+    handleListAction,
+    moveTask,
+    registerSaveHandler
+  } = useProjectStore();
+  
   const appDataRef = useRef(null);
   const currentUserRef = useRef(null);
   const saveQueueRef = useRef(Promise.resolve());
-  const [currentView, setCurrentView] = useState('home');
-  const [currentProject, setCurrentProject] = useState(null);
-  const [currentSubProject, setCurrentSubProject] = useState(null);
-  const [currentBoardType, setCurrentBoardType] = useState('kanban');
+
+  // Wrapper for Task Action to handle Notifications
+  const handleTaskAction = useCallback((action, data) => {
+    if (action === 'save') {
+      const taskData = data;
+      // Basic Mention Detection
+      const allText = (taskData.description || '') + ' ' + (taskData.comments?.map(c => c.text).join(' ') || '');
+      const mentions = allText.match(/@(\w+)/g);
+      if (mentions) {
+        mentions.forEach(m => {
+          const username = m.substring(1);
+          if (appData.users.some(u => u.username === username)) {
+            addNotification('info', `Usuário @${username} mencionado no card "${taskData.title}"`);
+          }
+        });
+      }
+
+      // Assignment Notification
+      if (taskData.responsibleUsers?.length > 0) {
+        taskData.responsibleUsers.forEach(username => {
+          if (!modalState.data?.responsibleUsers?.includes(username)) {
+            addNotification('info', `Card "${taskData.title}" atribuído a @${username}`);
+          }
+        });
+      }
+    }
+    // Call store action
+    handleTaskActionStore(action, data, modalState.listId || data.listId);
+  }, [handleTaskActionStore, appData?.users, modalState.data, modalState.listId, addNotification]);
+
+  // Sync with store
+  useEffect(() => {
+    if (appData) appDataRef.current = appData;
+  }, [appData]);
+
+  // Register save handler
+  useEffect(() => {
+    registerSaveHandler(saveDataToApi);
+  }, [registerSaveHandler]); // saveDataToApi is defined below, might need to be careful with dependency cycle or use ref
+
   const [isSyncing, setIsSyncing] = useState(false);
+
   const [modalState, setModalState] = useState({ type: null, isOpen: false, data: null, mode: 'create' });
   const [connectionError, setConnectionError] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -698,122 +749,10 @@ export default function App() {
     updateUsers(newUsersList);
   };
 
-  const [draggedItem, setDraggedItem] = useState(null);
-  const [dragOverTargetId, setDragOverTargetId] = useState(null);
-
-  const handleListAction = useCallback((action, listId) => {
-    updateProjects(prev => {
-      return prev.map(p => {
-        if (p.id !== currentProject.id) return p;
-        return {
-          ...p,
-          subProjects: p.subProjects.map(sp => {
-            if (sp.id !== currentSubProject.id) return sp;
-            const board = { ...sp.boardData[currentBoardType] };
-            if (action === 'archive-cards') {
-              board.lists = board.lists.map(l => l.id === listId ? { 
-                ...l, 
-                tasks: l.tasks.map(t => ({ ...t, isArchived: true })) 
-              } : l);
-            } else if (action === 'delete-list') {
-              board.lists = board.lists.filter(l => l.id !== listId);
-            } else if (action === 'add-list') {
-              const newList = { id: generateId('list'), title: 'NOVA LISTA', tasks: [] };
-              board.lists = [...board.lists, newList];
-            }
-            return { ...sp, boardData: { ...sp.boardData, [currentBoardType]: board } };
-          })
-        };
-      });
-    });
-  }, [currentProject?.id, currentSubProject?.id, currentBoardType]);
-
-  const handleTaskAction = useCallback((action, data) => {
-    if (action === 'delete') {
-      updateProjects(prev => {
-        return prev.map(p => {
-          if (p.id !== currentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== currentSubProject.id) return sp;
-              const board = { ...sp.boardData[currentBoardType] };
-              board.lists = board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }));
-              return { ...sp, boardData: { ...sp.boardData, [currentBoardType]: board } };
-            })
-          };
-        });
-      });
-    } else if (action === 'archive') {
-      updateProjects(prev => {
-        return prev.map(p => {
-          if (p.id !== currentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== currentSubProject.id) return sp;
-              const board = { ...sp.boardData[currentBoardType] };
-              board.lists = board.lists.map(l => ({
-                ...l,
-                tasks: l.tasks.map(t => t.id === data.taskId ? { ...t, isArchived: true } : t)
-              }));
-              return { ...sp, boardData: { ...sp.boardData, [currentBoardType]: board } };
-            })
-          };
-        });
-      });
-    } else if (action === 'save') {
-      const taskData = data.id ? data : { ...data, id: generateId('task'), responsibleUsers: [] };
-      const listId = modalState.listId || data.listId;
-      
-      // Basic Mention Detection
-      const allText = (taskData.description || '') + ' ' + (taskData.comments?.map(c => c.text).join(' ') || '');
-      const mentions = allText.match(/@(\w+)/g);
-      if (mentions) {
-        mentions.forEach(m => {
-          const username = m.substring(1);
-          if (appData.users.some(u => u.username === username)) {
-            addNotification('info', `Usuário @${username} mencionado no card "${taskData.title}"`);
-          }
-        });
-      }
-
-      // Assignment Notification
-      if (taskData.responsibleUsers?.length > 0) {
-        taskData.responsibleUsers.forEach(username => {
-          if (!modalState.data?.responsibleUsers?.includes(username)) {
-            addNotification('info', `Card "${taskData.title}" atribuído a @${username}`);
-          }
-        });
-      }
-
-      updateProjects(prev => {
-        return prev.map(p => {
-          if (p.id !== currentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== currentSubProject.id) return sp;
-              const board = { ...sp.boardData[currentBoardType] };
-              const newLists = board.lists.map(l => {
-                if (l.id !== listId) return l;
-                const taskExists = l.tasks.some(t => t.id === taskData.id);
-                return { 
-                  ...l, 
-                  tasks: taskExists 
-                    ? l.tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t)
-                    : [...l.tasks, taskData]
-                };
-              });
-              return { ...sp, boardData: { ...sp.boardData, [currentBoardType]: { ...board, lists: newLists } } };
-            })
-          };
-        });
-      });
-    }
-  }, [currentProject?.id, currentSubProject?.id, currentBoardType, modalState.listId]);
+  // Drag handlers and Action handlers removed - now managed by useProjectStore
 
   const handleSaveProject = useCallback((formData) => {
+
     if (modalState.type === 'project') {
       updateProjects(prev => prev.map(p => p.id === modalState.data.id ? { ...p, ...formData } : p));
     } else if (modalState.type === 'subProject') {
@@ -823,83 +762,8 @@ export default function App() {
     setModalState({ isOpen: false, type: null });
   }, [currentProject?.id, modalState.type, modalState.data?.id]);
 
-  const handleDragStart = (e, item, type, sourceId) => {
-    setDraggedItem({ item, type, sourceId });
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', item.id);
-    }
-  };
+  if (!appData && !connectionError) {
 
-  const handleDragEnter = (e, targetId) => {
-    e.preventDefault();
-    setDragOverTargetId(targetId);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (e, targetId, targetType) => {
-    e.preventDefault();
-    if (!draggedItem) return;
-
-    const { item: draggedData, type: draggedType, sourceId: sourceListId } = draggedItem;
-
-    if (draggedType === 'task') {
-      updateProjects(prev => {
-        return prev.map(p => {
-          if (p.id !== currentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== currentSubProject.id) return sp;
-              const board = sp.boardData[currentBoardType];
-              
-              // 1. Remove task from source list
-              let taskToMove = null;
-              const listsWithoutTask = board.lists.map(list => {
-                if (list.id === sourceListId) {
-                  taskToMove = list.tasks.find(t => t.id === draggedData.id);
-                  return { ...list, tasks: list.tasks.filter(t => t.id !== draggedData.id) };
-                }
-                return list;
-              });
-
-              if (!taskToMove) taskToMove = draggedData;
-
-              // 2. Add task to target list at correct position
-              const finalLists = listsWithoutTask.map(list => {
-                if (list.id === (targetType === 'list' ? targetId : sourceListId)) {
-                  const tasks = [...list.tasks];
-                  if (targetType === 'task') {
-                    const targetIdx = tasks.findIndex(t => t.id === targetId);
-                    tasks.splice(targetIdx, 0, taskToMove);
-                  } else {
-                    tasks.push(taskToMove);
-                  }
-                  return { ...list, tasks };
-                }
-                // Handle move between lists
-                if (targetType === 'list' && list.id === targetId) {
-                   return { ...list, tasks: [...list.tasks, taskToMove] };
-                }
-                return list;
-              });
-
-              return { ...sp, boardData: { ...sp.boardData, [currentBoardType]: { ...board, lists: finalLists } } };
-            })
-          };
-        });
-      });
-    }
-
-    setDraggedItem(null);
-    setDragOverTargetId(null);
-  };
-
-  const handleDeleteProject = (item, isSubProject = false) => {
     const deletedAt = new Date().toISOString();
     updateProjects(prev => {
       if (isSubProject) {
@@ -1067,14 +931,10 @@ export default function App() {
               setModalState={setModalState} 
               handleTaskAction={handleTaskAction}
               handleListAction={handleListAction}
-              handleDragStart={handleDragStart}
-              handleDragOver={handleDragOver}
-              handleDragEnter={handleDragEnter}
-              handleDrop={handleDrop}
-              dragOverTargetId={dragOverTargetId}
               isFileDragging={isDragging} 
               setIsFileDragging={setIsDragging} 
               handleFileDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e); }} 
+
               isUploading={isUploading} 
               handleFileUploadWithFeedback={handleFileUpload} 
               files={files} 

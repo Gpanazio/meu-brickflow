@@ -60,4 +60,10 @@ Exemplo de uso no frontend:
 fetch('/api/health')
 ```
 
-O Vite redireciona essa chamada para o servidor Express configurado no proxy.
+### Novas Dependências (Estilo Trello & Dnd-kit)
+
+Para suportar o novo sistema de Drag & Drop e a gestão de estado otimizada, instale:
+
+```bash
+npm install zustand @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities @dnd-kit/modifiers clsx tailwind-merge
+```
