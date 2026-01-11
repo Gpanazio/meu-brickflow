@@ -8,9 +8,9 @@ import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
 import { 
   Upload, ArrowLeft, Plus, Trash2, Eye, FileText, 
-  Search, Filter, MoreVertical, CheckSquare, Paperclip, MessageSquare,
-  Clock, Calendar as CalendarIcon, Tag, History, Archive
+  Search, History
 } from 'lucide-react';
+
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -19,8 +19,10 @@ import {
   DropdownMenuSeparator
 } from '../ui/dropdown-menu';
 import { formatFileSize } from '../../utils/formatFileSize';
+import KanbanBoard from './KanbanBoard';
 
 function LegacyBoard({
+
   data,
   entityName,
   enabledTabs,
@@ -131,150 +133,13 @@ function LegacyBoard({
         <div className="absolute inset-0 overflow-auto pr-2">
           {/* KANBAN */}
           {currentBoardType === 'kanban' && (
-            <div className="flex h-full gap-0 border-l border-zinc-900 min-w-max">
-              {filteredLists.length > 0 ? filteredLists.map(list => (
-                <div key={list.id} className="w-80 flex flex-col h-full bg-black border-r border-zinc-900"
-                     onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, list.id, 'list')}>
-                  <div className="p-4 border-b border-zinc-900 flex justify-between items-center bg-zinc-950/20">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-[10px] uppercase tracking-[0.2em] text-zinc-400">{list.title}</span>
-                      <span className="bg-zinc-900 text-zinc-600 text-[9px] font-mono px-1.5 py-0.5 rounded-sm">{(list.tasks?.length ?? 0).toString().padStart(2, '0')}</span>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-700 hover:text-white rounded-none">
-                          <MoreVertical className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-black border-zinc-800 rounded-none text-zinc-400">
-                        <DropdownMenuItem 
-                          className="text-[10px] uppercase tracking-widest focus:bg-zinc-900 focus:text-white cursor-pointer"
-                          onClick={() => handleListAction('archive-cards', list.id)}
-                        >
-                          Arquivar Cards
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-[10px] uppercase tracking-widest focus:bg-zinc-900 focus:text-white cursor-pointer">Mover Lista</DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-zinc-900" />
-                        <DropdownMenuItem 
-                          className="text-[10px] uppercase tracking-widest focus:bg-zinc-900 focus:text-white cursor-pointer text-red-600"
-                          onClick={() => {
-                            if (window.confirm('Excluir esta lista e todas as tarefas nela?')) {
-                              handleListAction('delete-list', list.id);
-                            }
-                          }}
-                        >
-                          Excluir Lista
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black/40">
-                    {list.tasks?.map(task => {
-                      const progress = getTaskProgress(task);
-                      const coverImage = task.attachments?.find(a => a.type?.includes('image'))?.url || task.coverImage;
-                      const dueDateStatus = getDueDateStatus(task.endDate);
-                      
-                      return (
-                        <div key={task.id} draggable onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
-                              onDragEnter={(e) => handleDragEnter(e, task.id)}
-                              onDragOver={handleDragOver}
-                              onDrop={(e) => handleDrop(e, task.id, 'task')}
-                              onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}
-                              className={`bg-zinc-950 border border-zinc-900 hover:border-zinc-700 cursor-grab active:cursor-grabbing group transition-all duration-200 shadow-sm hover:shadow-md 
-                                ${dragOverTargetId === task.id ? 'border-t-2 border-t-red-600 scale-[1.02]' : ''} 
-                                ${task.isArchived ? 'opacity-60' : ''}
-                                ${dueDateStatus === 'late' ? 'border-l-2 border-l-red-600' : dueDateStatus === 'near' ? 'border-l-2 border-l-yellow-500' : ''}
-                              `}>
-                          
-                          {coverImage && (
-                            <div className="w-full h-32 overflow-hidden border-b border-zinc-900">
-                              <img src={coverImage} alt="Cover" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            </div>
-                          )}
-
-                          <div className="p-4 space-y-3">
-                            <div className="flex flex-wrap gap-1 mb-1">
-                              {task.labels?.map((label, idx) => (
-                                <div key={idx} className={`h-1.5 w-8 rounded-full bg-${label.color}-600`} title={label.text} />
-                              ))}
-                              {task.priority === 'high' && <div className="h-1.5 w-8 rounded-full bg-red-600" title="Alta Prioridade" />}
-                            </div>
-
-                            <div className="flex justify-between items-start gap-2">
-                              <span className="text-xs font-bold text-zinc-300 group-hover:text-white transition-colors uppercase leading-tight tracking-wide">{task.title}</span>
-                              {task.isArchived && <Badge variant="outline" className="text-[8px] h-4 rounded-none border-zinc-800 text-zinc-600 uppercase">Arquivado</Badge>}
-                            </div>
-
-                            {(task.description || progress || task.attachments?.length > 0 || task.comments?.length > 0) && (
-                              <div className="flex flex-wrap items-center gap-3 text-zinc-600">
-                                {task.description && <FileText className="h-3 w-3" />}
-                                {progress && (
-                                  <div className="flex items-center gap-1 bg-green-950/30 px-1.5 py-0.5 rounded text-green-600 border border-green-900/30">
-                                    <CheckSquare className="h-2.5 w-2.5" />
-                                    <span className="text-[9px] font-bold">{progress.completed}/{progress.total}</span>
-                                  </div>
-                                )}
-                                {task.attachments?.length > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <Paperclip className="h-3 w-3" />
-                                    <span className="text-[9px] font-mono">{task.attachments.length}</span>
-                                  </div>
-                                )}
-                                {task.comments?.length > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    <MessageSquare className="h-3 w-3" />
-                                    <span className="text-[9px] font-mono">{task.comments.length}</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {progress && (
-                              <div className="space-y-1">
-                                <Progress value={progress.percent} className="h-1 bg-zinc-900" />
-                              </div>
-                            )}
-
-                            <div className="flex items-center justify-between pt-3 border-t border-zinc-900/50">
-                              <div className="flex -space-x-2 overflow-hidden">
-                                {task.responsibleUsers?.length > 0 ? (
-                                  <ResponsibleUsersButton users={task.responsibleUsers} />
-                                ) : (
-                                  <div className="h-6 w-6 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                                    <MoreVertical className="h-3 w-3 text-zinc-700" />
-                                  </div>
-                                )}
-                              </div>
-                              {task.endDate && (
-                                <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${
-                                  dueDateStatus === 'late' ? 'bg-red-950/50 text-red-500 border border-red-900/30' : 
-                                  dueDateStatus === 'near' ? 'bg-yellow-950/50 text-yellow-500 border border-yellow-900/30' : 
-                                  'text-zinc-500'
-                                }`}>
-                                  <Clock className="h-2.5 w-2.5" />
-                                  <span className="text-[9px] font-mono">{new Date(task.endDate).toLocaleDateString().slice(0,5)} {task.endDate.includes('T') ? new Date(task.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                      </div>
-                    );
-                  })}
-                  <Button variant="ghost" className="m-3 border border-dashed border-zinc-900 text-zinc-700 hover:text-white hover:bg-zinc-950 rounded-none h-10 uppercase text-[9px] tracking-widest"
-                    onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
-                    <Plus className="h-3 w-3 mr-2" /> Adicionar Card
-                  </Button>
-                </div>
-              )) : <div className="p-8 text-zinc-500 text-xs">Nenhum card encontrado com esses filtros.</div>}
-              <Button 
-                variant="ghost" 
-                className="w-72 h-12 m-4 border border-dashed border-zinc-900 text-zinc-700 hover:text-white hover:bg-zinc-950 rounded-none uppercase text-[10px] tracking-widest shrink-0"
-                onClick={() => handleListAction('add-list')}
-              >
-                <Plus className="h-4 w-4 mr-2" /> Nova Lista
-              </Button>
-            </div>
+            <KanbanBoard 
+              lists={filteredLists} 
+              setModalState={setModalState} 
+              handleListAction={handleListAction}
+            />
           )}
+
 
 
           {/* TODO LIST */}
