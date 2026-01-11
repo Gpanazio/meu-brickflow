@@ -1,0 +1,175 @@
+@import "tailwindcss";
+
+/* BRICK Typography System - Inter & JetBrains Mono */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 0%; 
+    --foreground: 0 0% 90%; 
+    --card: 0 0% 2%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 2%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 356 85% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 50%; 
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 9%;
+    --input: 0 0% 9%;
+    --ring: 356 85% 55%;
+    --radius: 0px;
+  }
+  * { border-color: hsl(var(--border)); border-style: solid; }
+  body { 
+    background-color: hsl(var(--background)); 
+    background-image: radial-gradient(circle at 50% -20%, #1a0505 0%, #000000 50%);
+    background-attachment: fixed;
+    color: hsl(var(--foreground)); 
+    font-feature-settings: "rlig" 1, "calt" 1; 
+    overflow-x: hidden; 
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; 
+  }
+}
+
+/* BRICK Liquid Glass System */
+@layer utilities {
+  .glass-panel {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  }
+  
+  .glass-header {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-button {
+     background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+     border: 1px solid rgba(255, 255, 255, 0.1);
+     backdrop-filter: blur(4px);
+     transition: all 0.2s ease;
+  }
+  .glass-button:hover {
+     background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+     border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* BRICK Typography Classes */
+@layer utilities {
+  /* Títulos de impacto - Inter Black com -5% tracking */
+  .brick-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+  }
+
+  /* Manifestos & Apoio - Inter Light (300) */
+  .brick-manifesto {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+  }
+
+  /* Textos técnicos - JetBrains Mono */
+  .brick-tech {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
+  }
+}
+
+@layer utilities {
+  .text-shadow { text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: #000; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #DC2626; }
+}
+
+/* Custom styles for larger UI elements */
+@layer utilities {
+  /* LegacyProjectView.jsx */
+  .group.cursor-pointer.glass-panel {
+    height: auto;
+    min-height: 14rem;
+  }
+  .group.cursor-pointer.glass-panel .text-lg {
+    font-size: 1.25rem;
+  }
+  .group.cursor-pointer.glass-panel .text-\[9px\] {
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* LegacyBoard.jsx - Kanban */
+  .w-72 {
+    width: 20rem; 
+  }
+  .text-xs {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+  
+  .text-\[9px\] {
+    font-size: 0.75rem;
+  }
+
+  .text-\[10px\] {
+    font-size: 0.8rem;
+  }
+  
+  /* LegacyBoard.jsx - Todo */
+  .text-sm {
+    font-size: 1rem;
+  }
+
+  /* LegacyBoard.jsx - Files */
+  .text-\[8px\] {
+    font-size: 0.7rem;
+  }
+}
