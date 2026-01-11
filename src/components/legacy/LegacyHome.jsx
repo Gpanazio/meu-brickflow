@@ -121,6 +121,11 @@ function LegacyHome({
 
           {userTasks.length > 0 ? (
             <>
+              {userTasks.length > 5 && (
+                <p className="brick-tech text-[9px] text-zinc-600 uppercase tracking-widest mb-3 text-center">
+                  Não existe trabalho ruim. O ruim é ter que trabalhar... 👇
+                </p>
+              )}
               <div className="space-y-2">
                 {userTasks.slice(0, 5).map((task) => {
                   const colors = DEFAULT_COLORS[task.projectColor] || DEFAULT_COLORS['blue'];
@@ -157,12 +162,18 @@ function LegacyHome({
               )}
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12">
+            <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="brick-manifesto text-2xl text-zinc-800 uppercase tracking-tight mb-2">
-                Tá molezinha demais! 😎
+                VOCÊ NÃO TEM NENHUMA TAREFA PENDENTE!
               </p>
               <p className="brick-tech text-[9px] text-zinc-600 uppercase tracking-widest">
-                Nenhuma tarefa atribuída... por enquanto
+                Para garantir que continue assim, uma dica do melhor:
+              </p>
+              <p className="brick-tech text-[9px] text-zinc-500 uppercase tracking-widest mt-3 max-w-md">
+                “Sabe, eu sempre pareço irritado. Quando você parece irritado, as pessoas acham que você está ocupado.”
+              </p>
+              <p className="brick-tech text-[9px] text-zinc-600 uppercase tracking-widest mt-2">
+                — George Costanza
               </p>
             </div>
           )}
