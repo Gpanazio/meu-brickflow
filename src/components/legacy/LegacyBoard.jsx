@@ -265,6 +265,7 @@ function LegacyBoard({
                     <Plus className="h-3 w-3 mr-2" /> Adicionar Card
                   </Button>
                 </div>
+              </div>
               )) : <div className="p-8 text-zinc-500 text-xs">Nenhum card encontrado com esses filtros.</div>}
               <Button 
                 variant="ghost" 
