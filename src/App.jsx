@@ -811,7 +811,7 @@ export default function App() {
       setConnectionErrorMessage(null);
     } catch (err) {
       setConnectionError(true);
-      setConnectionErrorMessage('Falha ao restaurar backup.');
+      setConnectionErrorMessage(formatConnectionErrorMessage(err, 'Falha ao restaurar backup.'));
     } finally {
       setIsSyncing(false);
       setIsBackupRestoring(false);
