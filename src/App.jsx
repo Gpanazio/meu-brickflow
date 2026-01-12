@@ -65,6 +65,7 @@ const generateMegaSenaNumbers = () => {
 };
 
 const VIEW_STORAGE_KEY = 'brickflow:lastViewState';
+const DATA_LOAD_FALLBACK_MESSAGE = 'Não foi possível carregar os dados. Verifique a internet ou se a variável DATABASE_URL está configurada no Railway.';
 
 // --- UI COMPONENTS LOCAIS ---
 const Button = React.forwardRef(({ className, variant = "default", size = "default", ...props }, ref) => {
@@ -158,6 +159,7 @@ export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [modalState, setModalState] = useState({ type: null, isOpen: false, data: null, mode: 'create' });
   const [connectionError, setConnectionError] = useState(false);
+  const [connectionErrorMessage, setConnectionErrorMessage] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showGuestInviteModal, setShowGuestInviteModal] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
@@ -398,6 +400,16 @@ export default function App() {
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   };
 
+  const formatConnectionErrorMessage = useCallback((error, fallback) => {
+    if (!error) return fallback;
+    if (error.name === 'AbortError') {
+      return 'Tempo esgotado ao conectar ao servidor.';
+    }
+    const message = String(error.message || '').trim();
+    if (!message || message === 'Failed to fetch') return fallback;
+    return message;
+  }, []);
+
   useEffect(() => {
     if (absurdPhrases && absurdPhrases.length > 0) {
       setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
@@ -481,6 +493,12 @@ export default function App() {
           console.error("Erro ao carregar dados:", err);
         }
         setConnectionError(true);
+        setConnectionErrorMessage(
+          formatConnectionErrorMessage(
+            err,
+            DATA_LOAD_FALLBACK_MESSAGE
+          )
+        );
         setAppData(INITIAL_STATE);
       } finally {
         setIsLoading(false);
@@ -627,11 +645,13 @@ export default function App() {
           });
         }
         setConnectionError(false);
+        setConnectionErrorMessage(null);
         addNotification('success', 'Alterações salvas', 2000);
       }
     } catch (e) {
       console.error("Erro ao salvar:", e);
       setConnectionError(true);
+      setConnectionErrorMessage(formatConnectionErrorMessage(e, 'Erro ao sincronizar. Verifique sua conexão.'));
       addNotification('error', 'Erro ao sincronizar. Verifique sua conexão.');
     } finally {
       setIsSyncing(false);
@@ -684,6 +704,13 @@ export default function App() {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
+  useEffect(() => {
+    if (isLoggedIn && connectionError) {
+      setConnectionError(false);
+      setConnectionErrorMessage(null);
+    }
+  }, [connectionError, isLoggedIn]);
+
   const fetchProjectHistory = useCallback(async (projectId) => {
     if (!projectId) return;
     setIsHistoryLoading(true);
@@ -720,6 +747,7 @@ export default function App() {
       await fetchProjectHistory(currentProject.id);
     } catch (err) {
       setConnectionError(true);
+      setConnectionErrorMessage(formatConnectionErrorMessage(err, 'Falha ao restaurar projeto.'));
     } finally {
       setIsSyncing(false);
     }
@@ -781,8 +809,10 @@ export default function App() {
       setCurrentBoardType('kanban');
       setCurrentView(updatedProject ? 'project' : 'home');
       setConnectionError(false);
+      setConnectionErrorMessage(null);
     } catch (err) {
       setConnectionError(true);
+      setConnectionErrorMessage(formatConnectionErrorMessage(err, 'Falha ao restaurar backup.'));
     } finally {
       setIsSyncing(false);
       setIsBackupRestoring(false);
@@ -804,9 +834,11 @@ export default function App() {
       setAppData(normalizedData);
       appDataRef.current = normalizedData;
       setConnectionError(false);
+      setConnectionErrorMessage(null);
       await fetchTrash();
     } catch (err) {
       setConnectionError(true);
+      setConnectionErrorMessage(formatConnectionErrorMessage(err, 'Falha ao restaurar item.'));
     } finally {
       setIsSyncing(false);
     }
@@ -971,7 +1003,9 @@ export default function App() {
       <div className="min-h-screen bg-black flex flex-col items-center justify-center text-red-600 gap-4 p-8 text-center">
         <WifiOff className="w-16 h-16" />
         <h1 className="text-2xl font-black uppercase">Falha na Conexão</h1>
-        <p className="text-zinc-500 text-sm max-w-md">Não foi possível carregar os dados. Verifique a internet ou se a variável DATABASE_URL está configurada no Railway.</p>
+        <p className="text-zinc-500 text-sm max-w-md">
+          {connectionErrorMessage || DATA_LOAD_FALLBACK_MESSAGE}
+        </p>
         <div className="flex gap-4">
           <Button onClick={() => window.location.reload()} className="bg-white text-zinc-950 font-bold">Tentar Novamente</Button>
         </div>
@@ -980,23 +1014,9 @@ export default function App() {
   }
 
   if (!isLoggedIn) {
-    // If we're not logged in, but the server is still checking status, 
-    // keep showing the "Iniciando" screen (handled by the block above).
-    // If there's an error, show it here.
-    if (connectionError || authError) {
-      return (
-        <div className="min-h-screen bg-black flex flex-col items-center justify-center text-red-600 gap-4 p-8 text-center">
-          <WifiOff className="w-16 h-16" />
-          <h1 className="text-2xl font-black uppercase">Falha na Conexão</h1>
-          <p className="text-zinc-500 text-sm max-w-md">
-            {authError || 'Não foi possível conectar à API. Verifique se o backend está no ar e se o banco de dados está acessível.'}
-          </p>
-          <div className="flex gap-4">
-            <Button onClick={() => window.location.reload()} className="bg-white text-zinc-950 font-bold">Tentar Novamente</Button>
-          </div>
-        </div>
-      );
-    }
+    const loginErrorMessage = authError || (connectionError
+      ? connectionErrorMessage || 'Não foi possível conectar à API. Verifique se o backend está no ar e se as variáveis `DATABASE_URL` (e opcionalmente `DATABASE_SSL`) estão configuradas no Railway.'
+      : null);
 
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
@@ -1007,6 +1027,15 @@ export default function App() {
             <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest">Acesso Restrito</p>
           </div>
 
+          {(isAuthLoading || loginErrorMessage) && (
+            <div className="text-center">
+              {isAuthLoading ? (
+                <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-mono">Verificando servidor...</p>
+              ) : (
+                <p className="text-xs text-red-400 font-bold">{loginErrorMessage}</p>
+              )}
+            </div>
+          )}
           <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); handleLogin(fd.get('username'), fd.get('pin')); }} className="space-y-4">
             <Input name="username" placeholder="ID (admin)" required className="h-12" />
             <Input name="pin" type="password" placeholder="PIN (1234)" required className="h-12 text-center tracking-[0.5em]" />
