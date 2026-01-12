@@ -25,20 +25,34 @@ const normalizeSslSetting = (value) => {
 };
 
 // --- DETECÇÃO DE AMBIENTE ---
+const parseHostname = (connStr) => {
+  try {
+    const url = new URL(connStr);
+    return url.hostname || '';
+  } catch {
+    return '';
+  }
+};
+
+const hostname = parseHostname(connectionString);
+
 // 1. Localhost: Rodando no seu PC
-const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
-// 2. Railway Internal: Rodando DENTRO do servidor do Railway
-// Detectamos tanto pelo hostname quanto pela presença de variáveis de ambiente do Railway
-const isRailwayInternal = connectionString.includes('railway.internal') || Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_STATIC_URL);
+const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+
+// 2. Railway internal: só quando o hostname é *.railway.internal
+const isRailwayInternal = hostname.endsWith('railway.internal') || connectionString.includes('railway.internal');
+
+// 3. Railway public proxy: *.proxy.rlwy.net (geralmente requer SSL)
+const isRailwayProxy = hostname.endsWith('proxy.rlwy.net') || connectionString.includes('proxy.rlwy.net');
 
 // Permite override via env para casos onde a detecção falha.
 // Valores aceitos: true/false/auto
 const sslSetting = normalizeSslSetting(process.env.DATABASE_SSL);
 
 // Lógica de SSL:
-// ATENÇÃO: Nunca usar SSL na rede interna do Railway (pode causar timeout)
-// Usar SSL apenas se for acesso externo (ex: do seu PC para o Railway)
-// Se estivermos no Railway, desativamos SSL por padrão para evitar problemas de certificado interno
+// - Localhost: sem SSL
+// - Railway internal: sem SSL
+// - Qualquer outro remoto (inclui proxy.rlwy.net): com SSL
 const inferredUseSSL = hasDatabaseUrl && !isLocal && !isRailwayInternal;
 const useSSL = sslSetting === 'true' ? true : sslSetting === 'false' ? false : inferredUseSSL;
 
@@ -49,8 +63,9 @@ if (!hasDatabaseUrl) {
   const maskedUrl = connectionString.replace(/:([^:@]+)@/, ':****@');
   console.log('✅ Inicializando Banco de Dados...');
   console.log(`   - URL: ${maskedUrl}`);
+  console.log(`   - Host: ${hostname || 'desconhecido'}`);
   console.log(
-    `   - Ambiente: ${isLocal ? 'Local' : isRailwayInternal ? 'Railway (Rede Interna/Produção)' : 'Remoto (Rede Pública)'}`
+    `   - Ambiente: ${isLocal ? 'Local' : isRailwayInternal ? 'Railway (Rede Interna)' : isRailwayProxy ? 'Railway (Proxy Público)' : 'Remoto (Rede Pública)'}`
   );
   console.log(`   - SSL: ${useSSL ? 'ATIVO' : 'INATIVO'}${sslSetting !== 'auto' ? ' (override DATABASE_SSL)' : ''}`);
 }
