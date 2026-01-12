@@ -650,7 +650,7 @@ export default function App() {
     } catch (e) {
       console.error("Erro ao salvar:", e);
       setConnectionError(true);
-      setConnectionErrorMessage('Erro ao sincronizar. Verifique sua conexão.');
+      setConnectionErrorMessage(formatConnectionErrorMessage(e, 'Erro ao sincronizar. Verifique sua conexão.'));
       addNotification('error', 'Erro ao sincronizar. Verifique sua conexão.');
     } finally {
       setIsSyncing(false);
