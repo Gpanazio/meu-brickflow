@@ -1253,6 +1253,10 @@ function UserSettingsModal({
 }) {
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar);
   const fileInputRef = useRef(null);
+  const [newUser, setNewUser] = useState({ displayName: '', username: '', pin: '', role: 'member' });
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [createUserError, setCreateUserError] = useState(null);
+  const [createUserSuccess, setCreateUserSuccess] = useState(null);
   
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -1260,6 +1264,38 @@ function UserSettingsModal({
         const reader = new FileReader();
         reader.onload = (ev) => setAvatarPreview(ev.target.result);
         reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCreateUserSubmit = async (e) => {
+    e.preventDefault();
+    setIsCreatingUser(true);
+    setCreateUserError(null);
+    setCreateUserSuccess(null);
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao criar usuário');
+      }
+
+      setCreateUserSuccess('Usuário criado com sucesso!');
+      setNewUser({ displayName: '', username: '', pin: '', role: 'member' });
+      // Opcional: Recarregar dados globais se necessário, mas o usuário só aparecerá após refresh ou se atualizarmos o appData via prop function
+      // onUpdateUser(updatedUserList) - mas não temos a lista atualizada aqui.
+      // O ideal seria um callback onUserCreated que chamasse fetch('/api/projects') de novo.
+      window.location.reload(); // Maneira mais simples de atualizar a lista de usuários no estado global por enquanto
+    } catch (err) {
+      setCreateUserError(err.message);
+    } finally {
+      setIsCreatingUser(false);
     }
   };
 
@@ -1288,6 +1324,68 @@ function UserSettingsModal({
                       </div>
                     </div>
                 </div>
+
+                {currentUser?.role === 'owner' && (
+                  <div>
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <Power className="w-3 h-3 text-green-500" /> Gerenciar Equipe
+                    </h3>
+                    <form onSubmit={handleCreateUserSubmit} className="space-y-3 bg-zinc-950/40 p-4 border border-zinc-900 rounded-md">
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input 
+                          placeholder="Nome Exibição" 
+                          value={newUser.displayName} 
+                          onChange={e => setNewUser({...newUser, displayName: e.target.value})} 
+                          required 
+                          className="h-8 text-xs"
+                        />
+                        <Input 
+                          placeholder="Usuário (ID)" 
+                          value={newUser.username} 
+                          onChange={e => setNewUser({...newUser, username: e.target.value})} 
+                          required 
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input 
+                          type="password" 
+                          placeholder="PIN/Senha" 
+                          value={newUser.pin} 
+                          onChange={e => setNewUser({...newUser, pin: e.target.value})} 
+                          required 
+                          className="h-8 text-xs"
+                        />
+                         <div className="relative">
+                            <select 
+                              value={newUser.role} 
+                              onChange={(e) => setNewUser({...newUser, role: e.target.value})} 
+                              className="flex h-8 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs shadow-sm ring-offset-black placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 text-white appearance-none"
+                            >
+                              <option value="member">Membro</option>
+                              <option value="owner">Admin (Owner)</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-2 h-4 w-4 opacity-50 text-white pointer-events-none" />
+                          </div>
+                      </div>
+                      <Button 
+                        type="submit" 
+                        disabled={isCreatingUser} 
+                        className="w-full bg-white text-zinc-950 font-bold uppercase tracking-widest h-8 text-xs"
+                      >
+                        {isCreatingUser ? 'Criando...' : 'Adicionar Novo Usuário'}
+                      </Button>
+                      
+                      {createUserSuccess && (
+                        <p className="text-[10px] text-green-500 font-mono text-center">{createUserSuccess}</p>
+                      )}
+                      {createUserError && (
+                        <p className="text-[10px] text-red-500 font-mono text-center">{createUserError}</p>
+                      )}
+                    </form>
+                  </div>
+                )}
+
               <div>
                   <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple-500" /> Avatares Gerados</h3>
                   <div className="grid grid-cols-6 gap-2">

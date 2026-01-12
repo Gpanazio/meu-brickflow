@@ -100,17 +100,17 @@ const withVersion = (state, version) => {
 const getAllMasterUsers = async () => {
   try {
     const { rows } = await query(`
-      SELECT username, password_hash, name 
+      SELECT username, password_hash, name, role, avatar, color 
       FROM master_users
     `);
     
     return rows.map(u => ({
       username: u.username,
       displayName: u.name || u.username,
-      role: (u.username === 'Gabriel' || u.username === 'admin') ? 'owner' : 'member', // Hardcoded role based on username for now
+      role: u.role || 'member',
       pin: u.password_hash, 
-      avatar: '', // Default
-      color: 'zinc' // Default
+      avatar: u.avatar || '', 
+      color: u.color || 'zinc'
     }));
   } catch (err) {
     // Silently fail if table doesn't exist yet (initDB will fix)
@@ -381,6 +381,48 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     res.status(500).json({ error: 'Erro ao registrar', code: err?.code, details: err?.message });
+  }
+});
+
+// Admin: Criar novo usuário (somente Owner)
+app.post('/api/admin/users', requireAuth, async (req, res) => {
+  try {
+    // Verifica se é Owner
+    if (req.user.role !== 'owner') {
+      return res.status(403).json({ error: 'Apenas administradores podem criar usuários.' });
+    }
+
+    const { username, pin, displayName, role, color } = req.body || {};
+    if (!username || !pin) {
+      return res.status(400).json({ error: 'Dados inválidos. Username e PIN são obrigatórios.' });
+    }
+
+    const existingCheck = await query('SELECT 1 FROM master_users WHERE username = $1', [username]);
+    if (existingCheck.rows.length > 0) {
+      return res.status(409).json({ error: 'Usuário já existe.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(String(pin), salt);
+
+    await query(
+      `INSERT INTO master_users (id, username, password_hash, name, email, role, color, created_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE)`,
+      [
+        randomUUID(), 
+        username, 
+        hashed, 
+        displayName || String(username),
+        `${username}@brickflow.local`,
+        role || 'member',
+        color || 'zinc'
+      ]
+    );
+
+    res.json({ ok: true, message: 'Usuário criado com sucesso.' });
+  } catch (err) {
+    console.error('❌ ERRO ADMIN CREATE USER:', err);
+    res.status(500).json({ error: 'Erro ao criar usuário', details: err.message });
   }
 });
 
@@ -830,21 +872,42 @@ const initDB = async () => {
 
     // Master Users & Seeding
     try {
+      // Ensure 'role' column exists
+      await query(`
+        ALTER TABLE master_users 
+        ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'member'
+      `);
+
+      // Ensure 'avatar' column exists
+      await query(`
+        ALTER TABLE master_users 
+        ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT ''
+      `);
+
+      // Ensure 'color' column exists
+      await query(`
+        ALTER TABLE master_users 
+        ADD COLUMN IF NOT EXISTS color TEXT DEFAULT 'zinc'
+      `);
+
       // Seed Gabriel
       // Using ON CONFLICT (username) if username is unique, otherwise we might need another strategy.
       // Assuming username is unique based on typical auth schemas.
       await query(`
-        INSERT INTO master_users (id, username, password_hash, name, email, created_at)
+        INSERT INTO master_users (id, username, password_hash, name, email, created_at, role, color)
         VALUES (
           gen_random_uuid(), 
           'Gabriel', 
           '$2b$10$V5RIP3w.qoyLKbMx9EZWDu8d/0UCbp5aJUhyK0SkrQzfQ5eh9qJXW', 
           'Gabriel', 
           'gabriel@brickflow.com', 
-          CURRENT_DATE
+          CURRENT_DATE,
+          'owner',
+          'red'
         )
         ON CONFLICT (username) DO UPDATE 
-        SET password_hash = EXCLUDED.password_hash;
+        SET password_hash = EXCLUDED.password_hash,
+            role = 'owner';
       `);
       console.log('✅ Usuário Gabriel garantido na tabela master_users.');
     } catch (e) {
