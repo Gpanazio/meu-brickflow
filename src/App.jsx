@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   ArrowLeft, Upload, RotateCcw, Sparkles,
-  X, ChevronDown, Settings, WifiOff, Save, Power
+  X, ChevronDown, Settings, WifiOff, Save, Power, Edit, Trash2
 } from 'lucide-react';
 import './App.css';
 
@@ -1218,6 +1218,7 @@ export default function App() {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         currentUser={currentUser}
+        users={appData?.users || []}
         onUpdateUser={handleUpdateUser}
         backups={backups}
         isBackupsLoading={isBackupsLoading}
@@ -1242,6 +1243,7 @@ function UserSettingsModal({
   isOpen,
   onClose,
   currentUser,
+  users,
   onUpdateUser,
   backups,
   isBackupsLoading,
@@ -1253,11 +1255,23 @@ function UserSettingsModal({
 }) {
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar);
   const fileInputRef = useRef(null);
-  const [newUser, setNewUser] = useState({ displayName: '', username: '', pin: '', role: 'member' });
-  const [isCreatingUser, setIsCreatingUser] = useState(false);
-  const [createUserError, setCreateUserError] = useState(null);
-  const [createUserSuccess, setCreateUserSuccess] = useState(null);
   
+  // User Management State
+  const [manageMode, setManageMode] = useState('list'); // 'list', 'create', 'edit'
+  const [editingUser, setEditingUser] = useState(null);
+  const [formData, setFormData] = useState({ displayName: '', username: '', pin: '', role: 'member', color: 'zinc' });
+  const [isLoadingUserAction, setIsLoadingUserAction] = useState(false);
+  const [userActionMessage, setUserActionMessage] = useState({ type: '', text: '' });
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+        setManageMode('list');
+        setUserActionMessage({ type: '', text: '' });
+        setAvatarPreview(currentUser?.avatar);
+    }
+  }, [isOpen, currentUser]);
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1267,39 +1281,71 @@ function UserSettingsModal({
     }
   };
 
-  const handleCreateUserSubmit = async (e) => {
+  const handleSave = () => { onUpdateUser({ ...currentUser, avatar: avatarPreview }); onClose(); };
+
+  const handleUserAction = async (e) => {
     e.preventDefault();
-    setIsCreatingUser(true);
-    setCreateUserError(null);
-    setCreateUserSuccess(null);
+    setIsLoadingUserAction(true);
+    setUserActionMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser)
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao criar usuário');
-      }
+        const isEdit = manageMode === 'edit';
+        const endpoint = isEdit ? `/api/admin/users/${editingUser.username}` : '/api/admin/users';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        const payload = { ...formData };
+        if (isEdit && !payload.pin) delete payload.pin; // Don't send empty pin on edit
 
-      setCreateUserSuccess('Usuário criado com sucesso!');
-      setNewUser({ displayName: '', username: '', pin: '', role: 'member' });
-      // Opcional: Recarregar dados globais se necessário, mas o usuário só aparecerá após refresh ou se atualizarmos o appData via prop function
-      // onUpdateUser(updatedUserList) - mas não temos a lista atualizada aqui.
-      // O ideal seria um callback onUserCreated que chamasse fetch('/api/projects') de novo.
-      window.location.reload(); // Maneira mais simples de atualizar a lista de usuários no estado global por enquanto
+        const response = await fetch(endpoint, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Erro na operação');
+
+        setUserActionMessage({ type: 'success', text: data.message || 'Sucesso!' });
+        
+        if (!isEdit) {
+            setFormData({ displayName: '', username: '', pin: '', role: 'member', color: 'zinc' });
+        }
+        
+        // Refresh page to sync data (simple approach)
+        setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
-      setCreateUserError(err.message);
-    } finally {
-      setIsCreatingUser(false);
+        setUserActionMessage({ type: 'error', text: err.message });
+        setIsLoadingUserAction(false);
     }
   };
 
-  const handleSave = () => { onUpdateUser({ ...currentUser, avatar: avatarPreview }); onClose(); };
+  const handleDeleteUser = async (username) => {
+      if (!window.confirm(`Tem certeza que deseja excluir o usuário ${username}?`)) return;
+      
+      try {
+          const response = await fetch(`/api/admin/users/${username}`, { method: 'DELETE' });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error);
+          
+          // Refresh
+          window.location.reload();
+      } catch (err) {
+          alert(err.message);
+      }
+  };
+
+  const startEdit = (user) => {
+      setEditingUser(user);
+      setFormData({
+          displayName: user.displayName,
+          username: user.username, // ReadOnly
+          pin: '', // Blank by default
+          role: user.role,
+          color: user.color || 'zinc'
+      });
+      setManageMode('edit');
+      setUserActionMessage({ type: '', text: '' });
+  };
 
   if (!isOpen) return null;
 
@@ -1310,7 +1356,8 @@ function UserSettingsModal({
           <button onClick={onClose}><X className="w-5 h-5 text-zinc-500 hover:text-white" /></button>
       </div>
       <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
-          <div className="space-y-6">
+          <div className="space-y-8">
+            {/* Seção Pessoal */}
             <div>
                 <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Avatar do Usuário</h3>
                 <div className="flex items-center gap-4">
@@ -1323,65 +1370,140 @@ function UserSettingsModal({
                 </div>
             </div>
 
+            {/* Gerenciamento de Usuários (Admin) */}
             {currentUser?.role === 'owner' && (
-              <div>
-                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <Power className="w-3 h-3 text-green-500" /> Gerenciar Equipe
-                </h3>
-                <form onSubmit={handleCreateUserSubmit} className="space-y-3 bg-zinc-950/40 p-4 border border-zinc-900 rounded-md">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input 
-                      placeholder="Nome Exibição" 
-                      value={newUser.displayName} 
-                      onChange={e => setNewUser({...newUser, displayName: e.target.value})} 
-                      required 
-                      className="h-8 text-xs"
-                    />
-                    <Input 
-                      placeholder="Usuário (ID)" 
-                      value={newUser.username} 
-                      onChange={e => setNewUser({...newUser, username: e.target.value})} 
-                      required 
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input 
-                      type="password" 
-                      placeholder="PIN/Senha" 
-                      value={newUser.pin} 
-                      onChange={e => setNewUser({...newUser, pin: e.target.value})} 
-                      required 
-                      className="h-8 text-xs"
-                      autoComplete="new-password"
-                    />
-                      <div className="relative">
-                        <select 
-                          value={newUser.role} 
-                          onChange={(e) => setNewUser({...newUser, role: e.target.value})} 
-                          className="flex h-8 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs shadow-sm ring-offset-black placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 text-white appearance-none"
+              <div className="border border-zinc-800 rounded-md bg-zinc-950/30 overflow-hidden">
+                <div className="bg-zinc-900/50 p-3 border-b border-zinc-800 flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                      <Power className="w-3 h-3 text-green-500" /> Gerenciar Equipe
+                    </h3>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => setManageMode('list')}
+                            className={cn("text-[10px] uppercase font-bold px-2 py-1 rounded transition-colors", manageMode === 'list' ? "bg-white text-black" : "text-zinc-500 hover:text-white")}
                         >
-                          <option value="member">Membro</option>
-                          <option value="owner">Admin (Owner)</option>
-                        </select>
-                        <ChevronDown className="absolute right-3 top-2 h-4 w-4 opacity-50 text-white pointer-events-none" />
-                      </div>
-                  </div>
-                  <Button 
-                    type="submit" 
-                    disabled={isCreatingUser} 
-                    className="w-full bg-white text-zinc-950 font-bold uppercase tracking-widest h-8 text-xs"
-                  >
-                    {isCreatingUser ? 'Criando...' : 'Adicionar Novo Usuário'}
-                  </Button>
-                  
-                  {createUserSuccess && (
-                    <p className="text-[10px] text-green-500 font-mono text-center">{createUserSuccess}</p>
-                  )}
-                  {createUserError && (
-                    <p className="text-[10px] text-red-500 font-mono text-center">{createUserError}</p>
-                  )}
-                </form>
+                            Lista
+                        </button>
+                        <button 
+                            onClick={() => { setManageMode('create'); setFormData({ displayName: '', username: '', pin: '', role: 'member', color: 'zinc' }); }}
+                            className={cn("text-[10px] uppercase font-bold px-2 py-1 rounded transition-colors", manageMode === 'create' ? "bg-white text-black" : "text-zinc-500 hover:text-white")}
+                        >
+                            Novo
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-4">
+                    {manageMode === 'list' && (
+                        <div className="space-y-2">
+                            {users.map(u => (
+                                <div key={u.username} className="flex items-center justify-between bg-black/40 border border-zinc-900 p-2 rounded">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold bg-${u.color}-900 text-${u.color}-200 border border-${u.color}-700`}>
+                                            {u.displayName.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-zinc-200">{u.displayName}</p>
+                                            <p className="text-[10px] text-zinc-600 font-mono">@{u.username} • {u.role === 'owner' ? 'ADMIN' : 'MEMBRO'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white" onClick={() => startEdit(u)}>
+                                            <Edit className="w-3 h-3" />
+                                        </Button>
+                                        {u.username !== currentUser.username && (
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-500" onClick={() => handleDeleteUser(u.username)}>
+                                                <Trash2 className="w-3 h-3" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {(manageMode === 'create' || manageMode === 'edit') && (
+                        <form onSubmit={handleUserAction} className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase">Nome</label>
+                                    <Input 
+                                        value={formData.displayName} 
+                                        onChange={e => setFormData({...formData, displayName: e.target.value})} 
+                                        required className="h-8 text-xs" 
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase">Usuário (ID)</label>
+                                    <Input 
+                                        value={formData.username} 
+                                        onChange={e => setFormData({...formData, username: e.target.value})} 
+                                        required className="h-8 text-xs" 
+                                        disabled={manageMode === 'edit'} // ID immutable
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase">{manageMode === 'edit' ? 'Nova Senha (Opcional)' : 'Senha'}</label>
+                                    <Input 
+                                        type="password" 
+                                        value={formData.pin} 
+                                        onChange={e => setFormData({...formData, pin: e.target.value})} 
+                                        required={manageMode === 'create'}
+                                        className="h-8 text-xs"
+                                        autoComplete="new-password"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase">Permissão</label>
+                                    <div className="relative">
+                                        <select 
+                                            value={formData.role} 
+                                            onChange={(e) => setFormData({...formData, role: e.target.value})} 
+                                            className="flex h-8 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-zinc-700 text-white appearance-none"
+                                        >
+                                            <option value="member">Membro</option>
+                                            <option value="owner">Admin (Owner)</option>
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-2 h-4 w-4 opacity-50 text-white pointer-events-none" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase">Cor do Avatar</label>
+                                <div className="flex gap-2">
+                                    {['blue', 'red', 'green', 'purple', 'orange', 'zinc'].map(c => (
+                                        <div 
+                                            key={c}
+                                            onClick={() => setFormData({...formData, color: c})}
+                                            className={cn("w-6 h-6 rounded-full cursor-pointer border-2 transition-all", 
+                                                formData.color === c ? "border-white scale-110" : "border-transparent opacity-50 hover:opacity-100",
+                                                `bg-${c}-600`
+                                            )}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="pt-2 flex gap-2">
+                                {manageMode === 'edit' && (
+                                    <Button type="button" variant="ghost" className="flex-1 h-8 text-xs font-bold uppercase" onClick={() => setManageMode('list')}>Cancelar</Button>
+                                )}
+                                <Button type="submit" disabled={isLoadingUserAction} className="flex-1 bg-white text-zinc-950 font-bold uppercase tracking-widest h-8 text-xs">
+                                    {isLoadingUserAction ? 'Salvando...' : (manageMode === 'create' ? 'Criar Usuário' : 'Atualizar Usuário')}
+                                </Button>
+                            </div>
+
+                            {userActionMessage.text && (
+                                <p className={cn("text-[10px] font-mono text-center", userActionMessage.type === 'success' ? "text-green-500" : "text-red-500")}>
+                                    {userActionMessage.text}
+                                </p>
+                            )}
+                        </form>
+                    )}
+                </div>
               </div>
             )}
 

@@ -426,6 +426,86 @@ app.post('/api/admin/users', requireAuth, async (req, res) => {
   }
 });
 
+// Admin: Editar usuário
+app.put('/api/admin/users/:targetUsername', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'owner') {
+      return res.status(403).json({ error: 'Apenas administradores podem editar usuários.' });
+    }
+
+    const { targetUsername } = req.params;
+    const { displayName, role, pin, color } = req.body || {};
+
+    // Build update query dynamically
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (displayName !== undefined) {
+      fields.push(`name = $${idx++}`);
+      values.push(displayName);
+    }
+    if (role !== undefined) {
+      fields.push(`role = $${idx++}`);
+      values.push(role);
+    }
+    if (color !== undefined) {
+      fields.push(`color = $${idx++}`);
+      values.push(color);
+    }
+    if (pin) {
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(String(pin), salt);
+      fields.push(`password_hash = $${idx++}`);
+      values.push(hashed);
+    }
+
+    if (fields.length === 0) {
+      return res.json({ ok: true, message: 'Nada a atualizar.' });
+    }
+
+    values.push(targetUsername);
+    const queryStr = `UPDATE master_users SET ${fields.join(', ')} WHERE username = $${idx}`;
+
+    const result = await query(queryStr, values);
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    res.json({ ok: true, message: 'Usuário atualizado com sucesso.' });
+  } catch (err) {
+    console.error('❌ ERRO ADMIN UPDATE USER:', err);
+    res.status(500).json({ error: 'Erro ao atualizar usuário', details: err.message });
+  }
+});
+
+// Admin: Deletar usuário
+app.delete('/api/admin/users/:targetUsername', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'owner') {
+      return res.status(403).json({ error: 'Apenas administradores podem deletar usuários.' });
+    }
+
+    const { targetUsername } = req.params;
+
+    if (targetUsername === req.user.username) {
+      return res.status(400).json({ error: 'Você não pode deletar a si mesmo.' });
+    }
+
+    const result = await query('DELETE FROM master_users WHERE username = $1', [targetUsername]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    res.json({ ok: true, message: 'Usuário deletado com sucesso.' });
+  } catch (err) {
+    console.error('❌ ERRO ADMIN DELETE USER:', err);
+    res.status(500).json({ error: 'Erro ao deletar usuário', details: err.message });
+  }
+});
+
 // GET: Busca estado atual
 app.get('/api/projects', async (req, res) => {
   try {
