@@ -91,9 +91,9 @@ Input.displayName = "Input";
 const Dialog = ({ open, onOpenChange, children }) => {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => onOpenChange(false)} />
-      <div className="relative z-50 grid w-full max-w-lg gap-4 glass-panel p-0 shadow-2xl duration-200 sm:rounded-none max-h-[90vh] overflow-y-auto custom-scrollbar border-0">
+      <div className="relative z-[60] grid w-full max-w-lg gap-4 glass-panel p-0 shadow-2xl duration-200 sm:rounded-none max-h-[90vh] overflow-y-auto custom-scrollbar border-0">
         {children}
       </div>
     </div>
@@ -1305,172 +1305,169 @@ function UserSettingsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
-        <div className="relative z-50 w-full max-w-lg glass-panel p-0 shadow-2xl sm:rounded-none overflow-hidden border-0">
-          <div className="p-6 border-b border-white/10 flex justify-between items-center">
-             <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2"><Settings className="w-5 h-5 text-zinc-500" /> Configurações</h2>
-             <button onClick={onClose}><X className="w-5 h-5 text-zinc-500 hover:text-white" /></button>
+      <div className="p-6 border-b border-white/10 flex justify-between items-center">
+          <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2"><Settings className="w-5 h-5 text-zinc-500" /> Configurações</h2>
+          <button onClick={onClose}><X className="w-5 h-5 text-zinc-500 hover:text-white" /></button>
+      </div>
+      <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
+          <div className="space-y-6">
+            <div>
+                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Avatar do Usuário</h3>
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-20 h-20 border-2 border-zinc-800"><AvatarImage src={avatarPreview} /><AvatarFallback className="bg-zinc-900 text-zinc-500 text-2xl font-bold">{currentUser?.displayName?.charAt(0)}</AvatarFallback></Avatar>
+                  <div className="space-y-2">
+                      <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="h-8 text-xs uppercase font-bold tracking-widest"><Upload className="w-3 h-3 mr-2" /> Upload</Button>
+                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                      <p className="text-[10px] text-zinc-600 font-mono">JPG, PNG ou GIF.</p>
+                  </div>
+                </div>
+            </div>
+
+            {currentUser?.role === 'owner' && (
+              <div>
+                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Power className="w-3 h-3 text-green-500" /> Gerenciar Equipe
+                </h3>
+                <form onSubmit={handleCreateUserSubmit} className="space-y-3 bg-zinc-950/40 p-4 border border-zinc-900 rounded-md">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input 
+                      placeholder="Nome Exibição" 
+                      value={newUser.displayName} 
+                      onChange={e => setNewUser({...newUser, displayName: e.target.value})} 
+                      required 
+                      className="h-8 text-xs"
+                    />
+                    <Input 
+                      placeholder="Usuário (ID)" 
+                      value={newUser.username} 
+                      onChange={e => setNewUser({...newUser, username: e.target.value})} 
+                      required 
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input 
+                      type="password" 
+                      placeholder="PIN/Senha" 
+                      value={newUser.pin} 
+                      onChange={e => setNewUser({...newUser, pin: e.target.value})} 
+                      required 
+                      className="h-8 text-xs"
+                      autoComplete="new-password"
+                    />
+                      <div className="relative">
+                        <select 
+                          value={newUser.role} 
+                          onChange={(e) => setNewUser({...newUser, role: e.target.value})} 
+                          className="flex h-8 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs shadow-sm ring-offset-black placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 text-white appearance-none"
+                        >
+                          <option value="member">Membro</option>
+                          <option value="owner">Admin (Owner)</option>
+                        </select>
+                        <ChevronDown className="absolute right-3 top-2 h-4 w-4 opacity-50 text-white pointer-events-none" />
+                      </div>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={isCreatingUser} 
+                    className="w-full bg-white text-zinc-950 font-bold uppercase tracking-widest h-8 text-xs"
+                  >
+                    {isCreatingUser ? 'Criando...' : 'Adicionar Novo Usuário'}
+                  </Button>
+                  
+                  {createUserSuccess && (
+                    <p className="text-[10px] text-green-500 font-mono text-center">{createUserSuccess}</p>
+                  )}
+                  {createUserError && (
+                    <p className="text-[10px] text-red-500 font-mono text-center">{createUserError}</p>
+                  )}
+                </form>
+              </div>
+            )}
+
+          <div>
+              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple-500" /> Avatares Gerados</h3>
+              <div className="grid grid-cols-6 gap-2">
+              {NO_SENSE_AVATARS.map((url, idx) => (
+                  <div key={idx} onClick={() => setAvatarPreview(url)} className={cn("aspect-square rounded-full overflow-hidden cursor-pointer border-2 transition-all hover:scale-105", avatarPreview === url ? "border-red-600 opacity-100" : "border-zinc-800 opacity-60 hover:opacity-100 hover:border-zinc-600")}>
+                  <img src={url} alt={`Avatar ${idx}`} className="w-full h-full object-cover" />
+                  </div>
+              ))}
+              </div>
           </div>
-          <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar">
-              <div className="space-y-6">
-                <div>
-                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Avatar do Usuário</h3>
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-20 h-20 border-2 border-zinc-800"><AvatarImage src={avatarPreview} /><AvatarFallback className="bg-zinc-900 text-zinc-500 text-2xl font-bold">{currentUser?.displayName?.charAt(0)}</AvatarFallback></Avatar>
-                      <div className="space-y-2">
-                          <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="h-8 text-xs uppercase font-bold tracking-widest"><Upload className="w-3 h-3 mr-2" /> Upload</Button>
-                          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                          <p className="text-[10px] text-zinc-600 font-mono">JPG, PNG ou GIF.</p>
+          <div>
+              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Save className="w-3 h-3 text-red-500" /> Backups na Nuvem</h3>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={onRefreshBackups}
+                  className="h-8 text-xs uppercase font-bold tracking-widest"
+                  disabled={isBackupsLoading}
+                >
+                  {isBackupsLoading ? 'Atualizando...' : 'Atualizar'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => onExportBackup()}
+                  className="h-8 text-xs uppercase font-bold tracking-widest"
+                  disabled={!backups?.length}
+                >
+                  Exportar Último
+                </Button>
+              </div>
+              {backupError && (
+                <p className="mt-3 text-[10px] text-red-500 font-mono">Erro ao carregar backups. Tente novamente.</p>
+              )}
+              <div className="mt-4 space-y-3">
+                {isBackupsLoading && (
+                  <p className="text-[10px] text-zinc-500 font-mono">Carregando snapshots...</p>
+                )}
+                {!isBackupsLoading && (!backups || backups.length === 0) && (
+                  <p className="text-[10px] text-zinc-600 font-mono">Nenhum snapshot disponível ainda.</p>
+                )}
+                {!isBackupsLoading && backups?.map((backup) => (
+                  <div key={backup.id} className="border border-zinc-900 rounded-md p-3 flex flex-col gap-2 bg-zinc-950/40">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-zinc-200">Snapshot #{backup.id}</p>
+                        <p className="text-[10px] text-zinc-500 font-mono">
+                          {formatBackupTimestamp(backup.created_at)} • {backup.kind}
+                        </p>
+                      </div>
+                      <div className="text-[10px] text-zinc-500 font-mono">
+                        {(backup.snapshot && formatFileSize(JSON.stringify(backup.snapshot).length)) || 'N/A'}
                       </div>
                     </div>
-                </div>
-
-                {currentUser?.role === 'owner' && (
-                  <div>
-                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                      <Power className="w-3 h-3 text-green-500" /> Gerenciar Equipe
-                    </h3>
-                    <form onSubmit={handleCreateUserSubmit} className="space-y-3 bg-zinc-950/40 p-4 border border-zinc-900 rounded-md">
-                      <div className="grid grid-cols-2 gap-3">
-                        <Input 
-                          placeholder="Nome Exibição" 
-                          value={newUser.displayName} 
-                          onChange={e => setNewUser({...newUser, displayName: e.target.value})} 
-                          required 
-                          className="h-8 text-xs"
-                        />
-                        <Input 
-                          placeholder="Usuário (ID)" 
-                          value={newUser.username} 
-                          onChange={e => setNewUser({...newUser, username: e.target.value})} 
-                          required 
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <Input 
-                          type="password" 
-                          placeholder="PIN/Senha" 
-                          value={newUser.pin} 
-                          onChange={e => setNewUser({...newUser, pin: e.target.value})} 
-                          required 
-                          className="h-8 text-xs"
-                        />
-                         <div className="relative">
-                            <select 
-                              value={newUser.role} 
-                              onChange={(e) => setNewUser({...newUser, role: e.target.value})} 
-                              className="flex h-8 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs shadow-sm ring-offset-black placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 text-white appearance-none"
-                            >
-                              <option value="member">Membro</option>
-                              <option value="owner">Admin (Owner)</option>
-                            </select>
-                            <ChevronDown className="absolute right-3 top-2 h-4 w-4 opacity-50 text-white pointer-events-none" />
-                          </div>
-                      </div>
-                      <Button 
-                        type="submit" 
-                        disabled={isCreatingUser} 
-                        className="w-full bg-white text-zinc-950 font-bold uppercase tracking-widest h-8 text-xs"
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        className="h-7 text-[10px] uppercase font-bold tracking-widest"
+                        onClick={() => onExportBackup(backup.id)}
                       >
-                        {isCreatingUser ? 'Criando...' : 'Adicionar Novo Usuário'}
+                        Exportar
                       </Button>
-                      
-                      {createUserSuccess && (
-                        <p className="text-[10px] text-green-500 font-mono text-center">{createUserSuccess}</p>
-                      )}
-                      {createUserError && (
-                        <p className="text-[10px] text-red-500 font-mono text-center">{createUserError}</p>
-                      )}
-                    </form>
+                      <Button
+                        variant="destructive"
+                        className="h-7 text-[10px] uppercase font-bold tracking-widest"
+                        disabled={isBackupRestoring}
+                        onClick={() => {
+                          if (window.confirm('Deseja restaurar este snapshot? Isso substituirá o estado atual.')) {
+                            onRestoreBackup(backup.id);
+                          }
+                        }}
+                      >
+                        Restaurar
+                      </Button>
+                    </div>
                   </div>
-                )}
-
-              <div>
-                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3 text-purple-500" /> Avatares Gerados</h3>
-                  <div className="grid grid-cols-6 gap-2">
-                  {NO_SENSE_AVATARS.map((url, idx) => (
-                      <div key={idx} onClick={() => setAvatarPreview(url)} className={cn("aspect-square rounded-full overflow-hidden cursor-pointer border-2 transition-all hover:scale-105", avatarPreview === url ? "border-red-600 opacity-100" : "border-zinc-800 opacity-60 hover:opacity-100 hover:border-zinc-600")}>
-                      <img src={url} alt={`Avatar ${idx}`} className="w-full h-full object-cover" />
-                      </div>
-                  ))}
-                  </div>
+                ))}
               </div>
-              <div>
-                  <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Save className="w-3 h-3 text-red-500" /> Backups na Nuvem</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={onRefreshBackups}
-                      className="h-8 text-xs uppercase font-bold tracking-widest"
-                      disabled={isBackupsLoading}
-                    >
-                      {isBackupsLoading ? 'Atualizando...' : 'Atualizar'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => onExportBackup()}
-                      className="h-8 text-xs uppercase font-bold tracking-widest"
-                      disabled={!backups?.length}
-                    >
-                      Exportar Último
-                    </Button>
-                  </div>
-                  {backupError && (
-                    <p className="mt-3 text-[10px] text-red-500 font-mono">Erro ao carregar backups. Tente novamente.</p>
-                  )}
-                  <div className="mt-4 space-y-3">
-                    {isBackupsLoading && (
-                      <p className="text-[10px] text-zinc-500 font-mono">Carregando snapshots...</p>
-                    )}
-                    {!isBackupsLoading && (!backups || backups.length === 0) && (
-                      <p className="text-[10px] text-zinc-600 font-mono">Nenhum snapshot disponível ainda.</p>
-                    )}
-                    {!isBackupsLoading && backups?.map((backup) => (
-                      <div key={backup.id} className="border border-zinc-900 rounded-md p-3 flex flex-col gap-2 bg-zinc-950/40">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-200">Snapshot #{backup.id}</p>
-                            <p className="text-[10px] text-zinc-500 font-mono">
-                              {formatBackupTimestamp(backup.created_at)} • {backup.kind}
-                            </p>
-                          </div>
-                          <div className="text-[10px] text-zinc-500 font-mono">
-                            {(backup.snapshot && formatFileSize(JSON.stringify(backup.snapshot).length)) || 'N/A'}
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            className="h-7 text-[10px] uppercase font-bold tracking-widest"
-                            onClick={() => onExportBackup(backup.id)}
-                          >
-                            Exportar
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            className="h-7 text-[10px] uppercase font-bold tracking-widest"
-                            disabled={isBackupRestoring}
-                            onClick={() => {
-                              if (window.confirm('Deseja restaurar este snapshot? Isso substituirá o estado atual.')) {
-                                onRestoreBackup(backup.id);
-                              }
-                            }}
-                          >
-                            Restaurar
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-              </div>
-            </div>
-          </div>
-          <div className="p-4 border-t border-zinc-900 bg-zinc-950 flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose} className="text-xs font-bold uppercase">Cancelar</Button>
-            <Button onClick={handleSave} className="bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-bold uppercase">Salvar</Button>
           </div>
         </div>
+      </div>
+      <div className="p-4 border-t border-zinc-900 bg-zinc-950 flex justify-end gap-2">
+        <Button variant="ghost" onClick={onClose} className="text-xs font-bold uppercase">Cancelar</Button>
+        <Button onClick={handleSave} className="bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-bold uppercase">Salvar</Button>
       </div>
     </Dialog>
   );
