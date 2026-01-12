@@ -68,10 +68,12 @@ function LegacyHome({
       <div className="relative z-10">
         
         {/* --- SEÇÃO SUPERIOR (HERO + WIDGETS) --- */}
-        <PrismaticPanel className="mx-6 md:mx-10 mt-6 flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10 lg:min-h-[10rem]">
-          {/* COLUNA 1: HERO */}
-          <div className="lg:w-1/2 px-6 md:px-10 py-6 flex flex-col justify-center">
-             <h1 className="brick-title text-4xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
+        {/* Alterado para md:flex-row para garantir alinhamento horizontal em telas médias e ajustado items-center */}
+        <PrismaticPanel className="mx-6 md:mx-10 mt-6 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-white/10">
+          
+          {/* COLUNA 1: HERO - Ajustado para md:w-1/2 */}
+          <div className="md:w-1/2 px-6 md:px-10 py-6 flex flex-col justify-center">
+             <h1 className="brick-title text-4xl md:text-5xl uppercase leading-[0.85] tracking-tighter">
                Olá, <span className="text-zinc-700">{currentUser?.displayName || 'Visitante'}</span>
              </h1>
              <p className="brick-mono mt-4 text-[10px] text-zinc-600 tracking-[0.2em] uppercase">
@@ -79,29 +81,29 @@ function LegacyHome({
              </p>
           </div>
 
-          {/* COLUNA 2: SORTE */}
-          <div className="lg:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between">
-              <div className="flex items-center gap-3">
+          {/* COLUNA 2: SORTE - Ajustado para md:w-1/4 */}
+          <div className="md:w-1/4 px-6 md:px-8 py-6 flex flex-col justify-between">
+              <div className="flex items-center gap-3 mb-2">
                   <Sparkles className="w-3 h-3 text-red-600" />
                   <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
               </div>
-              <div className="flex-1 flex items-center mt-3 lg:mt-0">
-                  <p className="font-sans text-sm text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
+              <div className="flex-1 flex items-center">
+                  <p className="font-sans text-xs text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
                    "{dailyPhrase || "O silêncio é uma resposta."}"
                    </p>
               </div>
           </div>
 
-          {/* COLUNA 3: PROBABILIDADE */}
-          <div className="lg:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between">
-              <div className="flex items-center gap-3 mb-4 lg:mb-0">
+          {/* COLUNA 3: PROBABILIDADE - Ajustado para md:w-1/4 */}
+          <div className="md:w-1/4 px-6 md:px-8 py-6 flex flex-col justify-between">
+              <div className="flex items-center gap-3 mb-4 md:mb-0">
                   <Dna className="w-3 h-3 text-emerald-600" />
                   <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
               </div>
               <div className="flex-1 flex items-center">
-                  <div className="flex gap-2 w-full justify-between">
+                  <div className="flex gap-1.5 w-full justify-between">
                       {safeMegaSena.map((n, i) => (
-                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-[10px] hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                               {n.toString().padStart(2, '0')}
                           </div>
                       ))}
