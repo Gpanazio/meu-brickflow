@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* BRICK Typography System - Inter & JetBrains Mono */
+/* BRICK Typography System */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
@@ -72,14 +72,20 @@
   }
 }
 
-/* BRICK Liquid Glass System */
+/* --- BRICK GLASS SYSTEM --- */
 @layer utilities {
+  /* Painel Prismático Base */
   .glass-panel {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    box-shadow: 
+      inset 1px 1px 0 0 rgba(255, 255, 255, 0.05),
+      inset -1px -1px 0 0 rgba(0, 0, 0, 0.5),
+      0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
   }
   
   .glass-header {
@@ -89,87 +95,30 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .glass-button {
-     background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-     border: 1px solid rgba(255, 255, 255, 0.1);
-     backdrop-filter: blur(4px);
-     transition: all 0.2s ease;
+  /* Ruído Digital */
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    mix-blend-mode: overlay;
+    pointer-events: none;
   }
-  .glass-button:hover {
-     background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-     border-color: rgba(255, 255, 255, 0.2);
-  }
-}
 
-/* BRICK Typography Classes */
-@layer utilities {
-  /* Títulos de impacto - Inter Black com -5% tracking */
+  /* Tipografia */
   .brick-title {
     font-family: 'Inter', sans-serif;
     font-weight: 900;
     letter-spacing: -0.05em;
   }
-
-  /* Manifestos & Apoio - Inter Light (300) */
-  .brick-manifesto {
-    font-family: 'Inter', sans-serif;
-    font-weight: 300;
-  }
-
-  /* Textos técnicos - JetBrains Mono */
-  .brick-tech {
+  
+  .brick-mono {
     font-family: 'JetBrains Mono', monospace;
-    font-weight: 400;
   }
-}
 
-@layer utilities {
   .text-shadow { text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+  
+  /* Scrollbar */
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: #000; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #DC2626; }
-}
-
-/* Custom styles for larger UI elements */
-@layer utilities {
-  /* LegacyProjectView.jsx */
-  .group.cursor-pointer.glass-panel {
-    height: auto;
-    min-height: 14rem;
-  }
-  .group.cursor-pointer.glass-panel .text-lg {
-    font-size: 1.25rem;
-  }
-  .group.cursor-pointer.glass-panel .text-\[9px\] {
-    font-size: 0.8rem;
-    letter-spacing: 0.05em;
-  }
-
-  /* LegacyBoard.jsx - Kanban */
-  .w-72 {
-    width: 20rem; 
-  }
-  .text-xs {
-    font-size: 1rem;
-    line-height: 1.2;
-  }
-  
-  .text-\[9px\] {
-    font-size: 0.75rem;
-  }
-
-  .text-\[10px\] {
-    font-size: 0.8rem;
-  }
-  
-  /* LegacyBoard.jsx - Todo */
-  .text-sm {
-    font-size: 1rem;
-  }
-
-  /* LegacyBoard.jsx - Files */
-  .text-\[8px\] {
-    font-size: 0.7rem;
-  }
 }
