@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '../ui/dropdown-menu';
 import { Separator } from '../ui/separator';
-import { RotateCcw, LogOut, Settings } from 'lucide-react';
+import { RotateCcw, LogOut, Settings, Users } from 'lucide-react';
 import { Search } from '../Search';
 
 function LegacyHeader({
@@ -16,10 +16,13 @@ function LegacyHeader({
   handleSwitchUser,
   handleLogout,
   onOpenSettings,
+  onOpenTeamManagement,
 
   projects,
   onSearchNavigate
 }) {
+  const canManageTeam = ['gabriel', 'lufe'].includes(String(currentUser?.username || '').toLowerCase());
+
   return (
     <header className="sticky top-0 z-50 w-full glass-header">
       {/* Header compacto h-16 (64px) */}
@@ -85,6 +88,13 @@ function LegacyHeader({
                 <p className="text-[9px] text-zinc-600 font-mono tracking-widest mt-1">@{currentUser?.username}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-zinc-900 m-0" />
+
+              {canManageTeam && (
+                <DropdownMenuItem onClick={onOpenTeamManagement} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] font-bold tracking-widest h-10 rounded-none px-4">
+                  <Users className="mr-3 h-3 w-3" /> Gerenciar Equipe
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuItem onClick={onOpenSettings} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] font-bold tracking-widest h-10 rounded-none px-4">
                 <Settings className="mr-3 h-3 w-3" /> Configurações
               </DropdownMenuItem>

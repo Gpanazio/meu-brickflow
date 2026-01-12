@@ -409,11 +409,17 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// Admin: Listar usuários (somente Owner)
+const TEAM_MANAGEMENT_USERS = new Set(['gabriel', 'lufe']);
+const canManageTeam = (user) => {
+  const username = String(user?.username || '').toLowerCase();
+  return user?.role === 'owner' || TEAM_MANAGEMENT_USERS.has(username);
+};
+
+// Admin: Listar usuários (equipe de gerenciamento)
 app.get('/api/admin/users', requireAuth, async (req, res) => {
   try {
-    if (req.user.role !== 'owner') {
-      return res.status(403).json({ error: 'Apenas administradores podem listar usuários.' });
+    if (!canManageTeam(req.user)) {
+      return res.status(403).json({ error: 'Acesso negado.' });
     }
 
     const { rows } = await query(
@@ -432,9 +438,8 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
 // Admin: Criar novo usuário (somente Owner)
 app.post('/api/admin/users', requireAuth, async (req, res) => {
   try {
-    // Verifica se é Owner
-    if (req.user.role !== 'owner') {
-      return res.status(403).json({ error: 'Apenas administradores podem criar usuários.' });
+    if (!canManageTeam(req.user)) {
+      return res.status(403).json({ error: 'Acesso negado.' });
     }
 
     const { username, pin, displayName, role, color, email, avatar } = req.body || {};
@@ -475,8 +480,8 @@ app.post('/api/admin/users', requireAuth, async (req, res) => {
 // Admin: Editar usuário
 app.put('/api/admin/users/:targetUsername', requireAuth, async (req, res) => {
   try {
-    if (req.user.role !== 'owner') {
-      return res.status(403).json({ error: 'Apenas administradores podem editar usuários.' });
+    if (!canManageTeam(req.user)) {
+      return res.status(403).json({ error: 'Acesso negado.' });
     }
 
     const { targetUsername } = req.params;
@@ -537,8 +542,8 @@ app.put('/api/admin/users/:targetUsername', requireAuth, async (req, res) => {
 // Admin: Deletar usuário
 app.delete('/api/admin/users/:targetUsername', requireAuth, async (req, res) => {
   try {
-    if (req.user.role !== 'owner') {
-      return res.status(403).json({ error: 'Apenas administradores podem deletar usuários.' });
+    if (!canManageTeam(req.user)) {
+      return res.status(403).json({ error: 'Acesso negado.' });
     }
 
     const { targetUsername } = req.params;
