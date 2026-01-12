@@ -10,6 +10,7 @@ import LegacyHome from './components/legacy/LegacyHome';
 import LegacyProjectView from './components/legacy/LegacyProjectView';
 import LegacyBoard from './components/legacy/LegacyBoard';
 import LegacyHeader from './components/legacy/LegacyHeader';
+import LegacyModal from './components/legacy/LegacyModal';
 import { CreateProjectModal } from './components/CreateProjectModal'; // COMPONENTE IMPORTADO
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { SyncNotificationContainer } from './components/SyncNotification';
@@ -143,6 +144,8 @@ const COLOR_VARIANTS = {
   zinc: { bg: 'bg-zinc-600', text: 'text-zinc-500', border: 'border-zinc-900' }
 };
 
+const USER_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'zinc'];
+
 export default function App() {
   const [appData, setAppData] = useState(null); 
   const appDataRef = useRef(null);
@@ -157,6 +160,7 @@ export default function App() {
   const [connectionError, setConnectionError] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showGuestInviteModal, setShowGuestInviteModal] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
   const [initialLoadSuccess, setInitialLoadSuccess] = useState(false);
@@ -183,6 +187,137 @@ export default function App() {
   const removeNotification = useCallback((id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   }, []);
+
+  const handleSaveProject = useCallback((formData) => {
+    if (modalState.type === 'project') {
+      // Editar projeto existente
+      setAppData(prev => ({
+        ...prev,
+        projects: prev.projects.map(p => p.id === modalState.data.id ? { ...p, ...formData } : p)
+      }));
+    } else if (modalState.type === 'subProject') {
+      // Editar sub-projeto existente
+      const targetProjId = currentProject.id;
+      setAppData(prev => ({
+        ...prev,
+        projects: prev.projects.map(p =>
+          p.id === targetProjId
+            ? {
+                ...p,
+                subProjects: p.subProjects.map(sp =>
+                  sp.id === modalState.data.id ? { ...sp, ...formData } : sp
+                )
+              }
+            : p
+        )
+      }));
+    }
+    setModalState({ isOpen: false, type: null });
+  }, [currentProject?.id, modalState.type, modalState.data?.id]);
+
+  const handleTaskAction = useCallback((action, data) => {
+    if (action === 'save') {
+      const taskData = data || {};
+      const safeUsers = Array.isArray(appData?.users) ? appData.users : [];
+
+      // Basic Mention Detection
+      const allText = (taskData.description || '') + ' ' + (taskData.comments?.map(c => c.text).join(' ') || '');
+      const mentions = allText.match(/@(\w+)/g);
+      if (mentions) {
+        mentions.forEach(m => {
+          const username = m.substring(1);
+          if (safeUsers.some(u => u.username === username)) {
+            addNotification('info', `Usuário @${username} mencionado no card "${taskData.title}"`);
+          }
+        });
+      }
+
+      // Assignment Notification
+      if (taskData.responsibleUsers?.length > 0) {
+        taskData.responsibleUsers.forEach(username => {
+          if (!modalState.data?.responsibleUsers?.includes(username)) {
+            addNotification('info', `Card "${taskData.title}" atribuído a @${username}`);
+          }
+        });
+      }
+
+      // Lógica de save real - atualizar o board
+      const listId = modalState.listId || data.listId;
+      if (currentProject && currentSubProject && listId) {
+        setAppData(prev => ({
+          ...prev,
+          projects: prev.projects.map(p => {
+            if (p.id !== currentProject.id) return p;
+            return {
+              ...p,
+              subProjects: p.subProjects.map(sp => {
+                if (sp.id !== currentSubProject.id) return sp;
+                const board = sp.boardData?.[currentBoardType];
+                if (!board) return sp;
+
+                return {
+                  ...sp,
+                  boardData: {
+                    ...sp.boardData,
+                    [currentBoardType]: {
+                      ...board,
+                      lists: board.lists.map(list => {
+                        if (list.id !== listId) return list;
+                        const taskIndex = list.tasks.findIndex(t => t.id === taskData.id);
+                        if (taskIndex === -1) {
+                          // Novo task
+                          return { ...list, tasks: [...list.tasks, { ...taskData, id: taskData.id || generateId('task') }] };
+                        } else {
+                          // Update task
+                          return {
+                            ...list,
+                            tasks: list.tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t)
+                          };
+                        }
+                      })
+                    }
+                  }
+                };
+              })
+            };
+          })
+        }));
+      }
+      setModalState({ isOpen: false, type: null });
+    } else if (action === 'delete') {
+      // Lógica de delete existente
+      if (currentProject && currentSubProject) {
+        setAppData(prev => ({
+          ...prev,
+          projects: prev.projects.map(p => {
+            if (p.id !== currentProject.id) return p;
+            return {
+              ...p,
+              subProjects: p.subProjects.map(sp => {
+                if (sp.id !== currentSubProject.id) return sp;
+                const board = sp.boardData?.[currentBoardType];
+                if (!board) return sp;
+
+                return {
+                  ...sp,
+                  boardData: {
+                    ...sp.boardData,
+                    [currentBoardType]: {
+                      ...board,
+                      lists: board.lists.map(l => ({
+                        ...l,
+                        tasks: l.tasks.filter(t => t.id !== data.taskId)
+                      }))
+                    }
+                  }
+                };
+              })
+            };
+          })
+        }));
+      }
+    }
+  }, [addNotification, appData?.users, modalState.data, modalState.listId, currentProject, currentSubProject, currentBoardType]);
 
   const normalizeApiState = (data) => {
     if (!data) return null;
@@ -864,23 +999,9 @@ export default function App() {
               setCurrentBoardType={setCurrentBoardType} 
               currentSubProject={currentSubProject} 
               currentProject={currentProject} 
-              setCurrentView={setCurrentView} 
-              setModalState={setModalState} 
-              handleTaskAction={(action, data) => {
-                 if (action === 'delete') {
-                    updateProjects(prev => {
-                        return prev.map(p => {
-                            if (p.id !== currentProject.id) return p;
-                            const updateEntity = (entity) => {
-                                const board = entity.boardData[currentBoardType];
-                                board.lists = board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }));
-                                return entity;
-                            };
-                            return { ...p, subProjects: p.subProjects.map(sp => sp.id === currentSubProject.id ? updateEntity(sp) : sp) };
-                        });
-                    });
-                 }
-              }} 
+              setCurrentView={setCurrentView}
+              setModalState={setModalState}
+              handleTaskAction={handleTaskAction}
               isFileDragging={isDragging} 
               setIsFileDragging={setIsDragging} 
               handleFileDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e); }} 
@@ -931,75 +1052,17 @@ export default function App() {
           }}
         />
       ) : (
-        /* MODAL GENÉRICO PARA EDITAR SUBPROJETOS E GERENCIAR TASKS */
-        modalState.isOpen && (
-          <Dialog open={modalState.isOpen} onOpenChange={(open) => setModalState(prev => ({ ...prev, isOpen: open }))}>
-             <div className="bg-black text-white p-2">
-                <h2 className="text-xl font-black uppercase mb-6">{modalState.mode === 'create' ? 'Novo' : 'Editar'} {modalState.type === 'subProject' ? 'Área' : 'Item'}</h2>
-                <form onSubmit={(e) => {
-                   e.preventDefault();
-                   const fd = new FormData(e.target);
-                   const data = Object.fromEntries(fd);
-
-                   if (modalState.type === 'subProject') {
-                      const targetProjId = currentProject.id;
-                      // Only edit mode here, create is handled by CreateSubProjectModal
-                      updateProjects(prev => prev.map(p => p.id === targetProjId ? { ...p, subProjects: p.subProjects.map(sp => sp.id === modalState.data.id ? { ...sp, ...data } : sp) } : p));
-                   } else if (modalState.type === 'task') {
-                      const listId = modalState.listId || modalState.data.listId;
-                      const taskData = { ...data, id: modalState.mode === 'create' ? generateId('task') : modalState.data.id, responsibleUsers: [] };
-                      updateProjects(prev => {
-                          return prev.map(p => {
-                              if (p.id !== currentProject.id) return p;
-                              return {
-                                  ...p,
-                                  subProjects: p.subProjects.map(sp => {
-                                      if (sp.id !== currentSubProject.id) return sp;
-                                      const board = sp.boardData[currentBoardType];
-                                      const newLists = board.lists.map(l => {
-                                          if (l.id !== listId) return l;
-                                          return { ...l, tasks: modalState.mode === 'create' ? [...l.tasks, taskData] : l.tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t) };
-                                      });
-                                      return { ...sp, boardData: { ...sp.boardData, [currentBoardType]: { ...board, lists: newLists } } };
-                                  })
-                              };
-                          });
-                      });
-                   }
-                   setModalState({ isOpen: false, type: null });
-                }} className="space-y-6">
-                   
-                   <div className="space-y-2">
-                     <Label>Nome / Título</Label>
-                     <Input name={modalState.type === 'task' ? "title" : "name"} defaultValue={modalState.data?.name || modalState.data?.title} required autoFocus className="bg-zinc-950 border-zinc-800 text-white" />
-                   </div>
-                   
-                   {modalState.type !== 'task' && (
-                       <div className="space-y-2">
-                         <Label>Descrição</Label>
-                         <textarea name="description" defaultValue={modalState.data?.description} className="w-full bg-zinc-950 border border-zinc-800 p-3 text-sm text-white rounded-md focus:outline-none focus:ring-1 focus:ring-red-600 min-h-[100px]" />
-                       </div>
-                   )}
-
-                   {modalState.type === 'subProject' && (
-                       <div className="space-y-2">
-                           <Label>Cor</Label>
-                           <Select name="color" defaultValue={modalState.data?.color || 'blue'} />
-                       </div>
-                   )}
-
-                   {modalState.type === 'task' && (
-                       <div className="space-y-2">
-                           <Label>Prioridade</Label>
-                           <Select name="priority" defaultValue={modalState.data?.priority || 'medium'} />
-                       </div>
-                   )}
-                   
-                   <Button type="submit" className="w-full bg-white text-zinc-950 font-bold uppercase hover:bg-zinc-200">Salvar</Button>
-                </form>
-             </div>
-          </Dialog>
-        )
+        /* MODAL COMPLETO - EDITAR SUBPROJETOS E GERENCIAR TASKS */
+        <LegacyModal
+          modalState={modalState}
+          setModalState={setModalState}
+          handlePasswordSubmit={() => {}}
+          handleSaveProject={handleSaveProject}
+          handleTaskAction={handleTaskAction}
+          USER_COLORS={USER_COLORS}
+          isReadOnly={isReadOnly}
+          users={appData?.users}
+        />
       )}
 
       <UserSettingsModal
