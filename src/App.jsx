@@ -837,7 +837,7 @@ export default function App() {
       await fetchTrash();
     } catch (err) {
       setConnectionError(true);
-      setConnectionErrorMessage('Falha ao restaurar item.');
+      setConnectionErrorMessage(formatConnectionErrorMessage(err, 'Falha ao restaurar item.'));
     } finally {
       setIsSyncing(false);
     }
