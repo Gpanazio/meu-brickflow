@@ -6,12 +6,21 @@ dotenv.config();
 
 const { Pool } = pg;
 
-// Pega a URL do ambiente - tentamos DATABASE_URL primeiro, depois RAILWAY_DATABASE_URL como fallback
-const connectionString = process.env.DATABASE_URL || process.env.RAILWAY_DATABASE_URL || '';
-export const hasDatabaseUrl = Boolean(connectionString);
+// Pega a URL do ambiente
+// - `DATABASE_URL` (padrão Railway)
+// - fallback opcional para quando a URL interna não alcança o DB: `DATABASE_URL_FALLBACK`
+const primaryConnectionString = process.env.DATABASE_URL || process.env.RAILWAY_DATABASE_URL || '';
+const fallbackConnectionString =
+  process.env.DATABASE_URL_FALLBACK ||
+  process.env.DATABASE_PUBLIC_URL ||
+  process.env.DATABASE_URL_PUBLIC ||
+  '';
+
+let activeConnectionString = primaryConnectionString || fallbackConnectionString || '';
+export const hasDatabaseUrl = Boolean(activeConnectionString);
 
 const createMissingDatabaseUrlError = () => {
-  const error = new Error('DATABASE_URL não configurada. Verifique as variáveis de ambiente no Railway.');
+  const error = new Error('DATABASE_URL não configurada (ou fallback ausente).');
   error.code = 'MISSING_DATABASE_URL';
   return error;
 };
@@ -34,63 +43,105 @@ const parseHostname = (connStr) => {
   }
 };
 
-const hostname = parseHostname(connectionString);
+const describeConnection = (connStr) => {
+  const hostname = parseHostname(connStr);
+  const isLocal =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    connStr.includes('localhost') ||
+    connStr.includes('127.0.0.1');
 
-// 1. Localhost: Rodando no seu PC
-const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+  const isRailwayInternal = hostname.endsWith('railway.internal') || connStr.includes('railway.internal');
+  const isRailwayProxy = hostname.endsWith('proxy.rlwy.net') || connStr.includes('proxy.rlwy.net');
 
-// 2. Railway internal: só quando o hostname é *.railway.internal
-const isRailwayInternal = hostname.endsWith('railway.internal') || connectionString.includes('railway.internal');
+  const sslSetting = normalizeSslSetting(process.env.DATABASE_SSL);
+  const inferredUseSSL = Boolean(connStr) && !isLocal && !isRailwayInternal;
+  const useSSL = sslSetting === 'true' ? true : sslSetting === 'false' ? false : inferredUseSSL;
 
-// 3. Railway public proxy: *.proxy.rlwy.net (geralmente requer SSL)
-const isRailwayProxy = hostname.endsWith('proxy.rlwy.net') || connectionString.includes('proxy.rlwy.net');
+  const maskedUrl = connStr ? connStr.replace(/:([^:@]+)@/, ':****@') : '';
+  const envLabel = isLocal
+    ? 'Local'
+    : isRailwayInternal
+      ? 'Railway (Rede Interna)'
+      : isRailwayProxy
+        ? 'Railway (Proxy Público)'
+        : 'Remoto (Rede Pública)';
 
-// Permite override via env para casos onde a detecção falha.
-// Valores aceitos: true/false/auto
-const sslSetting = normalizeSslSetting(process.env.DATABASE_SSL);
-
-// Lógica de SSL:
-// - Localhost: sem SSL
-// - Railway internal: sem SSL
-// - Qualquer outro remoto (inclui proxy.rlwy.net): com SSL
-const inferredUseSSL = hasDatabaseUrl && !isLocal && !isRailwayInternal;
-const useSSL = sslSetting === 'true' ? true : sslSetting === 'false' ? false : inferredUseSSL;
+  return { hostname, isLocal, isRailwayInternal, isRailwayProxy, sslSetting, useSSL, maskedUrl, envLabel };
+};
 
 if (!hasDatabaseUrl) {
   console.error('❌ ERRO CRÍTICO: DATABASE_URL não encontrada! O servidor não vai conectar.');
 } else {
-  // Mascara a senha para logar com segurança
-  const maskedUrl = connectionString.replace(/:([^:@]+)@/, ':****@');
+  const info = describeConnection(activeConnectionString);
   console.log('✅ Inicializando Banco de Dados...');
-  console.log(`   - URL: ${maskedUrl}`);
-  console.log(`   - Host: ${hostname || 'desconhecido'}`);
-  console.log(
-    `   - Ambiente: ${isLocal ? 'Local' : isRailwayInternal ? 'Railway (Rede Interna)' : isRailwayProxy ? 'Railway (Proxy Público)' : 'Remoto (Rede Pública)'}`
-  );
-  console.log(`   - SSL: ${useSSL ? 'ATIVO' : 'INATIVO'}${sslSetting !== 'auto' ? ' (override DATABASE_SSL)' : ''}`);
+  console.log(`   - URL: ${info.maskedUrl}`);
+  console.log(`   - Host: ${info.hostname || 'desconhecido'}`);
+  console.log(`   - Ambiente: ${info.envLabel}`);
+  console.log(`   - SSL: ${info.useSSL ? 'ATIVO' : 'INATIVO'}${info.sslSetting !== 'auto' ? ' (override DATABASE_SSL)' : ''}`);
 }
 
 let pool = null;
 
-if (hasDatabaseUrl) {
-  pool = new Pool({
-    connectionString,
-    ssl: useSSL ? { rejectUnauthorized: false } : false,
-    // Timeouts ajustados para resiliência
-    connectionTimeoutMillis: 30000,
-    idleTimeoutMillis: 30000,
-    max: 20
-  });
+const createPool = (connStr) => {
+  const info = describeConnection(connStr);
+  return {
+    info,
+    pool: new Pool({
+      connectionString: connStr,
+      ssl: info.useSSL ? { rejectUnauthorized: false } : false,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 20
+    })
+  };
+};
 
-  // Teste rápido de conexão
+const shouldFallback = (err) => {
+  const msg = String(err?.message || '');
+  return /timeout/i.test(msg) || err?.code === 'ETIMEDOUT';
+};
+
+if (hasDatabaseUrl) {
+  const primary = activeConnectionString;
+  const primaryHandle = createPool(primary);
+  pool = primaryHandle.pool;
+
+  // Teste rápido de conexão (e fallback opcional)
   pool
     .connect()
     .then((client) => {
       console.log('✅ Conexão com o Banco estabelecida com SUCESSO!');
       client.release();
     })
-    .catch((err) => {
+    .catch(async (err) => {
       console.error('❌ FALHA AO CONECTAR:', err.message);
+
+      const canFallback = Boolean(fallbackConnectionString) && fallbackConnectionString !== primaryConnectionString;
+      const usingInternal = primaryHandle.info.isRailwayInternal;
+
+      if (canFallback && usingInternal && shouldFallback(err)) {
+        try {
+          console.warn('⚠️ Timeout no DB interno. Tentando fallback (URL pública)...');
+          await pool.end().catch(() => {});
+
+          activeConnectionString = fallbackConnectionString;
+          const fallbackHandle = createPool(activeConnectionString);
+          pool = fallbackHandle.pool;
+
+          console.log('✅ Reconfigurando conexão:');
+          console.log(`   - URL: ${fallbackHandle.info.maskedUrl}`);
+          console.log(`   - Host: ${fallbackHandle.info.hostname || 'desconhecido'}`);
+          console.log(`   - Ambiente: ${fallbackHandle.info.envLabel}`);
+          console.log(`   - SSL: ${fallbackHandle.info.useSSL ? 'ATIVO' : 'INATIVO'}`);
+
+          const client = await pool.connect();
+          console.log('✅ Conexão com o fallback estabelecida com SUCESSO!');
+          client.release();
+        } catch (fallbackErr) {
+          console.error('❌ FALHA AO CONECTAR NO FALLBACK:', fallbackErr.message);
+        }
+      }
     });
 }
 
