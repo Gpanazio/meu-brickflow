@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
-import { Button } from '../ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Lock, Sparkles, Dna, CheckSquare, ArrowRight } from 'lucide-react';
-import SudokuGame from '../SudokuGame';
-import { getUserTasks } from '../../utils/userTasks';
-import { hasPermission, PERMISSIONS } from '../../utils/accessControl';
-import PrismaticPanel from '../ui/PrismaticPanel';
+import SudokuGame from '@/components/SudokuGame';
+import { getUserTasks } from '@/utils/userTasks';
+import { hasPermission, PERMISSIONS } from '@/utils/accessControl';
+import PrismaticPanel from '@/components/ui/PrismaticPanel';
 
 // Cores definidas internamente para blindagem visual
 const DEFAULT_COLORS = {
