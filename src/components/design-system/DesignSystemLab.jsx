@@ -7,7 +7,7 @@ import {
   Cpu, 
   Box 
 } from 'lucide-react';
-import PrismaticPanel from '../ui/PrismaticPanel';
+import PrismaticPanel from '@/components/ui/PrismaticPanel';
 
 // --- UTILITÁRIOS VISUAIS ---
 
