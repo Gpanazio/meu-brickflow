@@ -746,7 +746,7 @@ export default function App() {
       await fetchProjectHistory(currentProject.id);
     } catch (err) {
       setConnectionError(true);
-      setConnectionErrorMessage('Falha ao restaurar projeto.');
+      setConnectionErrorMessage(formatConnectionErrorMessage(err, 'Falha ao restaurar projeto.'));
     } finally {
       setIsSyncing(false);
     }
