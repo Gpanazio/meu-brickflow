@@ -87,8 +87,8 @@ function LegacyBoard({
                   </div>
                   <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black">
                     {list.tasks?.map(task => (
-                      <div key={task.id} draggable onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
-                            onDragEnter={(e) => handleDragEnter(e, task.id)}
+<div key={task.id} draggable onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
+                             onDragEnter={(e) => handleDragEnter(e, task.id, list.id)}
                             onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}
                             className={`bg-zinc-950 border border-zinc-900 hover:border-zinc-700 cursor-grab active:cursor-grabbing p-4 group transition-all ${dragOverTargetId === task.id ? 'border-t-2 border-t-red-600' : ''}`}>
                         <div className="flex justify-between items-start mb-2">

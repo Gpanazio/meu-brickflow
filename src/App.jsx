@@ -157,11 +157,21 @@ export default function App() {
   const [currentBoardType, setCurrentBoardType] = useState('kanban');
   const [isSyncing, setIsSyncing] = useState(false);
   const [modalState, setModalState] = useState({ type: null, isOpen: false, data: null, mode: 'create' });
+
+  const dragTaskRef = useRef(null);
+  const [dragOverTargetId, setDragOverTargetId] = useState(null);
+  const [dragOverListId, setDragOverListId] = useState(null);
   const [connectionError, setConnectionError] = useState(false);
   const [connectionErrorMessage, setConnectionErrorMessage] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTeamManagementModal, setShowTeamManagementModal] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
+
+  const [userPrefs, setUserPrefs] = useState({ lastViewState: null, cardOrder: {} });
+  const [isPrefsLoading, setIsPrefsLoading] = useState(false);
+  const [prefsError, setPrefsError] = useState(null);
+  const prefsSaveTimerRef = useRef(null);
+  const prefsDirtyRef = useRef({});
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
   const [initialLoadSuccess, setInitialLoadSuccess] = useState(false);
@@ -187,6 +197,63 @@ export default function App() {
 
   const removeNotification = useCallback((id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+  const mergePrefs = (prev, partial) => {
+    const next = {
+      ...(isPlainObject(prev) ? prev : {}),
+      ...(isPlainObject(partial) ? partial : {})
+    };
+
+    if (isPlainObject(partial?.lastViewState)) {
+      next.lastViewState = { ...(prev?.lastViewState || {}), ...partial.lastViewState };
+    }
+
+    if (isPlainObject(partial?.cardOrder)) {
+      next.cardOrder = { ...(prev?.cardOrder || {}), ...partial.cardOrder };
+    }
+
+    if (!isPlainObject(next.cardOrder)) next.cardOrder = {};
+
+    return next;
+  };
+
+  const persistPrefs = useCallback((partial) => {
+    setUserPrefs((prev) => mergePrefs(prev, partial));
+
+    prefsDirtyRef.current = mergePrefs(prefsDirtyRef.current, partial);
+
+    if (!currentUserRef.current?.username) {
+      return;
+    }
+
+    if (prefsSaveTimerRef.current) {
+      clearTimeout(prefsSaveTimerRef.current);
+    }
+
+    prefsSaveTimerRef.current = setTimeout(async () => {
+      const dirty = prefsDirtyRef.current;
+      prefsDirtyRef.current = {};
+
+      try {
+        const response = await fetch('/api/users/me/prefs', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: dirty })
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload?.error || 'Erro ao salvar preferências');
+        }
+
+        setPrefsError(null);
+      } catch (err) {
+        setPrefsError(err.message);
+      }
+    }, 600);
   }, []);
 
   const handleSaveProject = useCallback((formData) => {
@@ -508,21 +575,6 @@ export default function App() {
     return () => clearTimeout(slowLoadTimer);
   }, []);
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(VIEW_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          setRestoreViewState(parsed);
-        } else {
-          console.warn('Ignorando estado de visualização salvo inválido:', parsed);
-        }
-      }
-    } catch (error) {
-      console.warn('Falha ao restaurar visualização salva', error);
-    }
-  }, []);
 
   useEffect(() => {
     if (!appData?.projects || !restoreViewState) return;
@@ -569,11 +621,10 @@ export default function App() {
       subProjectId: currentSubProject?.id || null,
       boardType: currentBoardType
     };
-    try {
-      localStorage.setItem(VIEW_STORAGE_KEY, JSON.stringify(payload));
-    } catch (error) {
-      console.warn('Falha ao salvar visualização', error);
-    }
+
+    if (!currentUserRef.current?.username) return;
+
+    persistPrefs({ lastViewState: payload });
   }, [currentView, currentProject?.id, currentSubProject?.id, currentBoardType]);
 
   const saveDataToApi = useCallback(async (newData) => {
@@ -702,6 +753,43 @@ export default function App() {
   useEffect(() => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!currentUser?.username || !isLoggedIn) {
+      setUserPrefs({ lastViewState: null, cardOrder: {} });
+      setRestoreViewState(null);
+      return;
+    }
+
+    setIsPrefsLoading(true);
+    setPrefsError(null);
+
+    fetch('/api/users/me/prefs')
+      .then((r) => (r.ok ? r.json() : Promise.resolve({ data: {} })))
+      .then((payload) => {
+        if (!alive) return;
+        const next = mergePrefs({ lastViewState: null, cardOrder: {} }, payload?.data || {});
+        setUserPrefs(next);
+
+        if (next?.lastViewState) {
+          setRestoreViewState(next.lastViewState);
+        }
+      })
+      .catch((err) => {
+        if (!alive) return;
+        setPrefsError(String(err?.message || 'Erro ao carregar preferências'));
+      })
+      .finally(() => {
+        if (!alive) return;
+        setIsPrefsLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [currentUser?.username, isLoggedIn]);
 
   useEffect(() => {
     if (isLoggedIn && connectionError) {
@@ -962,9 +1050,108 @@ export default function App() {
     updateUsers(newUsersList);
   };
 
-  const handleDragStart = () => {};
+  const makeCardOrderKeyUnsafe = (projectId, subProjectId, boardType, listId) => {
+    return `${projectId || 'none'}:${subProjectId || 'none'}:${boardType || 'none'}:${listId || 'none'}`;
+  };
+
+  const getOrderedTaskIdsForList = (listId) => {
+    const projectId = currentProject?.id;
+    const subProjectId = currentSubProject?.id;
+    if (!projectId || !subProjectId) return [];
+
+    const board = currentSubProject?.boardData?.[currentBoardType];
+    const lists = Array.isArray(board?.lists) ? board.lists : [];
+    const list = lists.find((l) => l.id === listId);
+    const tasks = Array.isArray(list?.tasks) ? list.tasks : [];
+
+    const key = makeCardOrderKeyUnsafe(projectId, subProjectId, currentBoardType, listId);
+    const order = userPrefs?.cardOrder?.[key];
+    if (!Array.isArray(order) || order.length === 0) {
+      return tasks.map((t) => t.id).filter(Boolean);
+    }
+
+    const byId = new Map(tasks.map((t) => [t.id, t]));
+    const ids = [];
+    order.forEach((id) => {
+      if (byId.has(id)) {
+        ids.push(id);
+        byId.delete(id);
+      }
+    });
+    for (const id of byId.keys()) ids.push(id);
+    return ids;
+  };
+
+  const handleDragStart = (e, item, type, listId) => {
+    if (type !== 'task' || !item?.id || !listId) return;
+
+    dragTaskRef.current = { taskId: item.id, fromListId: listId };
+
+    try {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({ taskId: item.id, fromListId: listId }));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleDragEnter = (_e, taskId, listId) => {
+    if (!taskId) return;
+    setDragOverTargetId(taskId);
+    setDragOverListId(listId || null);
+  };
+
   const handleDragOver = (e) => e.preventDefault();
-  const handleDrop = () => {};
+
+  const handleDrop = (e, toListId, dropType) => {
+    e?.preventDefault?.();
+
+    if (dropType !== 'list') return;
+
+    const drag = dragTaskRef.current;
+    if (!drag?.taskId || !drag?.fromListId || !toListId) return;
+
+    const projectId = currentProject?.id;
+    const subProjectId = currentSubProject?.id;
+    if (!projectId || !subProjectId) return;
+
+    const boardType = currentBoardType;
+    const fromListId = drag.fromListId;
+    const taskId = drag.taskId;
+
+    const fromKey = makeCardOrderKeyUnsafe(projectId, subProjectId, boardType, fromListId);
+    const toKey = makeCardOrderKeyUnsafe(projectId, subProjectId, boardType, toListId);
+
+    const currentToIds = getOrderedTaskIdsForList(toListId).filter((id) => id !== taskId);
+    const currentFromIds = fromListId === toListId
+      ? currentToIds
+      : getOrderedTaskIdsForList(fromListId).filter((id) => id !== taskId);
+
+    const shouldInsertBefore = dragOverListId === toListId && dragOverTargetId && dragOverTargetId !== taskId;
+    const insertIndex = shouldInsertBefore
+      ? Math.max(0, currentToIds.indexOf(dragOverTargetId))
+      : currentToIds.length;
+
+    const nextToIds = [...currentToIds];
+    nextToIds.splice(insertIndex < 0 ? nextToIds.length : insertIndex, 0, taskId);
+
+    const cardOrderPatch = {};
+
+    if (fromListId !== toListId) {
+      cardOrderPatch[fromKey] = currentFromIds;
+      cardOrderPatch[toKey] = nextToIds;
+      persistPrefs({ cardOrder: cardOrderPatch });
+      handleTaskAction('move', { taskId, fromListId, toListId });
+    } else {
+      cardOrderPatch[toKey] = nextToIds;
+      persistPrefs({ cardOrder: cardOrderPatch });
+    }
+
+    dragTaskRef.current = null;
+    setDragOverTargetId(null);
+    setDragOverListId(null);
+  };
+
   const handleDeleteProject = (item, isSubProject = false) => {
     const deletedAt = new Date().toISOString();
     updateProjects(prev => {
@@ -1061,7 +1248,42 @@ export default function App() {
   }
 
   const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
-  const boardData = currentEntity?.boardData?.[currentBoardType] || (currentBoardType === 'files' ? { files: { files: [] } } : { lists: [] });
+  const boardDataRaw = currentEntity?.boardData?.[currentBoardType] || (currentBoardType === 'files' ? { files: { files: [] } } : { lists: [] });
+
+  const makeCardOrderKey = (projectId, subProjectId, boardType, listId) => {
+    return `${projectId || 'none'}:${subProjectId || 'none'}:${boardType || 'none'}:${listId || 'none'}`;
+  };
+
+  const orderedBoardData = (() => {
+    if (!boardDataRaw || typeof boardDataRaw !== 'object') return boardDataRaw;
+    if (!Array.isArray(boardDataRaw.lists)) return boardDataRaw;
+
+    const cardOrder = userPrefs?.cardOrder || {};
+    const projectId = currentProject?.id || null;
+    const subProjectId = currentSubProject?.id || null;
+    const boardType = currentBoardType;
+
+    const nextLists = boardDataRaw.lists.map((list) => {
+      const tasks = Array.isArray(list?.tasks) ? list.tasks : [];
+      const key = makeCardOrderKey(projectId, subProjectId, boardType, list?.id);
+      const order = Array.isArray(cardOrder[key]) ? cardOrder[key] : null;
+      if (!order) return list;
+
+      const byId = new Map(tasks.map((t) => [t.id, t]));
+      const ordered = [];
+      order.forEach((id) => {
+        if (byId.has(id)) {
+          ordered.push(byId.get(id));
+          byId.delete(id);
+        }
+      });
+      for (const t of byId.values()) ordered.push(t);
+
+      return { ...list, tasks: ordered };
+    });
+
+    return { ...boardDataRaw, lists: nextLists };
+  })();
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
@@ -1140,7 +1362,7 @@ export default function App() {
 
           {currentView === 'subproject' && currentSubProject && (
             <LegacyBoard 
-              data={boardData} 
+               data={orderedBoardData} 
               entityName={currentSubProject.name} 
               enabledTabs={currentSubProject.enabledTabs || ['kanban', 'todo', 'files']} 
               currentBoardType={currentBoardType} 
@@ -1148,9 +1370,14 @@ export default function App() {
               currentSubProject={currentSubProject} 
               currentProject={currentProject} 
               setCurrentView={setCurrentView}
-              setModalState={setModalState}
-              handleTaskAction={handleTaskAction}
-              isFileDragging={isDragging} 
+               setModalState={setModalState}
+               handleTaskAction={handleTaskAction}
+               handleDragStart={handleDragStart}
+               handleDragOver={handleDragOver}
+               handleDrop={handleDrop}
+               handleDragEnter={handleDragEnter}
+               dragOverTargetId={dragOverTargetId}
+               isFileDragging={isDragging} 
               setIsFileDragging={setIsDragging} 
               handleFileDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileUpload(e); }} 
               isUploading={isUploading} 

@@ -241,6 +241,56 @@ app.get('/api/users', requireAuth, async (req, res) => {
   }
 });
 
+const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+// User prefs: preferências por usuário (ex: ordem de cards, última visualização)
+app.get('/api/users/me/prefs', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await query('SELECT data FROM brickflow_user_prefs WHERE username = $1', [req.user.username]);
+    const data = rows.length > 0 && isPlainObject(rows[0].data) ? rows[0].data : {};
+    res.json({ data });
+  } catch (err) {
+    console.error('❌ ERRO GET /api/users/me/prefs:', err);
+    res.status(500).json({ error: 'Erro ao carregar preferências', details: err.message });
+  }
+});
+
+app.put('/api/users/me/prefs', requireAuth, async (req, res) => {
+  try {
+    const incoming = req.body?.data;
+    if (!isPlainObject(incoming)) {
+      return res.status(400).json({ error: 'Payload inválido. Esperado { data: object }.' });
+    }
+
+    const { rows } = await query('SELECT data FROM brickflow_user_prefs WHERE username = $1', [req.user.username]);
+    const existing = rows.length > 0 && isPlainObject(rows[0].data) ? rows[0].data : {};
+
+    const merged = {
+      ...existing,
+      ...incoming,
+      lastViewState: isPlainObject(incoming.lastViewState)
+        ? { ...(existing.lastViewState || {}), ...incoming.lastViewState }
+        : existing.lastViewState,
+      cardOrder: isPlainObject(incoming.cardOrder)
+        ? { ...(existing.cardOrder || {}), ...incoming.cardOrder }
+        : existing.cardOrder
+    };
+
+    await query(
+      `INSERT INTO brickflow_user_prefs (username, data, updated_at)
+       VALUES ($1, $2, CURRENT_TIMESTAMP)
+       ON CONFLICT (username)
+       DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP`,
+      [req.user.username, JSON.stringify(merged)]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('❌ ERRO PUT /api/users/me/prefs:', err);
+    res.status(500).json({ error: 'Erro ao salvar preferências', details: err.message });
+  }
+});
+
 // Profile: atualizar dados do usuário logado (ex: avatar)
 app.put('/api/users/me', requireAuth, async (req, res) => {
   try {
@@ -1045,6 +1095,14 @@ const initDB = async () => {
         user_id TEXT NOT NULL,
         expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS brickflow_user_prefs (
+        username TEXT PRIMARY KEY,
+        data JSONB NOT NULL DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
