@@ -68,7 +68,7 @@ function LegacyHome({
       <div className="relative z-10">
         
         {/* --- SEÇÃO SUPERIOR (HERO + WIDGETS) --- */}
-        <PrismaticPanel className="mx-6 md:mx-10 mt-6 flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10 lg:h-40">
+        <PrismaticPanel className="mx-6 md:mx-10 mt-6 flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10 lg:min-h-[10rem]">
           {/* COLUNA 1: HERO */}
           <div className="lg:w-1/2 px-6 md:px-10 py-6 flex flex-col justify-center">
              <h1 className="brick-title text-4xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
@@ -86,9 +86,9 @@ function LegacyHome({
                   <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
               </div>
               <div className="flex-1 flex items-center mt-3 lg:mt-0">
-                  <p className="font-sans text-sm text-zinc-300 italic leading-relaxed tracking-tight">
-                  "{dailyPhrase || "O silêncio é uma resposta."}"
-                  </p>
+                  <p className="font-sans text-sm text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
+                   "{dailyPhrase || "O silêncio é uma resposta."}"
+                   </p>
               </div>
           </div>
 
