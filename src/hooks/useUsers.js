@@ -1,131 +1,165 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { isValidGuestToken, createGuestUser, ROLES } from '../utils/accessControl'
 
-export function useUsers(globalUsers, updateGlobalUsers) {
-  const safeUsers = useMemo(() => (Array.isArray(globalUsers) ? globalUsers : []), [globalUsers])
+export function useUsers(_globalUsers, _updateGlobalUsers) {
   const [currentUser, setCurrentUser] = useState(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showCreateUserModal, setShowCreateUserModal] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const [authError, setAuthError] = useState(null)
 
-  // Tenta recuperar a *Sessão* (quem eu sou) ao recarregar a página
+  const fetchMe = useCallback(async () => {
+    const response = await fetch('/api/auth/me')
+    if (!response.ok) {
+      return null
+    }
+    const data = await response.json().catch(() => null)
+    return data?.user || null
+  }, [])
+
   useEffect(() => {
-    // Verifica se há token de convidado na URL
-    const urlParams = new URLSearchParams(window.location.search)
-    const guestToken = urlParams.get('guest')
+    let alive = true
+    setIsAuthLoading(true)
 
-    if (guestToken && isValidGuestToken(guestToken)) {
-      // Login automático como convidado
-      const guestUser = createGuestUser(guestToken)
-      setCurrentUser(guestUser)
-      setIsLoggedIn(true)
-      setShowLoginModal(false)
-      // Salva sessão de convidado
-      localStorage.setItem('brickflow-session-user', JSON.stringify(guestUser))
-      toast.success('Você entrou como convidado (somente leitura)')
-      return
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+    const waitForServer = async () => {
+      let backoffMs = 500
+      while (alive) {
+        try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 15000)
+          const response = await fetch('/api/health', { signal: controller.signal })
+          clearTimeout(timeoutId)
+
+          if (response.ok) {
+            return true
+          }
+        } catch {
+          // server is likely waking up
+        }
+
+        await sleep(backoffMs)
+        backoffMs = Math.min(3000, Math.floor(backoffMs * 1.5))
+      }
+      return false
     }
 
-    const savedSession = localStorage.getItem('brickflow-session-user')
-    if (savedSession) {
-      const parsedSession = JSON.parse(savedSession)
+    ;(async () => {
+      const ready = await waitForServer()
+      if (!alive || !ready) return
 
-      // Se for convidado, mantém a sessão sem verificar no banco
-      if (parsedSession.isGuest) {
-        setCurrentUser(parsedSession)
-        setIsLoggedIn(true)
-        return
-      }
+      try {
+        const user = await fetchMe()
+        if (!alive) return
 
-      // Verifica se o usuário da sessão ainda existe no banco
-      const userStillExists = safeUsers.find(u => u.username.toLowerCase() === parsedSession.username.toLowerCase())
-
-      if (userStillExists) {
-        // Atualiza com os dados mais recentes do banco (caso tenha mudado avatar/cor)
-        setCurrentUser(userStillExists)
-        setIsLoggedIn(true)
-      } else if (globalUsers && globalUsers.length > 0) {
-        // Se o usuário foi deletado do banco, desloga
-        localStorage.removeItem('brickflow-session-user')
+        if (user) {
+          setCurrentUser(user)
+          setIsLoggedIn(true)
+          setShowLoginModal(false)
+          setAuthError(null)
+        } else {
+          setCurrentUser(null)
+          setIsLoggedIn(false)
+          setShowLoginModal(true)
+        }
+      } catch {
+        if (!alive) return
+        setCurrentUser(null)
+        setIsLoggedIn(false)
         setShowLoginModal(true)
+      } finally {
+        if (!alive) return
+        setIsAuthLoading(false)
       }
-    } else if (globalUsers && globalUsers.length > 0) {
-      setShowLoginModal(true)
+    })()
+
+    return () => {
+      alive = false
     }
-  }, [safeUsers]) // Roda sempre que a lista de usuários do banco carregar
+  }, [fetchMe])
 
-  const handleLogin = (username, pin) => {
-    if (!safeUsers.length) return
+  const handleLogin = useCallback(async (username, pin) => {
+    setAuthError(null)
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, pin })
+      })
 
-    const user = safeUsers.find(u => 
-      u.username.toLowerCase() === username.toLowerCase()
-    )
+      const data = await response.json().catch(() => ({}))
 
-    if (user) {
-      // Logic for hashed passwords will be added in the next step
-      setCurrentUser(user)
+      if (!response.ok) {
+        const message = data?.error || 'Falha no login'
+        setAuthError(message)
+        toast.error(message)
+        return false
+      }
+
+      setCurrentUser(data.user)
       setIsLoggedIn(true)
       setShowLoginModal(false)
-      localStorage.setItem('brickflow-session-user', JSON.stringify(user))
-    } else {
-      toast.error('Usuário ou PIN incorretos.')
+      setAuthError(null)
+      return true
+    } catch {
+      setAuthError('Falha no login')
+      toast.error('Falha no login')
+      return false
     }
-  }
+  }, [])
 
-  const handleCreateUser = (userData) => {
-    if (!safeUsers.length) return
+  const handleCreateUser = useCallback(async (userData) => {
+    setAuthError(null)
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      })
 
-    const existing = safeUsers.find(u => 
-      u.username.toLowerCase() === userData.username.toLowerCase()
-    )
-    if (existing) {
-      toast.error('Este nome de usuário já está em uso.')
-      return
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const message = data?.error || 'Erro ao criar usuário'
+        setAuthError(message)
+        toast.error(message)
+        return false
+      }
+
+      toast.success('Usuário criado! Faça login para continuar.')
+      setShowCreateUserModal(false)
+      setShowLoginModal(true)
+      return true
+    } catch {
+      setAuthError('Erro ao criar usuário')
+      toast.error('Erro ao criar usuário')
+      return false
     }
-    
-    // Adiciona verificação extra para garantir que não haja duplicatas
-    if (safeUsers.some(u => u.username.toLowerCase() === userData.username.toLowerCase())) {
-      toast.error('Usuário já existe.')
-      return
+  }, [])
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // ignore
     }
 
-    const newUser = { 
-      ...userData, 
-      role: ROLES.OWNER, // Default role for new users
-      userKey: `${userData.username}-${userData.pin}`,
-      createdAt: new Date().toISOString()
-    }
-    
-    // Atualiza a lista GLOBAL (que será salva no banco pelo App.jsx)
-    const newUsersList = [...safeUsers, newUser]
-    updateGlobalUsers(newUsersList)
-
-    // Loga automaticamente
-    setCurrentUser(newUser)
-    setIsLoggedIn(true)
-    setShowCreateUserModal(false)
-    setShowLoginModal(false)
-    localStorage.setItem('brickflow-session-user', JSON.stringify(newUser))
-    toast.success('Usuário criado e salvo no Banco de Dados!')
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('brickflow-session-user')
     setCurrentUser(null)
     setIsLoggedIn(false)
     setShowLoginModal(true)
-  }
+    setAuthError(null)
+  }, [])
 
-  const handleSwitchUser = () => {
-    setCurrentUser(null)
-    setIsLoggedIn(false)
-    setShowLoginModal(true)
-  }
+  const handleSwitchUser = useCallback(() => {
+    handleLogout()
+  }, [handleLogout])
 
   return {
     currentUser,
     isLoggedIn,
+    isAuthLoading,
+    authError,
     showLoginModal,
     setShowLoginModal,
     showCreateUserModal,
