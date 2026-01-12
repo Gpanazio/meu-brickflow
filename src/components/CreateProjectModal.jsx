@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   ListTodo, Kanban, FileText, Goal, ChevronDown
 } from 'lucide-react';
