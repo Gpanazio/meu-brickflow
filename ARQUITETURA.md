@@ -60,3 +60,46 @@
 - Persistir dados em um banco remoto (ex.: Supabase) para sincronização em tempo real.
 - Adicionar testes de integração para garantir a comunicação entre os componentes principais.
 
+---
+
+## Contrato de Banco e Autenticação (produção)
+
+Esta seção define o comportamento esperado do Brickflow em produção (Railway) e o que **não pode** mudar sem quebrar login/sessão.
+
+### Banco (Railway Postgres)
+
+- **Conexão**: `server/db.js` lê `DATABASE_URL` (Railway). Opcionalmente pode usar `DATABASE_URL_FALLBACK` se a conexão interna sofrer timeout.
+- **SSL por hostname** (regra de ouro):
+  - `*.railway.internal` → SSL **INATIVO**.
+  - `*.proxy.rlwy.net` / hosts remotos → SSL **ATIVO**.
+  - Override manual: `DATABASE_SSL=true|false|auto`.
+- **Observabilidade**: o backend loga `Host`, `Ambiente` e `SSL` na inicialização.
+
+### Tabelas
+
+- `master_users`: fonte de verdade de usuários.
+  - Campos usados pelo app: `id (uuid)`, `username`, `name`, `email`, `password_hash`, `created_at`.
+  - Campos adicionais suportados: `role`, `avatar`, `color`.
+  - **Nunca** retornar `password_hash` para o frontend.
+- `brickflow_sessions`: sessões de login.
+  - `id` (session id), `user_id` (username), `expires_at`.
+- `brickflow_state`: estado do app (projetos/boards/etc). Não é a fonte de verdade de usuários.
+
+### Sessão (cookie)
+
+- Cookie: `bf_session`.
+- Flags: `HttpOnly`, `SameSite=Lax`, `Secure` apenas quando `NODE_ENV=production` e a requisição é HTTPS.
+- Expiração: ~30 dias.
+
+### Endpoints de autenticação
+
+- `GET /api/health`: saúde do backend + DB.
+- `GET /api/auth/me`: retorna `{ user: null }` se não autenticado.
+- `POST /api/auth/login`: valida credenciais e cria sessão.
+- `POST /api/auth/logout`: encerra sessão.
+
+### Regra do usuário "Gabriel"
+
+- O backend garante que exista um usuário `Gabriel` e que ele tenha papel `owner` (admin).
+- Usuários com papel `owner` podem gerenciar novos usuários (CRUD) via endpoints admin.
+

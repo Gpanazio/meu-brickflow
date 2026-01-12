@@ -61,3 +61,39 @@ fetch('/api/health')
 ```
 
 O Vite redireciona essa chamada para o servidor Express configurado no proxy.
+
+## Regras “em pedra”: Banco + Login
+
+Esta seção descreve o **contrato** de funcionamento do Brickflow em produção (Railway) e em dev local. Se você mudar comportamento aqui, atualize também o código em `server/db.js`, `server/index.js` e o hook `src/hooks/useUsers.js`.
+
+### Banco (Postgres / Railway)
+
+- **Variável principal**: o backend usa `DATABASE_URL` (Railway) como string de conexão do Postgres.
+- **Fallback opcional**: se a URL interna (`*.railway.internal`) der timeout, o backend pode cair para `DATABASE_URL_FALLBACK` (normalmente a URL pública `*.proxy.rlwy.net`).
+- **SSL (regra determinística)**
+  - Host `*.railway.internal` → SSL **INATIVO** (rede interna).
+  - Host `*.proxy.rlwy.net` e hosts remotos → SSL **ATIVO**.
+  - Override manual via `DATABASE_SSL=true|false|auto`.
+- **Logs esperados ao subir**: o servidor imprime `Host`, `Ambiente` e `SSL` na inicialização do banco para facilitar debug.
+
+### Login (Sessão)
+
+- **Cookie de sessão**: `bf_session` (HttpOnly, `SameSite=Lax`). Em produção, `Secure` só é aplicado quando a requisição está em HTTPS (via `x-forwarded-proto`).
+- **Persistência**: sessões ficam na tabela `brickflow_sessions` e expiram em ~30 dias.
+- **Fluxo do frontend** (resumo):
+  - `/api/health` confirma que o backend e o banco respondem.
+  - `/api/auth/me` retorna `{ user: null }` se não houver sessão válida.
+  - `/api/auth/login` valida credenciais e cria sessão.
+  - `/api/auth/logout` remove a sessão.
+
+### Usuários (fonte de verdade)
+
+- A fonte de verdade de usuários é a tabela `master_users` no Postgres.
+- O frontend **nunca** deve receber hash de senha (`password_hash`).
+- O usuário `Gabriel` é garantido como `owner` (admin) no bootstrap do backend.
+
+### Variáveis de ambiente (produção)
+
+- `DATABASE_URL` (**obrigatória**) — conexão Postgres.
+- `DATABASE_SSL` (opcional; default `auto`) — força SSL `true|false`.
+- `DATABASE_URL_FALLBACK` (opcional) — URL alternativa caso a interna dê timeout.
