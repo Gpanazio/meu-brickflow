@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-export function CreateProjectModal({ isOpen, onClose, onCreate }) {
+export function CreateSubProjectModal({ isOpen, onClose, onCreate }) {
   // Estado local para os módulos visuais (Grid 2x2)
   const [modules, setModules] = useState({
     todo: true,
@@ -129,8 +129,6 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
     </Dialog>
   );
 }
-
-export default CreateProjectModal;
 
 // Subcomponente de Toggle Visual (Card)
 function ModuleToggle({ active, onClick, icon: Icon, label }) {
