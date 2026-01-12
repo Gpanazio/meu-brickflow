@@ -169,7 +169,12 @@ const requireAuth = async (req, res, next) => {
     next();
   } catch (err) {
     console.error('❌ AUTH ERROR:', err);
-    res.status(500).json({ error: 'Auth failure', details: err.message });
+
+    if (err?.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'Database unavailable', details: err.message });
+    }
+
+    res.status(500).json({ error: 'Auth failure', code: err?.code, details: err?.message });
   }
 };
 
@@ -181,7 +186,12 @@ app.get('/api/health', async (req, res) => {
     await query('SELECT 1');
     res.json({ status: 'ok', database: 'connected', timestamp: new Date() });
   } catch (err) {
-    res.status(503).json({ status: 'error', database: 'disconnected', message: err.message });
+    res.status(503).json({
+      status: 'error',
+      database: 'disconnected',
+      code: err?.code,
+      message: err?.message
+    });
   }
 });
 
@@ -230,7 +240,12 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({ ok: true, user: sanitizeUser(user) });
   } catch (err) {
     console.error('❌ ERRO LOGIN:', err);
-    res.status(500).json({ error: 'Erro ao autenticar', details: err.message });
+
+    if (err?.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'Database unavailable', details: err.message });
+    }
+
+    res.status(500).json({ error: 'Erro ao autenticar', code: err?.code, details: err?.message });
   }
 });
 
@@ -305,7 +320,12 @@ app.post('/api/auth/register', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error('❌ ERRO REGISTER:', err);
-    res.status(500).json({ error: 'Erro ao registrar', details: err.message });
+
+    if (err?.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'Database unavailable', details: err.message });
+    }
+
+    res.status(500).json({ error: 'Erro ao registrar', code: err?.code, details: err?.message });
   }
 });
 
@@ -332,7 +352,7 @@ app.get('/api/projects', async (req, res) => {
     console.error('❌ ERRO NA ROTA GET /api/projects:', err);
     
     if (err.code === 'MISSING_DATABASE_URL') {
-      return res.status(503).json({ error: 'DATABASE_URL não configurada' });
+      return res.status(503).json({ error: 'DATABASE_URL não configurada', code: err?.code, details: err?.message });
     }
     
     // Auto-healing: Se a tabela (42P01) ou coluna (42703) não existe, tenta inicializar/migrar
@@ -342,7 +362,7 @@ app.get('/api/projects', async (req, res) => {
        return res.json(null);
     }
     
-    res.status(500).json({ error: 'Erro interno ao buscar dados', details: err.message });
+    res.status(500).json({ error: 'Erro interno ao buscar dados', code: err?.code, details: err?.message });
   }
 });
 

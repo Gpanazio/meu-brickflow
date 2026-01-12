@@ -26,6 +26,9 @@ export function useUsers(_globalUsers, _updateGlobalUsers) {
 
     const waitForServer = async () => {
       let backoffMs = 500
+      const startedAt = Date.now()
+      const maxWaitMs = 120000
+
       while (alive) {
         try {
           const controller = new AbortController()
@@ -36,19 +39,39 @@ export function useUsers(_globalUsers, _updateGlobalUsers) {
           if (response.ok) {
             return true
           }
+
+          if (response.status === 503) {
+            const payload = await response.json().catch(() => null)
+            if (payload?.code === 'MISSING_DATABASE_URL') {
+              return false
+            }
+          }
         } catch {
           // server is likely waking up
         }
 
+        if (Date.now() - startedAt > maxWaitMs) {
+          return false
+        }
+
         await sleep(backoffMs)
-        backoffMs = Math.min(3000, Math.floor(backoffMs * 1.5))
+        backoffMs = Math.min(5000, Math.floor(backoffMs * 1.5))
       }
       return false
     }
 
     ;(async () => {
       const ready = await waitForServer()
-      if (!alive || !ready) return
+      if (!alive) return
+
+      if (!ready) {
+        setCurrentUser(null)
+        setIsLoggedIn(false)
+        setShowLoginModal(true)
+        setAuthError('Servidor indisponível')
+        setIsAuthLoading(false)
+        return
+      }
 
       try {
         const user = await fetchMe()

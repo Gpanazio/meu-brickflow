@@ -357,18 +357,56 @@ export default function App() {
 
     const loadData = async () => {
       try {
+        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+        const waitForServer = async () => {
+          let backoffMs = 500;
+          const startedAt = Date.now();
+          const maxWaitMs = 120000;
+
+          while (Date.now() - startedAt < maxWaitMs) {
+            try {
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 15000);
+              const response = await fetch('/api/health', { signal: controller.signal });
+              clearTimeout(timeoutId);
+
+              if (response.ok) return true;
+
+              if (response.status === 503) {
+                const payload = await response.json().catch(() => null);
+                if (payload?.code === 'MISSING_DATABASE_URL') {
+                  return false;
+                }
+              }
+            } catch {
+              // ignore and retry
+            }
+
+            await sleep(backoffMs);
+            backoffMs = Math.min(5000, Math.floor(backoffMs * 1.5));
+          }
+
+          return false;
+        };
+
+        const ready = await waitForServer();
+        if (!ready) {
+          throw new Error('Servidor indisponível');
+        }
+
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const timeoutId = setTimeout(() => controller.abort(), 90000);
 
         const response = await fetch('/api/projects', { signal: controller.signal });
         clearTimeout(timeoutId);
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error('❌ Erro detalhado da API:', { 
-            status: response.status, 
+          console.error('❌ Erro detalhado da API:', {
+            status: response.status,
             statusText: response.statusText,
-            errorData 
+            errorData
           });
           throw new Error(errorData.details || errorData.error || "Falha na API");
         }
@@ -385,7 +423,7 @@ export default function App() {
         setInitialLoadSuccess(true);
       } catch (err) {
         if (err.name === 'AbortError') {
-          console.warn("Timeout ao carregar dados do servidor (30s). Tentando modo offline...");
+          console.warn("Timeout ao carregar dados do servidor. Tentando modo offline...");
         } else {
           console.error("Erro ao carregar dados:", err);
         }
@@ -576,9 +614,17 @@ export default function App() {
     updateGlobalState(prev => ({ ...prev, users: newUsersList }));
   };
 
-  const { 
-    currentUser, isLoggedIn, handleLogin, handleCreateUser, handleLogout, handleSwitchUser,
-    showLoginModal, setShowLoginModal, showCreateUserModal, setShowCreateUserModal
+  const {
+    currentUser,
+    isLoggedIn,
+    isAuthLoading,
+    authError,
+    handleLogin,
+    handleCreateUser,
+    handleLogout,
+    handleSwitchUser,
+    showCreateUserModal,
+    setShowCreateUserModal
   } = useUsers(appData?.users, updateUsers);
 
   useEffect(() => {
@@ -879,6 +925,21 @@ export default function App() {
   }
 
   if (!isLoggedIn) {
+    if (connectionError) {
+      return (
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center text-red-600 gap-4 p-8 text-center">
+          <WifiOff className="w-16 h-16" />
+          <h1 className="text-2xl font-black uppercase">Falha na Conexão</h1>
+          <p className="text-zinc-500 text-sm max-w-md">
+            Não foi possível conectar à API. Verifique se o backend está no ar e se as variáveis `DATABASE_URL` (e opcionalmente `DATABASE_SSL`) estão configuradas no Railway.
+          </p>
+          <div className="flex gap-4">
+            <Button onClick={() => window.location.reload()} className="bg-white text-zinc-950 font-bold">Tentar Novamente</Button>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
         <Toaster />
@@ -887,6 +948,17 @@ export default function App() {
             <h1 className="text-xl font-bold tracking-widest text-white uppercase">BrickFlow OS</h1>
             <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest">Acesso Restrito</p>
           </div>
+
+          {(isAuthLoading || authError) && (
+            <div className="text-center">
+              {isAuthLoading ? (
+                <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-mono">Verificando servidor...</p>
+              ) : (
+                <p className="text-xs text-red-400 font-bold">{authError}</p>
+              )}
+            </div>
+          )}
+
           <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); handleLogin(fd.get('username'), fd.get('pin')); }} className="space-y-4">
             <Input name="username" placeholder="ID (admin)" required className="h-12" />
             <Input name="pin" type="password" placeholder="PIN (1234)" required className="h-12 text-center tracking-[0.5em]" />
