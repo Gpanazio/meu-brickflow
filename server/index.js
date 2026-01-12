@@ -216,6 +216,31 @@ const requireAuth = async (req, res, next) => {
 
 // --- ROTAS DA API ---
 
+// Users: lista de usuários (fonte: master_users)
+// Usado para atribuição de responsáveis em tasks.
+app.get('/api/users', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT username, name, role, avatar, color
+       FROM master_users
+       ORDER BY username ASC`
+    );
+
+    const users = rows.map((u) => ({
+      username: u.username,
+      displayName: u.name || u.username,
+      role: u.role || 'member',
+      avatar: u.avatar || '',
+      color: u.color || 'zinc'
+    }));
+
+    res.json({ users });
+  } catch (err) {
+    console.error('❌ ERRO GET /api/users:', err);
+    res.status(500).json({ error: 'Erro ao listar usuários', details: err.message });
+  }
+});
+
 // Health Check: Verifica se o servidor e o banco estão vivos
 app.get('/api/health', async (req, res) => {
   try {

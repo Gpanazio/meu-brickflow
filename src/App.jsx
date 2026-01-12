@@ -14,7 +14,6 @@ import LegacyModal from './components/legacy/LegacyModal';
 import { CreateProjectModal } from './components/CreateProjectModal'; // COMPONENTE IMPORTADO
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { SyncNotificationContainer } from './components/SyncNotification';
-import { GuestInviteModal } from './components/GuestInviteModal';
 import { Toaster } from './components/ui/sonner';
 import { useUsers, useFiles } from './hooks';
 import SudokuGame from './components/SudokuGame';
@@ -161,7 +160,6 @@ export default function App() {
   const [connectionError, setConnectionError] = useState(false);
   const [connectionErrorMessage, setConnectionErrorMessage] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showGuestInviteModal, setShowGuestInviteModal] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
@@ -1075,7 +1073,6 @@ export default function App() {
         handleSwitchUser={handleSwitchUser}
         handleLogout={handleLogout}
         onOpenSettings={() => setShowSettingsModal(true)}
-        onOpenGuestInvite={() => setShowGuestInviteModal(true)}
         onExportBackup={handleExportBackup}
         projects={appData.projects}
         onSearchNavigate={handleSearchNavigation}
@@ -1229,11 +1226,6 @@ export default function App() {
         onExportBackup={handleExportBackupFromServer}
       />
 
-      {showGuestInviteModal && (
-        <GuestInviteModal
-          onClose={() => setShowGuestInviteModal(false)}
-        />
-      )}
       <Toaster />
     </div>
   );

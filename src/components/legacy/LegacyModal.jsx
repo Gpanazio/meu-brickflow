@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -27,6 +27,14 @@ function LegacyModal({
   const canEdit = !isReadOnly;
   const [auditEvents, setAuditEvents] = useState([]);
   const [isAuditLoading, setIsAuditLoading] = useState(false);
+
+  const [dbUsers, setDbUsers] = useState([]);
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+
+  const responsibleOptions = useMemo(() => {
+    const list = Array.isArray(dbUsers) && dbUsers.length > 0 ? dbUsers : (Array.isArray(users) ? users : []);
+    return Array.isArray(list) ? list : [];
+  }, [dbUsers, users]);
   
   useEffect(() => {
     if (modalState.type === 'task') {
@@ -72,6 +80,35 @@ function LegacyModal({
       alive = false;
     };
   }, [modalState?.isOpen, modalState?.type, taskState?.id]);
+
+  useEffect(() => {
+    if (!modalState?.isOpen || modalState.type !== 'task') {
+      setDbUsers([]);
+      return;
+    }
+
+    let alive = true;
+    setIsUsersLoading(true);
+
+    fetch('/api/users')
+      .then((r) => (r.ok ? r.json() : Promise.resolve(null)))
+      .then((data) => {
+        if (!alive) return;
+        setDbUsers(Array.isArray(data?.users) ? data.users : []);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setDbUsers([]);
+      })
+      .finally(() => {
+        if (!alive) return;
+        setIsUsersLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [modalState?.isOpen, modalState?.type]);
 
   const addChecklistItem = () => {
     if (!canEdit) return;
@@ -362,35 +399,38 @@ function LegacyModal({
                  <div className="space-y-3">
                    <Label className="text-[9px] uppercase tracking-[0.2em] text-zinc-600 font-bold">Responsáveis</Label>
                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                     {(Array.isArray(users) ? users : []).map((u) => {
-                       const username = u?.username;
-                       if (!username) return null;
-                       const checked = (taskState.responsibleUsers || []).includes(username);
-                       return (
-                         <label key={username} className={`flex items-center gap-2 text-[10px] uppercase tracking-widest ${isReadOnly ? 'opacity-60' : 'cursor-pointer'}`}>
-                           <Checkbox
-                             checked={checked}
-                             disabled={isReadOnly}
-                             onCheckedChange={(nextChecked) => {
-                               if (isReadOnly) return;
-                               setTaskState((prev) => {
-                                 const prevList = Array.isArray(prev.responsibleUsers) ? prev.responsibleUsers : [];
-                                 const nextList = nextChecked
-                                   ? Array.from(new Set([...prevList, username]))
-                                   : prevList.filter((x) => x !== username);
-                                 return { ...prev, responsibleUsers: nextList };
-                               });
-                             }}
-                             className="border-zinc-800 rounded-none"
-                           />
-                           <span className="text-zinc-400">@{username}</span>
-                           <span className="text-zinc-600 ml-auto truncate">{u.displayName || username}</span>
-                         </label>
-                       );
-                     })}
-                     {(Array.isArray(users) ? users : []).length === 0 && (
-                       <p className="text-[10px] text-zinc-700 uppercase font-mono tracking-widest">Nenhum usuário disponível.</p>
-                     )}
+                      {isUsersLoading && (
+                        <p className="text-[10px] text-zinc-700 uppercase font-mono tracking-widest">Carregando usuários...</p>
+                      )}
+                      {!isUsersLoading && responsibleOptions.map((u) => {
+                        const username = u?.username;
+                        if (!username) return null;
+                        const checked = (taskState.responsibleUsers || []).includes(username);
+                        return (
+                          <label key={username} className={`flex items-center gap-2 text-[10px] uppercase tracking-widest ${isReadOnly ? 'opacity-60' : 'cursor-pointer'}`}>
+                            <Checkbox
+                              checked={checked}
+                              disabled={isReadOnly}
+                              onCheckedChange={(nextChecked) => {
+                                if (isReadOnly) return;
+                                setTaskState((prev) => {
+                                  const prevList = Array.isArray(prev.responsibleUsers) ? prev.responsibleUsers : [];
+                                  const nextList = nextChecked
+                                    ? Array.from(new Set([...prevList, username]))
+                                    : prevList.filter((x) => x !== username);
+                                  return { ...prev, responsibleUsers: nextList };
+                                });
+                              }}
+                              className="border-zinc-800 rounded-none"
+                            />
+                            <span className="text-zinc-400">@{username}</span>
+                            <span className="text-zinc-600 ml-auto truncate">{u.displayName || username}</span>
+                          </label>
+                        );
+                      })}
+                      {!isUsersLoading && responsibleOptions.length === 0 && (
+                        <p className="text-[10px] text-zinc-700 uppercase font-mono tracking-widest">Nenhum usuário disponível.</p>
+                      )}
                    </div>
                  </div>
 
