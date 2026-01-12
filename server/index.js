@@ -195,9 +195,49 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Auth: retorna usuário da sessão
-app.get('/api/auth/me', requireAuth, async (req, res) => {
-  res.json({ user: req.user });
+// Auth: retorna usuário da sessão (sem erro 401 se não estiver logado para evitar log sujo no console)
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const cookies = parseCookies(req.headers.cookie);
+    const sessionId = cookies.bf_session;
+    if (!sessionId) {
+      return res.json({ user: null });
+    }
+
+    const { rows } = await query('SELECT id, user_id, expires_at FROM brickflow_sessions WHERE id = $1', [
+      sessionId
+    ]);
+
+    if (rows.length === 0) {
+      clearSessionCookie(req, res);
+      return res.json({ user: null });
+    }
+
+    const session = rows[0];
+    const expiresAt = session.expires_at ? new Date(session.expires_at) : null;
+    if (expiresAt && Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() < Date.now()) {
+      await query('DELETE FROM brickflow_sessions WHERE id = $1', [sessionId]);
+      clearSessionCookie(req, res);
+      return res.json({ user: null });
+    }
+
+    const stateRow = await getStateRow();
+    const users = stateRow.data?.users || [];
+    const user = users.find((u) => u.username === session.user_id);
+    if (!user) {
+      await query('DELETE FROM brickflow_sessions WHERE id = $1', [sessionId]);
+      clearSessionCookie(req, res);
+      return res.json({ user: null });
+    }
+
+    res.json({ user: sanitizeUser(user) });
+  } catch (err) {
+    console.error('❌ ERRO AUTH ME:', err);
+    if (err?.code === 'MISSING_DATABASE_URL') {
+      return res.status(503).json({ error: 'Database unavailable' });
+    }
+    res.status(500).json({ error: 'Internal error', details: err.message });
+  }
 });
 
 // Auth: login (30 dias)
