@@ -65,6 +65,7 @@ const generateMegaSenaNumbers = () => {
 };
 
 const VIEW_STORAGE_KEY = 'brickflow:lastViewState';
+const DATA_LOAD_FALLBACK_MESSAGE = 'Não foi possível carregar os dados. Verifique a internet ou se a variável DATABASE_URL está configurada no Railway.';
 
 // --- UI COMPONENTS LOCAIS ---
 const Button = React.forwardRef(({ className, variant = "default", size = "default", ...props }, ref) => {
@@ -495,7 +496,7 @@ export default function App() {
         setConnectionErrorMessage(
           formatConnectionErrorMessage(
             err,
-            'Não foi possível carregar os dados. Verifique a internet ou se a variável DATABASE_URL está configurada no Railway.'
+            DATA_LOAD_FALLBACK_MESSAGE
           )
         );
         setAppData(INITIAL_STATE);
@@ -1001,7 +1002,7 @@ export default function App() {
         <WifiOff className="w-16 h-16" />
         <h1 className="text-2xl font-black uppercase">Falha na Conexão</h1>
         <p className="text-zinc-500 text-sm max-w-md">
-          {connectionErrorMessage || 'Não foi possível carregar os dados. Verifique a internet ou se a variável DATABASE_URL está configurada no Railway.'}
+          {connectionErrorMessage || DATA_LOAD_FALLBACK_MESSAGE}
         </p>
         <div className="flex gap-4">
           <Button onClick={() => window.location.reload()} className="bg-white text-zinc-950 font-bold">Tentar Novamente</Button>
