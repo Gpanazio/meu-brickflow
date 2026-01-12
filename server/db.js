@@ -60,7 +60,7 @@ if (hasDatabaseUrl) {
     connectionString,
     ssl: useSSL ? { rejectUnauthorized: false } : false,
     // Timeouts ajustados para resiliência
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 30000,
     idleTimeoutMillis: 30000,
     max: 20
   });
