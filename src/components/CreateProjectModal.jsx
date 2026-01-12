@@ -130,6 +130,8 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
   );
 }
 
+export default CreateProjectModal;
+
 // Subcomponente de Toggle Visual (Card)
 function ModuleToggle({ active, onClick, icon: Icon, label }) {
   return (
