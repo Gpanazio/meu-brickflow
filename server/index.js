@@ -891,12 +891,12 @@ const initDB = async () => {
       `);
 
       // Seed Gabriel
-      // Using ON CONFLICT (username) if username is unique, otherwise we might need another strategy.
-      // Assuming username is unique based on typical auth schemas.
+      // Geramos o UUID no Node para evitar dependência de gen_random_uuid() no Postgres
+      const gabrielId = randomUUID();
       await query(`
         INSERT INTO master_users (id, username, password_hash, name, email, created_at, role, color)
         VALUES (
-          gen_random_uuid(), 
+          $1, 
           'Gabriel', 
           '$2b$10$V5RIP3w.qoyLKbMx9EZWDu8d/0UCbp5aJUhyK0SkrQzfQ5eh9qJXW', 
           'Gabriel', 
@@ -908,7 +908,7 @@ const initDB = async () => {
         ON CONFLICT (username) DO UPDATE 
         SET password_hash = EXCLUDED.password_hash,
             role = 'owner';
-      `);
+      `, [gabrielId]);
       console.log('✅ Usuário Gabriel garantido na tabela master_users.');
     } catch (e) {
       console.error('⚠️ Erro ao configurar master_users:', e.message);

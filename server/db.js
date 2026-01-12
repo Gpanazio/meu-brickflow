@@ -6,12 +6,12 @@ dotenv.config();
 
 const { Pool } = pg;
 
-// Pega a URL do ambiente
-const connectionString = process.env.DATABASE_URL || '';
+// Pega a URL do ambiente - tentamos DATABASE_URL primeiro, depois RAILWAY_DATABASE_URL como fallback
+const connectionString = process.env.DATABASE_URL || process.env.RAILWAY_DATABASE_URL || '';
 export const hasDatabaseUrl = Boolean(connectionString);
 
 const createMissingDatabaseUrlError = () => {
-  const error = new Error('DATABASE_URL não configurada.');
+  const error = new Error('DATABASE_URL não configurada. Verifique as variáveis de ambiente no Railway.');
   error.code = 'MISSING_DATABASE_URL';
   return error;
 };
@@ -28,7 +28,8 @@ const normalizeSslSetting = (value) => {
 // 1. Localhost: Rodando no seu PC
 const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
 // 2. Railway Internal: Rodando DENTRO do servidor do Railway
-const isRailwayInternal = connectionString.includes('railway.internal');
+// Detectamos tanto pelo hostname quanto pela presença de variáveis de ambiente do Railway
+const isRailwayInternal = connectionString.includes('railway.internal') || Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_STATIC_URL);
 
 // Permite override via env para casos onde a detecção falha.
 // Valores aceitos: true/false/auto
@@ -37,6 +38,7 @@ const sslSetting = normalizeSslSetting(process.env.DATABASE_SSL);
 // Lógica de SSL:
 // ATENÇÃO: Nunca usar SSL na rede interna do Railway (pode causar timeout)
 // Usar SSL apenas se for acesso externo (ex: do seu PC para o Railway)
+// Se estivermos no Railway, desativamos SSL por padrão para evitar problemas de certificado interno
 const inferredUseSSL = hasDatabaseUrl && !isLocal && !isRailwayInternal;
 const useSSL = sslSetting === 'true' ? true : sslSetting === 'false' ? false : inferredUseSSL;
 
@@ -48,7 +50,7 @@ if (!hasDatabaseUrl) {
   console.log('✅ Inicializando Banco de Dados...');
   console.log(`   - URL: ${maskedUrl}`);
   console.log(
-    `   - Ambiente: ${isLocal ? 'Local' : isRailwayInternal ? 'Railway (Rede Interna)' : 'Remoto (Rede Pública)'}`
+    `   - Ambiente: ${isLocal ? 'Local' : isRailwayInternal ? 'Railway (Rede Interna/Produção)' : 'Remoto (Rede Pública)'}`
   );
   console.log(`   - SSL: ${useSSL ? 'ATIVO' : 'INATIVO'}${sslSetting !== 'auto' ? ' (override DATABASE_SSL)' : ''}`);
 }
