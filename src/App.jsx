@@ -1256,21 +1256,58 @@ function UserSettingsModal({
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar);
   const fileInputRef = useRef(null);
   
-  // User Management State
+  // User Management State (admin)
   const [manageMode, setManageMode] = useState('list'); // 'list', 'create', 'edit'
   const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({ displayName: '', username: '', pin: '', role: 'member', color: 'zinc' });
+  const [formData, setFormData] = useState({ displayName: '', username: '', email: '', avatar: '', pin: '', role: 'member', color: 'zinc' });
   const [isLoadingUserAction, setIsLoadingUserAction] = useState(false);
   const [userActionMessage, setUserActionMessage] = useState({ type: '', text: '' });
+
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [isAdminUsersLoading, setIsAdminUsersLoading] = useState(false);
+  const [adminUsersError, setAdminUsersError] = useState(null);
+
+  const loadAdminUsers = useCallback(async () => {
+    setIsAdminUsersLoading(true);
+    setAdminUsersError(null);
+    try {
+      const response = await fetch('/api/admin/users');
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || 'Erro ao carregar usuários');
+      }
+      const normalized = (data?.users || []).map((row) => ({
+        id: row.id,
+        username: row.username,
+        displayName: row.name || row.username,
+        email: row.email || '',
+        createdAt: row.created_at,
+        role: row.role || 'member',
+        avatar: row.avatar || '',
+        color: row.color || 'zinc'
+      }));
+      setAdminUsers(normalized);
+    } catch (err) {
+      setAdminUsers([]);
+      setAdminUsersError(err.message);
+    } finally {
+      setIsAdminUsersLoading(false);
+    }
+  }, []);
 
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-        setManageMode('list');
-        setUserActionMessage({ type: '', text: '' });
-        setAvatarPreview(currentUser?.avatar);
+      setManageMode('list');
+      setEditingUser(null);
+      setUserActionMessage({ type: '', text: '' });
+      setAvatarPreview(currentUser?.avatar);
+
+      if (currentUser?.role === 'owner') {
+        loadAdminUsers();
+      }
     }
-  }, [isOpen, currentUser]);
+  }, [isOpen, currentUser, loadAdminUsers]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -1308,13 +1345,15 @@ function UserSettingsModal({
         setUserActionMessage({ type: 'success', text: data.message || 'Sucesso!' });
         
         if (!isEdit) {
-            setFormData({ displayName: '', username: '', pin: '', role: 'member', color: 'zinc' });
+          setFormData({ displayName: '', username: '', email: '', avatar: '', pin: '', role: 'member', color: 'zinc' });
         }
-        
-        // Refresh page to sync data (simple approach)
-        setTimeout(() => window.location.reload(), 1000);
+
+        await loadAdminUsers();
+        setManageMode('list');
+        setEditingUser(null);
     } catch (err) {
         setUserActionMessage({ type: 'error', text: err.message });
+    } finally {
         setIsLoadingUserAction(false);
     }
   };
@@ -1324,13 +1363,13 @@ function UserSettingsModal({
       
       try {
           const response = await fetch(`/api/admin/users/${username}`, { method: 'DELETE' });
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error);
-          
-          // Refresh
-          window.location.reload();
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || 'Erro ao deletar usuário');
+
+          setUserActionMessage({ type: 'success', text: data.message || 'Usuário deletado.' });
+          await loadAdminUsers();
       } catch (err) {
-          alert(err.message);
+          setUserActionMessage({ type: 'error', text: err.message });
       }
   };
 
@@ -1339,6 +1378,8 @@ function UserSettingsModal({
       setFormData({
           displayName: user.displayName,
           username: user.username, // ReadOnly
+          email: user.email || '',
+          avatar: user.avatar || '',
           pin: '', // Blank by default
           role: user.role,
           color: user.color || 'zinc'
@@ -1385,7 +1426,7 @@ function UserSettingsModal({
                             Lista
                         </button>
                         <button 
-                            onClick={() => { setManageMode('create'); setFormData({ displayName: '', username: '', pin: '', role: 'member', color: 'zinc' }); }}
+                            onClick={() => { setManageMode('create'); setEditingUser(null); setFormData({ displayName: '', username: '', email: '', avatar: '', pin: '', role: 'member', color: 'zinc' }); }}
                             className={cn("text-[10px] uppercase font-bold px-2 py-1 rounded transition-colors", manageMode === 'create' ? "bg-white text-black" : "text-zinc-500 hover:text-white")}
                         >
                             Novo
@@ -1396,15 +1437,35 @@ function UserSettingsModal({
                 <div className="p-4">
                     {manageMode === 'list' && (
                         <div className="space-y-2">
-                            {users.map(u => (
+                            {isAdminUsersLoading && (
+                              <p className="text-[10px] text-zinc-500 font-mono">Carregando usuários...</p>
+                            )}
+                            {!isAdminUsersLoading && adminUsersError && (
+                              <p className="text-[10px] text-red-500 font-mono">{adminUsersError}</p>
+                            )}
+                            {!isAdminUsersLoading && !adminUsersError && adminUsers.length === 0 && (
+                              <p className="text-[10px] text-zinc-600 font-mono">Nenhum usuário encontrado em `master_users`.</p>
+                            )}
+
+                            {!isAdminUsersLoading && !adminUsersError && adminUsers.map(u => {
+                              const colorVariant = COLOR_VARIANTS[u.color] || COLOR_VARIANTS.zinc;
+                              return (
                                 <div key={u.username} className="flex items-center justify-between bg-black/40 border border-zinc-900 p-2 rounded">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold bg-${u.color}-900 text-${u.color}-200 border border-${u.color}-700`}>
-                                            {u.displayName.charAt(0)}
+                                        <div className={cn(
+                                          "w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border",
+                                          colorVariant.bg,
+                                          colorVariant.border,
+                                          "text-white"
+                                        )}>
+                                            {(u.displayName || u.username).charAt(0)}
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold text-zinc-200">{u.displayName}</p>
                                             <p className="text-[10px] text-zinc-600 font-mono">@{u.username} • {u.role === 'owner' ? 'ADMIN' : 'MEMBRO'}</p>
+                                            {u.email && (
+                                              <p className="text-[10px] text-zinc-700 font-mono">{u.email}</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex gap-1">
@@ -1418,7 +1479,8 @@ function UserSettingsModal({
                                         )}
                                     </div>
                                 </div>
-                            ))}
+                              );
+                            })}
                         </div>
                     )}
 
@@ -1439,10 +1501,32 @@ function UserSettingsModal({
                                         value={formData.username} 
                                         onChange={e => setFormData({...formData, username: e.target.value})} 
                                         required className="h-8 text-xs" 
-                                        disabled={manageMode === 'edit'} // ID immutable
+                                        disabled={manageMode === 'edit'}
                                     />
                                 </div>
                             </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase">Email</label>
+                                    <Input 
+                                        value={formData.email} 
+                                        onChange={e => setFormData({...formData, email: e.target.value})} 
+                                        className="h-8 text-xs" 
+                                        placeholder="nome@empresa.com"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase">Avatar (URL)</label>
+                                    <Input 
+                                        value={formData.avatar} 
+                                        onChange={e => setFormData({...formData, avatar: e.target.value})} 
+                                        className="h-8 text-xs" 
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-zinc-500 uppercase">{manageMode === 'edit' ? 'Nova Senha (Opcional)' : 'Senha'}</label>
@@ -1474,16 +1558,20 @@ function UserSettingsModal({
                             <div className="space-y-1">
                                 <label className="text-[10px] font-bold text-zinc-500 uppercase">Cor do Avatar</label>
                                 <div className="flex gap-2">
-                                    {['blue', 'red', 'green', 'purple', 'orange', 'zinc'].map(c => (
+                                    {['blue', 'red', 'green', 'purple', 'orange', 'zinc'].map(c => {
+                                      const colorVariant = COLOR_VARIANTS[c] || COLOR_VARIANTS.zinc;
+                                      return (
                                         <div 
                                             key={c}
                                             onClick={() => setFormData({...formData, color: c})}
-                                            className={cn("w-6 h-6 rounded-full cursor-pointer border-2 transition-all", 
-                                                formData.color === c ? "border-white scale-110" : "border-transparent opacity-50 hover:opacity-100",
-                                                `bg-${c}-600`
+                                            className={cn(
+                                              "w-6 h-6 rounded-full cursor-pointer border-2 transition-all",
+                                              formData.color === c ? "border-white scale-110" : "border-transparent opacity-50 hover:opacity-100",
+                                              colorVariant.bg
                                             )}
                                         />
-                                    ))}
+                                      );
+                                    })}
                                 </div>
                             </div>
 

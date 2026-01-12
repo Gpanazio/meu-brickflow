@@ -384,6 +384,26 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+// Admin: Listar usuários (somente Owner)
+app.get('/api/admin/users', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'owner') {
+      return res.status(403).json({ error: 'Apenas administradores podem listar usuários.' });
+    }
+
+    const { rows } = await query(
+      `SELECT id, username, name, email, created_at, role, avatar, color
+       FROM master_users
+       ORDER BY created_at DESC NULLS LAST, username ASC`
+    );
+
+    res.json({ users: rows });
+  } catch (err) {
+    console.error('❌ ERRO ADMIN LIST USERS:', err);
+    res.status(500).json({ error: 'Erro ao listar usuários', details: err.message });
+  }
+});
+
 // Admin: Criar novo usuário (somente Owner)
 app.post('/api/admin/users', requireAuth, async (req, res) => {
   try {
@@ -392,7 +412,7 @@ app.post('/api/admin/users', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Apenas administradores podem criar usuários.' });
     }
 
-    const { username, pin, displayName, role, color } = req.body || {};
+    const { username, pin, displayName, role, color, email, avatar } = req.body || {};
     if (!username || !pin) {
       return res.status(400).json({ error: 'Dados inválidos. Username e PIN são obrigatórios.' });
     }
@@ -406,16 +426,17 @@ app.post('/api/admin/users', requireAuth, async (req, res) => {
     const hashed = await bcrypt.hash(String(pin), salt);
 
     await query(
-      `INSERT INTO master_users (id, username, password_hash, name, email, role, color, created_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE)`,
+      `INSERT INTO master_users (id, username, password_hash, name, email, role, color, avatar, created_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_DATE)`,
       [
-        randomUUID(), 
-        username, 
-        hashed, 
+        randomUUID(),
+        username,
+        hashed,
         displayName || String(username),
-        `${username}@brickflow.local`,
+        email || `${username}@brickflow.local`,
         role || 'member',
-        color || 'zinc'
+        color || 'zinc',
+        avatar || ''
       ]
     );
 
@@ -434,7 +455,7 @@ app.put('/api/admin/users/:targetUsername', requireAuth, async (req, res) => {
     }
 
     const { targetUsername } = req.params;
-    const { displayName, role, pin, color } = req.body || {};
+    const { displayName, role, pin, color, email, avatar } = req.body || {};
 
     // Build update query dynamically
     const fields = [];
@@ -444,6 +465,14 @@ app.put('/api/admin/users/:targetUsername', requireAuth, async (req, res) => {
     if (displayName !== undefined) {
       fields.push(`name = $${idx++}`);
       values.push(displayName);
+    }
+    if (email !== undefined) {
+      fields.push(`email = $${idx++}`);
+      values.push(email);
+    }
+    if (avatar !== undefined) {
+      fields.push(`avatar = $${idx++}`);
+      values.push(avatar);
     }
     if (role !== undefined) {
       fields.push(`role = $${idx++}`);

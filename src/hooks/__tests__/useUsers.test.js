@@ -1,41 +1,19 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useUsers } from '../useUsers'
 import { toast } from 'sonner'
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
-const apiState = {
-  users: [
-    { username: 'admin', pin: '1234', displayName: 'Admin' },
-    { username: 'fran', pin: '1234', displayName: 'Fran' }
-  ],
-  projects: []
-}
+const apiUsers = [
+  { username: 'admin', pin: '1234', displayName: 'Admin' },
+  { username: 'fran', pin: '1234', displayName: 'Fran' }
+]
 
-function useUsersFromApi() {
-  const [data, setData] = useState(null)
-
-  useEffect(() => {
-    let isMounted = true
-    fetch('/api/projects')
-      .then((response) => response.json())
-      .then((responseData) => {
-        if (isMounted) {
-          setData(responseData)
-        }
-      })
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  const updateGlobalUsers = (newUsers) => {
-    setData((prev) => ({ ...prev, users: newUsers }))
-  }
-
-  return useUsers(data?.users, updateGlobalUsers)
+function useUsersHarness() {
+  const [users, setUsers] = useState(apiUsers)
+  return useUsers(users, setUsers)
 }
 
 function wrapper({ children }) {
@@ -45,17 +23,31 @@ function wrapper({ children }) {
 describe('useUsers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: async () => apiState
-      })
-    )
     localStorage.clear()
+
+    global.fetch = vi.fn(async (url) => {
+      if (url === '/api/health') {
+        return { ok: true, json: async () => ({ status: 'ok' }) }
+      }
+
+      if (url === '/api/auth/me') {
+        return { ok: true, json: async () => ({ user: null }) }
+      }
+
+      if (url === '/api/auth/login') {
+        return { ok: false, json: async () => ({ error: 'Usuário ou PIN incorretos.' }) }
+      }
+
+      if (url === '/api/auth/register') {
+        return { ok: false, json: async () => ({ error: 'Usuário já existe.' }) }
+      }
+
+      return { ok: false, status: 404, json: async () => ({}) }
+    })
   })
 
   it('should initialize without user', async () => {
-    const { result } = renderHook(() => useUsersFromApi(), { wrapper })
+    const { result } = renderHook(() => useUsersHarness(), { wrapper })
 
     await waitFor(() => {
       expect(result.current.showLoginModal).toBe(true)
@@ -65,10 +57,10 @@ describe('useUsers', () => {
   })
 
   it('notifies when login credentials are invalid', async () => {
-    const { result } = renderHook(() => useUsersFromApi(), { wrapper })
+    const { result } = renderHook(() => useUsersHarness(), { wrapper })
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/projects')
+      expect(result.current.isDatabaseReady).toBe(true)
     })
 
     await act(async () => {
@@ -79,22 +71,20 @@ describe('useUsers', () => {
   })
 
   it('notifies when creating existing user', async () => {
-    const { result } = renderHook(() => useUsersFromApi(), { wrapper })
+    const { result } = renderHook(() => useUsersHarness(), { wrapper })
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/projects')
+      expect(result.current.isDatabaseReady).toBe(true)
     })
 
     await act(async () => {
       await result.current.handleCreateUser({
         username: 'admin',
         displayName: 'Admin',
-        avatar: '',
-        color: '',
         pin: '1234'
       })
     })
 
-    expect(toast.error).toHaveBeenCalledWith('Este nome de usuário já está em uso.')
+    expect(toast.error).toHaveBeenCalledWith('Usuário já existe.')
   })
 })
