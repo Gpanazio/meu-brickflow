@@ -11,7 +11,7 @@ import LegacyProjectView from './components/legacy/LegacyProjectView';
 import LegacyBoard from './components/legacy/LegacyBoard';
 import LegacyHeader from './components/legacy/LegacyHeader';
 import LegacyModal from './components/legacy/LegacyModal';
-import { CreateProjectModal } from './components/CreateProjectModal'; // COMPONENTE IMPORTADO
+import CreateProjectModal from './components/CreateProjectModal'; // COMPONENTE IMPORTADO
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { SyncNotificationContainer } from './components/SyncNotification';
 import { Toaster } from './components/ui/sonner';
