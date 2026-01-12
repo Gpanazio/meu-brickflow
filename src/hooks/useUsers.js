@@ -7,94 +7,105 @@ export function useUsers(_globalUsers, _updateGlobalUsers) {
   const [showCreateUserModal, setShowCreateUserModal] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const [isDatabaseReady, setIsDatabaseReady] = useState(false)
   const [authError, setAuthError] = useState(null)
 
   const fetchMe = useCallback(async () => {
-    const response = await fetch('/api/auth/me')
-    if (!response.ok) {
+    try {
+      const response = await fetch('/api/auth/me')
+      if (!response.ok) {
+        return null
+      }
+      const data = await response.json().catch(() => null)
+      return data?.user || null
+    } catch {
       return null
     }
-    const data = await response.json().catch(() => null)
-    return data?.user || null
   }, [])
 
   useEffect(() => {
     let alive = true
     setIsAuthLoading(true)
+    setIsDatabaseReady(false)
 
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
     const waitForServer = async () => {
       let backoffMs = 500
       const startedAt = Date.now()
-      const maxWaitMs = 120000
+      const maxWaitMs = 120000 // 2 minutes max wait
 
       while (alive) {
         try {
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 15000)
+          const timeoutId = setTimeout(() => controller.abort(), 30000)
           const response = await fetch('/api/health', { signal: controller.signal })
           clearTimeout(timeoutId)
 
           if (response.ok) {
-            return true
+            return 'ready'
           }
 
           if (response.status === 503) {
             const payload = await response.json().catch(() => null)
             if (payload?.code === 'MISSING_DATABASE_URL') {
-              return false
+              return 'db_missing'
             }
           }
         } catch {
-          // server is likely waking up
+          // server is likely waking up or network error
         }
 
         if (Date.now() - startedAt > maxWaitMs) {
-          return false
+          return 'timeout'
         }
 
         await sleep(backoffMs)
         backoffMs = Math.min(5000, Math.floor(backoffMs * 1.5))
       }
-      return false
+      return 'aborted'
     }
 
     ;(async () => {
-      const ready = await waitForServer()
+      const status = await waitForServer()
       if (!alive) return
 
-      if (!ready) {
-        setCurrentUser(null)
-        setIsLoggedIn(false)
-        setShowLoginModal(true)
-        setAuthError('Servidor indisponível')
-        setIsAuthLoading(false)
-        return
-      }
+      if (status === 'ready') {
+        setIsDatabaseReady(true)
+        try {
+          const user = await fetchMe()
+          if (!alive) return
 
-      try {
-        const user = await fetchMe()
-        if (!alive) return
-
-        if (user) {
-          setCurrentUser(user)
-          setIsLoggedIn(true)
-          setShowLoginModal(false)
-          setAuthError(null)
-        } else {
+          if (user) {
+            setCurrentUser(user)
+            setIsLoggedIn(true)
+            setShowLoginModal(false)
+            setAuthError(null)
+          } else {
+            setCurrentUser(null)
+            setIsLoggedIn(false)
+            setShowLoginModal(true)
+          }
+        } catch {
+          if (!alive) return
           setCurrentUser(null)
           setIsLoggedIn(false)
           setShowLoginModal(true)
+        } finally {
+          if (!alive) return
+          setIsAuthLoading(false)
         }
-      } catch {
-        if (!alive) return
+      } else {
+        setIsDatabaseReady(false)
+        setIsAuthLoading(false)
         setCurrentUser(null)
         setIsLoggedIn(false)
-        setShowLoginModal(true)
-      } finally {
-        if (!alive) return
-        setIsAuthLoading(false)
+        
+        if (status === 'db_missing') {
+          setAuthError('Configuração do Banco de Dados faltando (DATABASE_URL).')
+        } else {
+          setAuthError('Não foi possível conectar ao servidor. Tente recarregar a página.')
+        }
       }
     })()
 
@@ -104,6 +115,11 @@ export function useUsers(_globalUsers, _updateGlobalUsers) {
   }, [fetchMe])
 
   const handleLogin = useCallback(async (username, pin) => {
+    if (!isDatabaseReady) {
+      toast.error('Aguardando conexão com o banco de dados...')
+      return false
+    }
+    
     setAuthError(null)
     try {
       const response = await fetch('/api/auth/login', {
@@ -131,9 +147,11 @@ export function useUsers(_globalUsers, _updateGlobalUsers) {
       toast.error('Falha no login')
       return false
     }
-  }, [])
+  }, [isDatabaseReady])
 
   const handleCreateUser = useCallback(async (userData) => {
+    if (!isDatabaseReady) return false
+    
     setAuthError(null)
     try {
       const response = await fetch('/api/auth/register', {
@@ -159,7 +177,7 @@ export function useUsers(_globalUsers, _updateGlobalUsers) {
       toast.error('Erro ao criar usuário')
       return false
     }
-  }, [])
+  }, [isDatabaseReady])
 
   const handleLogout = useCallback(async () => {
     try {
@@ -182,6 +200,7 @@ export function useUsers(_globalUsers, _updateGlobalUsers) {
     currentUser,
     isLoggedIn,
     isAuthLoading,
+    isDatabaseReady,
     authError,
     showLoginModal,
     setShowLoginModal,

@@ -16,12 +16,19 @@ const apiState = {
 
 describe('App', () => {
   beforeEach(() => {
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: async () => apiState
-      })
-    )
+    global.fetch = vi.fn((url) => {
+      if (url === '/api/health') {
+        return Promise.resolve({ ok: true })
+      }
+      if (url === '/api/projects') {
+        return Promise.resolve({ ok: true, json: async () => apiState })
+      }
+      if (url === '/api/auth/me') {
+        // Default to not logged in
+        return Promise.resolve({ ok: false, status: 401 })
+      }
+      return Promise.resolve({ ok: false, status: 404 })
+    })
     localStorage.clear()
   })
 
@@ -35,13 +42,37 @@ describe('App', () => {
   })
 
   it('shows SudokuGame for user Fran', async () => {
-    localStorage.setItem('brickflow-session-user', JSON.stringify(apiState.users[1]))
+    // Mock user being logged in
+    global.fetch.mockImplementation((url) => {
+      if (url === '/api/health') return Promise.resolve({ ok: true })
+      if (url === '/api/projects') return Promise.resolve({ ok: true, json: async () => apiState })
+      if (url === '/api/auth/me') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ user: apiState.users[1] })
+        })
+      }
+      return Promise.resolve({ ok: false, status: 404 })
+    })
+
     render(<App />)
     expect(await screen.findByTestId('sudoku-game')).toBeInTheDocument()
   })
 
   it('does not show SudokuGame for other users', async () => {
-    localStorage.setItem('brickflow-session-user', JSON.stringify(apiState.users[0]))
+    // Mock admin user being logged in
+    global.fetch.mockImplementation((url) => {
+      if (url === '/api/health') return Promise.resolve({ ok: true })
+      if (url === '/api/projects') return Promise.resolve({ ok: true, json: async () => apiState })
+      if (url === '/api/auth/me') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ user: apiState.users[0] })
+        })
+      }
+      return Promise.resolve({ ok: false, status: 404 })
+    })
+
     render(<App />)
     await waitFor(() => {
       expect(screen.queryByTestId('sudoku-game')).toBeNull()

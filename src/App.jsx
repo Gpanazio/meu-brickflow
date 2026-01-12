@@ -951,10 +951,12 @@ export default function App() {
     });
   };
 
-  if (!appData && !connectionError) {
+  if ((!appData || isAuthLoading) && !connectionError) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 text-center p-4">
-        <div className="text-zinc-500 font-mono animate-pulse uppercase tracking-widest">Iniciando Sistema...</div>
+        <div className="text-zinc-500 font-mono animate-pulse uppercase tracking-widest">
+          {isAuthLoading ? 'Conectando ao Banco...' : 'Iniciando Sistema...'}
+        </div>
         {showSlowLoad && (
           <div className="animate-in fade-in zoom-in duration-500 flex flex-col items-center gap-3">
             <p className="text-zinc-700 text-xs font-mono">O servidor está demorando para acordar...</p>
@@ -978,19 +980,22 @@ export default function App() {
   }
 
   if (!isLoggedIn) {
-    if (connectionError) {
+    // If we're not logged in, but the server is still checking status, 
+    // keep showing the "Iniciando" screen (handled by the block above).
+    // If there's an error, show it here.
+    if (connectionError || authError) {
       return (
         <div className="min-h-screen bg-black flex flex-col items-center justify-center text-red-600 gap-4 p-8 text-center">
           <WifiOff className="w-16 h-16" />
           <h1 className="text-2xl font-black uppercase">Falha na Conexão</h1>
           <p className="text-zinc-500 text-sm max-w-md">
-            Não foi possível conectar à API. Verifique se o backend está no ar e se as variáveis `DATABASE_URL` (e opcionalmente `DATABASE_SSL`) estão configuradas no Railway.
+            {authError || 'Não foi possível conectar à API. Verifique se o backend está no ar e se o banco de dados está acessível.'}
           </p>
           <div className="flex gap-4">
             <Button onClick={() => window.location.reload()} className="bg-white text-zinc-950 font-bold">Tentar Novamente</Button>
           </div>
         </div>
-      )
+      );
     }
 
     return (
@@ -1001,16 +1006,6 @@ export default function App() {
             <h1 className="text-xl font-bold tracking-widest text-white uppercase">BrickFlow OS</h1>
             <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest">Acesso Restrito</p>
           </div>
-
-          {(isAuthLoading || authError) && (
-            <div className="text-center">
-              {isAuthLoading ? (
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-mono">Verificando servidor...</p>
-              ) : (
-                <p className="text-xs text-red-400 font-bold">{authError}</p>
-              )}
-            </div>
-          )}
 
           <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); handleLogin(fd.get('username'), fd.get('pin')); }} className="space-y-4">
             <Input name="username" placeholder="ID (admin)" required className="h-12" />

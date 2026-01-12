@@ -97,18 +97,54 @@ const withVersion = (state, version) => {
   return { ...state, version };
 };
 
+const getAllMasterUsers = async () => {
+  try {
+    const { rows } = await query(`
+      SELECT username, password as pin, display_name, role, avatar, color 
+      FROM master_users
+    `);
+    
+    return rows.map(u => ({
+      username: u.username,
+      displayName: u.display_name || u.username,
+      role: u.role || 'member',
+      pin: u.pin, 
+      avatar: u.avatar || '',
+      color: u.color || 'zinc'
+    }));
+  } catch (err) {
+    // Silently fail if table doesn't exist yet (initDB will fix)
+    // or if we really can't connect.
+    return [];
+  }
+};
+
 const getStateRow = async () => {
+  let stateData = null;
+  let version = 0;
+
   const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
   if (rows.length > 0) {
-    return { data: normalizeStateData(rows[0].data), version: rows[0].version ?? 1 };
+    stateData = normalizeStateData(rows[0].data);
+    version = rows[0].version ?? 1;
+  } else {
+    const fallback = await query('SELECT data, version FROM brickflow_state ORDER BY id DESC LIMIT 1');
+    if (fallback.rows.length > 0) {
+      stateData = normalizeStateData(fallback.rows[0].data);
+      version = fallback.rows[0].version ?? 1;
+    }
   }
 
-  const fallback = await query('SELECT data, version FROM brickflow_state ORDER BY id DESC LIMIT 1');
-  if (fallback.rows.length > 0) {
-    return { data: normalizeStateData(fallback.rows[0].data), version: fallback.rows[0].version ?? 1 };
+  // Inject Master Users as the Single Source of Truth
+  const masterUsers = await getAllMasterUsers();
+  if (masterUsers.length > 0) {
+    if (!stateData) {
+      stateData = { projects: [], version: 0 };
+    }
+    stateData.users = masterUsers;
   }
 
-  return { data: null, version: 0 };
+  return { data: stateData, version };
 };
 
 const sanitizeUser = (user) => {
@@ -308,7 +344,7 @@ app.post('/api/auth/logout', requireAuth, async (req, res) => {
   }
 });
 
-// Bootstrap: cria o primeiro usuário (somente se não existir nenhum)
+// Bootstrap: cria novo usuário no master_users
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, pin, displayName, role } = req.body || {};
@@ -316,46 +352,18 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ error: 'Dados inválidos' });
     }
 
-    const stateRow = await getStateRow();
-    const existingUsers = stateRow.data?.users || [];
-    if (existingUsers.length > 0) {
-      return res.status(409).json({ error: 'Registro desabilitado (já existem usuários).' });
+    const existingCheck = await query('SELECT 1 FROM master_users WHERE username = $1', [username]);
+    if (existingCheck.rows.length > 0) {
+      return res.status(409).json({ error: 'Usuário já existe.' });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(String(pin), salt);
 
-    const firstUser = {
-      username: String(username),
-      displayName: displayName || String(username),
-      role: role || 'owner',
-      pin: hashed,
-      color: 'red',
-      avatar: ''
-    };
-
-    const initialState = {
-      users: [firstUser],
-      projects: [],
-      version: 0
-    };
-
-    const client = await getClient();
-    try {
-      await client.query('BEGIN');
-      await client.query(
-        `INSERT INTO brickflow_state (id, data, updated_at, version)
-         VALUES (1, $1, CURRENT_TIMESTAMP, 0)
-         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP`,
-        [JSON.stringify(initialState)]
-      );
-      await client.query('COMMIT');
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    } finally {
-      client.release();
-    }
+    await query(
+      'INSERT INTO master_users (username, password, display_name, role, color) VALUES ($1, $2, $3, $4, $5)',
+      [username, hashed, displayName || String(username), role || 'member', 'zinc']
+    );
 
     res.json({ ok: true });
   } catch (err) {
@@ -812,6 +820,32 @@ const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Master Users & Seeding
+    try {
+      await query(`
+        CREATE TABLE IF NOT EXISTS master_users (
+          username TEXT PRIMARY KEY,
+          password TEXT NOT NULL,
+          display_name TEXT,
+          role TEXT DEFAULT 'member',
+          avatar TEXT,
+          color TEXT
+        );
+      `);
+      
+      // Seed Gabriel
+      await query(`
+        INSERT INTO master_users (username, password, display_name, role, color)
+        VALUES ('Gabriel', '$2b$10$V5RIP3w.qoyLKbMx9EZWDu8d/0UCbp5aJUhyK0SkrQzfQ5eh9qJXW', 'Gabriel', 'owner', 'red')
+        ON CONFLICT (username) DO UPDATE 
+        SET role = 'owner', password = EXCLUDED.password;
+      `);
+      console.log('✅ Tabela master_users verificada e usuário Gabriel garantido.');
+    } catch (e) {
+      console.error('⚠️ Erro ao configurar master_users:', e.message);
+    }
+
     console.log('✅ Tabelas verificadas/criadas com sucesso.');
   } catch (err) {
     console.error('❌ Erro ao inicializar tabelas:', err.message);
