@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  ListTodo, KanbanSquare, FileText, Goal
+  ListTodo, Kanban, FileText, Goal
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -88,7 +88,7 @@ export function CreateSubProjectModal({ isOpen, onClose, onCreate }) {
               <ModuleToggle
                 active={modules.kanban}
                 onClick={() => toggleModule('kanban')}
-                icon={KanbanSquare}
+                icon={Kanban}
                 label="Kanban"
               />
               <ModuleToggle
