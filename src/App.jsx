@@ -1311,7 +1311,33 @@ function UserSettingsModal({
     }
   };
 
-  const handleSave = () => { onUpdateUser({ ...currentUser, avatar: avatarPreview }); onClose(); };
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState(null);
+
+  const handleSave = async () => {
+    setIsSavingProfile(true);
+    setProfileSaveError(null);
+
+    try {
+      const response = await fetch('/api/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar: avatarPreview })
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao salvar avatar');
+      }
+
+      onClose();
+      window.location.reload();
+    } catch (err) {
+      setProfileSaveError(err.message);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const handleUserAction = async (e) => {
     e.preventDefault();
@@ -1484,9 +1510,16 @@ function UserSettingsModal({
           </div>
         </div>
       </div>
-      <div className="p-4 border-t border-zinc-900 bg-zinc-950 flex justify-end gap-2">
-        <Button variant="ghost" onClick={onClose} className="text-xs font-bold uppercase">Cancelar</Button>
-        <Button onClick={handleSave} className="bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-bold uppercase">Salvar</Button>
+      <div className="p-4 border-t border-zinc-900 bg-zinc-950 flex flex-col gap-2">
+        {profileSaveError && (
+          <p className="text-[10px] text-red-500 font-mono text-center">{profileSaveError}</p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} className="text-xs font-bold uppercase">Cancelar</Button>
+          <Button onClick={handleSave} disabled={isSavingProfile} className="bg-white text-zinc-950 hover:bg-zinc-200 text-xs font-bold uppercase">
+            {isSavingProfile ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </div>
       </div>
     </Dialog>
   );

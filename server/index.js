@@ -241,6 +241,45 @@ app.get('/api/users', requireAuth, async (req, res) => {
   }
 });
 
+// Profile: atualizar dados do usuário logado (ex: avatar)
+app.put('/api/users/me', requireAuth, async (req, res) => {
+  try {
+    const { avatar, color, displayName } = req.body || {};
+
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (avatar !== undefined) {
+      fields.push(`avatar = $${idx++}`);
+      values.push(String(avatar || ''));
+    }
+
+    if (color !== undefined) {
+      fields.push(`color = $${idx++}`);
+      values.push(String(color || 'zinc'));
+    }
+
+    if (displayName !== undefined) {
+      fields.push(`name = $${idx++}`);
+      values.push(String(displayName || req.user.username));
+    }
+
+    if (fields.length === 0) {
+      return res.json({ ok: true });
+    }
+
+    values.push(req.user.username);
+
+    await query(`UPDATE master_users SET ${fields.join(', ')} WHERE username = $${idx}`, values);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('❌ ERRO PUT /api/users/me:', err);
+    res.status(500).json({ error: 'Erro ao atualizar perfil', details: err.message });
+  }
+});
+
 // Health Check: Verifica se o servidor e o banco estão vivos
 app.get('/api/health', async (req, res) => {
   try {
