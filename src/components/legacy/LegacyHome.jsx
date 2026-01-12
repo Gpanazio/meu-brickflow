@@ -68,42 +68,40 @@ function LegacyHome({
       <div className="relative z-10">
         
         {/* --- SEÇÃO SUPERIOR (HERO + WIDGETS) --- */}
-        {/* MUDANÇA: 'lg:' alterado para 'md:' para garantir linha horizontal em notebooks/tablets */}
-        <PrismaticPanel className="mx-6 md:mx-10 mt-6 flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-white/10 md:min-h-[10rem]">
-          
+        <PrismaticPanel className="mx-6 md:mx-10 mt-6 flex flex-row divide-x divide-white/10 min-h-[8rem] md:min-h-[10rem] overflow-x-auto no-scrollbar">
           {/* COLUNA 1: HERO */}
-          <div className="md:w-1/2 px-6 md:px-10 py-6 flex flex-col justify-center">
-             <h1 className="brick-title text-4xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
+          <div className="w-[50%] md:w-1/2 px-4 md:px-10 py-6 flex flex-col justify-center min-w-[200px]">
+             <h1 className="brick-title text-2xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
                Olá, <span className="text-zinc-700">{currentUser?.displayName || 'Visitante'}</span>
              </h1>
-             <p className="brick-mono mt-4 text-[10px] text-zinc-600 tracking-[0.2em] uppercase">
+             <p className="brick-mono mt-4 text-[8px] md:text-[10px] text-zinc-600 tracking-[0.2em] uppercase">
                {currentDate}
              </p>
           </div>
 
           {/* COLUNA 2: SORTE */}
-          <div className="md:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between">
+          <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[150px]">
               <div className="flex items-center gap-3">
                   <Sparkles className="w-3 h-3 text-red-600" />
-                  <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
+                  <span className="brick-mono text-[8px] md:text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
               </div>
-              <div className="flex-1 flex items-center mt-3 md:mt-0">
-                  <p className="font-sans text-sm text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
+              <div className="flex-1 flex items-center mt-3">
+                  <p className="font-sans text-[10px] md:text-sm text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
                    "{dailyPhrase || "O silêncio é uma resposta."}"
                    </p>
               </div>
           </div>
 
           {/* COLUNA 3: PROBABILIDADE */}
-          <div className="md:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between">
-              <div className="flex items-center gap-3 mb-4 md:mb-0">
+          <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[180px]">
+              <div className="flex items-center gap-3 mb-2 md:mb-0">
                   <Dna className="w-3 h-3 text-emerald-600" />
-                  <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
+                  <span className="brick-mono text-[8px] md:text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
               </div>
               <div className="flex-1 flex items-center">
-                  <div className="flex gap-1 w-full justify-between">
+                  <div className="flex gap-1 md:gap-2 w-full justify-between">
                       {safeMegaSena.map((n, i) => (
-                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-[9px] md:text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                               {n.toString().padStart(2, '0')}
                           </div>
                       ))}
