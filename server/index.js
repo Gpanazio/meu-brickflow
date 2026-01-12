@@ -6,15 +6,22 @@ import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import { getClient, hasDatabaseUrl, query } from './db.js';
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Behind Railway/other proxies
+app.set('trust proxy', 1);
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors());
+
+// In dev we may rely on Vite proxy; this CORS config allows direct calls too.
+app.use(cors(isProd ? undefined : { origin: true, credentials: true }));
 
 // --- FUNÇÕES AUXILIARES ---
 const normalizeStateData = (state) => {
@@ -23,6 +30,57 @@ const normalizeStateData = (state) => {
   if (Array.isArray(state.projects)) return state;
   return state;
 };
+
+const parseCookies = (cookieHeader) => {
+  if (!cookieHeader || typeof cookieHeader !== 'string') return {};
+  const result = {};
+  cookieHeader.split(';').forEach((part) => {
+    const [rawKey, ...rest] = part.trim().split('=');
+    if (!rawKey) return;
+    const key = rawKey.trim();
+    const value = rest.join('=');
+    result[key] = decodeURIComponent(value);
+  });
+  return result;
+};
+
+const isRequestSecure = (req) => {
+  const protoHeader = req?.headers?.['x-forwarded-proto'];
+  const proto = Array.isArray(protoHeader) ? protoHeader[0] : protoHeader;
+  const normalizedProto = String(proto || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase();
+
+  return Boolean(req?.secure) || normalizedProto === 'https';
+};
+
+const setSessionCookie = (req, res, sessionId) => {
+  const maxAge = 30 * 24 * 60 * 60; // 30 days in seconds
+  const parts = [
+    `bf_session=${encodeURIComponent(sessionId)}`,
+    `Max-Age=${maxAge}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax'
+  ];
+
+  // Secure cookies only work over HTTPS.
+  if (isProd && isRequestSecure(req)) {
+    parts.push('Secure');
+  }
+
+  res.setHeader('Set-Cookie', parts.join('; '));
+};
+
+const clearSessionCookie = (req, res) => {
+  const parts = ['bf_session=', 'Max-Age=0', 'Path=/', 'HttpOnly', 'SameSite=Lax'];
+  if (isProd && isRequestSecure(req)) {
+    parts.push('Secure');
+  }
+  res.setHeader('Set-Cookie', parts.join('; '));
+};
+
 
 // --- MIDDLEWARE DE LOGGING ---
 app.use((req, res, next) => {
@@ -39,6 +97,82 @@ const withVersion = (state, version) => {
   return { ...state, version };
 };
 
+const getStateRow = async () => {
+  const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
+  if (rows.length > 0) {
+    return { data: normalizeStateData(rows[0].data), version: rows[0].version ?? 1 };
+  }
+
+  const fallback = await query('SELECT data, version FROM brickflow_state ORDER BY id DESC LIMIT 1');
+  if (fallback.rows.length > 0) {
+    return { data: normalizeStateData(fallback.rows[0].data), version: fallback.rows[0].version ?? 1 };
+  }
+
+  return { data: null, version: 0 };
+};
+
+const sanitizeUser = (user) => {
+  if (!user || typeof user !== 'object') return null;
+  const { pin, ...rest } = user;
+  return rest;
+};
+
+const stripUserPinsFromState = (state) => {
+  if (!state || typeof state !== 'object') return state;
+  const users = Array.isArray(state.users) ? state.users : [];
+  if (users.length === 0) return state;
+  return {
+    ...state,
+    users: users.map(sanitizeUser)
+  };
+};
+
+const requireAuth = async (req, res, next) => {
+  try {
+    const cookies = parseCookies(req.headers.cookie);
+    const sessionId = cookies.bf_session;
+    if (!sessionId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { rows } = await query(
+      'SELECT id, user_id, expires_at FROM brickflow_sessions WHERE id = $1',
+      [sessionId]
+    );
+
+    if (rows.length === 0) {
+      clearSessionCookie(req, res);
+
+      return res.status(401).json({ error: 'Invalid session' });
+    }
+
+    const session = rows[0];
+    const expiresAt = session.expires_at ? new Date(session.expires_at) : null;
+    if (expiresAt && Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() < Date.now()) {
+      await query('DELETE FROM brickflow_sessions WHERE id = $1', [sessionId]);
+      clearSessionCookie(req, res);
+
+      return res.status(401).json({ error: 'Session expired' });
+    }
+
+    const stateRow = await getStateRow();
+    const users = stateRow.data?.users || [];
+    const user = users.find((u) => u.username === session.user_id);
+    if (!user) {
+      await query('DELETE FROM brickflow_sessions WHERE id = $1', [sessionId]);
+      clearSessionCookie(req, res);
+
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    req.user = sanitizeUser(user);
+    next();
+  } catch (err) {
+    console.error('❌ AUTH ERROR:', err);
+    res.status(500).json({ error: 'Auth failure', details: err.message });
+  }
+};
+
 // --- ROTAS DA API ---
 
 // Health Check: Verifica se o servidor e o banco estão vivos
@@ -48,6 +182,130 @@ app.get('/api/health', async (req, res) => {
     res.json({ status: 'ok', database: 'connected', timestamp: new Date() });
   } catch (err) {
     res.status(503).json({ status: 'error', database: 'disconnected', message: err.message });
+  }
+});
+
+// Auth: retorna usuário da sessão
+app.get('/api/auth/me', requireAuth, async (req, res) => {
+  res.json({ user: req.user });
+});
+
+// Auth: login (30 dias)
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, pin } = req.body || {};
+    if (!username || !pin) {
+      return res.status(400).json({ error: 'Dados inválidos' });
+    }
+
+    const stateRow = await getStateRow();
+    const users = stateRow.data?.users || [];
+    const user = users.find((u) => (u.username || '').toLowerCase() === String(username).toLowerCase());
+    if (!user) {
+      return res.status(401).json({ error: 'Usuário ou PIN incorretos.' });
+    }
+
+    const storedPin = user.pin;
+    let ok = false;
+    if (typeof storedPin === 'string' && storedPin.startsWith('$2')) {
+      ok = await bcrypt.compare(String(pin), storedPin);
+    } else {
+      ok = String(storedPin) === String(pin);
+    }
+
+    if (!ok) {
+      return res.status(401).json({ error: 'Usuário ou PIN incorretos.' });
+    }
+
+    const sessionId = randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    await query(
+      'INSERT INTO brickflow_sessions (id, user_id, expires_at) VALUES ($1, $2, $3)',
+      [sessionId, user.username, expiresAt]
+    );
+
+    setSessionCookie(req, res, sessionId);
+
+    res.json({ ok: true, user: sanitizeUser(user) });
+  } catch (err) {
+    console.error('❌ ERRO LOGIN:', err);
+    res.status(500).json({ error: 'Erro ao autenticar', details: err.message });
+  }
+});
+
+// Auth: logout
+app.post('/api/auth/logout', requireAuth, async (req, res) => {
+  try {
+    const cookies = parseCookies(req.headers.cookie);
+    const sessionId = cookies.bf_session;
+    if (sessionId) {
+      await query('DELETE FROM brickflow_sessions WHERE id = $1', [sessionId]);
+    }
+    clearSessionCookie(req, res);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('❌ ERRO LOGOUT:', err);
+    clearSessionCookie(req, res);
+
+    res.status(500).json({ error: 'Erro ao deslogar', details: err.message });
+  }
+});
+
+// Bootstrap: cria o primeiro usuário (somente se não existir nenhum)
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, pin, displayName, role } = req.body || {};
+    if (!username || !pin) {
+      return res.status(400).json({ error: 'Dados inválidos' });
+    }
+
+    const stateRow = await getStateRow();
+    const existingUsers = stateRow.data?.users || [];
+    if (existingUsers.length > 0) {
+      return res.status(409).json({ error: 'Registro desabilitado (já existem usuários).' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(String(pin), salt);
+
+    const firstUser = {
+      username: String(username),
+      displayName: displayName || String(username),
+      role: role || 'owner',
+      pin: hashed,
+      color: 'red',
+      avatar: ''
+    };
+
+    const initialState = {
+      users: [firstUser],
+      projects: [],
+      version: 0
+    };
+
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        `INSERT INTO brickflow_state (id, data, updated_at, version)
+         VALUES (1, $1, CURRENT_TIMESTAMP, 0)
+         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP`,
+        [JSON.stringify(initialState)]
+      );
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('❌ ERRO REGISTER:', err);
+    res.status(500).json({ error: 'Erro ao registrar', details: err.message });
   }
 });
 
@@ -483,6 +741,14 @@ const initDB = async () => {
         snapshot JSONB NOT NULL,
         kind TEXT NOT NULL DEFAULT 'hourly',
         source TEXT NOT NULL DEFAULT 'scheduler',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await query(`
+      CREATE TABLE IF NOT EXISTS brickflow_sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
