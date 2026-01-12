@@ -284,6 +284,59 @@ export default function App() {
         }));
       }
       setModalState({ isOpen: false, type: null });
+    } else if (action === 'move') {
+      const { taskId, fromListId, toListId } = data || {};
+      if (!taskId || !fromListId || !toListId || fromListId === toListId) return;
+
+      if (currentProject && currentSubProject) {
+        setAppData((prev) => ({
+          ...prev,
+          projects: prev.projects.map((p) => {
+            if (p.id !== currentProject.id) return p;
+            return {
+              ...p,
+              subProjects: p.subProjects.map((sp) => {
+                if (sp.id !== currentSubProject.id) return sp;
+                const board = sp.boardData?.[currentBoardType];
+                if (!board?.lists) return sp;
+
+                let movingTask = null;
+
+                const listsWithoutTask = board.lists.map((list) => {
+                  if (list.id !== fromListId) return list;
+                  const tasks = Array.isArray(list.tasks) ? list.tasks : [];
+                  const idx = tasks.findIndex((t) => t.id === taskId);
+                  if (idx === -1) return list;
+                  movingTask = tasks[idx];
+                  return { ...list, tasks: tasks.filter((t) => t.id !== taskId) };
+                });
+
+                if (!movingTask) return sp;
+
+                const listExists = listsWithoutTask.some((l) => l.id === toListId);
+                if (!listExists) return sp;
+
+                const nextLists = listsWithoutTask.map((list) => {
+                  if (list.id !== toListId) return list;
+                  const tasks = Array.isArray(list.tasks) ? list.tasks : [];
+                  return { ...list, tasks: [...tasks, movingTask] };
+                });
+
+                return {
+                  ...sp,
+                  boardData: {
+                    ...sp.boardData,
+                    [currentBoardType]: {
+                      ...board,
+                      lists: nextLists
+                    }
+                  }
+                };
+              })
+            };
+          })
+        }));
+      }
     } else if (action === 'delete') {
       // Lógica de delete existente
       if (currentProject && currentSubProject) {

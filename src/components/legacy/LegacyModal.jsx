@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -123,6 +123,17 @@ function LegacyModal({
   return (
     <Dialog open={modalState.isOpen} onOpenChange={(open) => !open && setModalState({ ...modalState, isOpen: false })}>
       <DialogContent className={`bg-black border border-zinc-800 text-zinc-100 p-0 gap-0 shadow-2xl rounded-none ${modalState.type === 'task' ? 'sm:max-w-[700px]' : 'sm:max-w-[400px]'}`}>
+        <DialogDescription className="sr-only">
+          {modalState.type === 'task'
+            ? 'Editor de tarefas'
+            : modalState.type === 'project'
+              ? 'Editor de projeto'
+              : modalState.type === 'subProject'
+                ? 'Editor de área'
+                : modalState.type === 'password'
+                  ? 'Solicitação de senha'
+                  : 'Diálogo'}
+        </DialogDescription>
         <DialogHeader className="p-6 border-b border-zinc-900 flex flex-row items-center justify-between space-y-0">
           <DialogTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
             {modalState.type === 'task' && <CheckSquare className="h-5 w-5 text-red-600" />}

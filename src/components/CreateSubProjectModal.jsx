@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   ListTodo, KanbanSquare, FileText, Goal
 } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ export function CreateSubProjectModal({ isOpen, onClose, onCreate }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md w-full glass-panel p-0 gap-0 text-white overflow-hidden sm:rounded-none border-0">
+        <DialogDescription className="sr-only">Criação de uma nova área</DialogDescription>
 
         {/* HEADER: Minimalista e Tipográfico */}
         <div className="flex justify-between items-center p-6 border-b border-white/10">

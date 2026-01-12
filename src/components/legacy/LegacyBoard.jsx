@@ -36,6 +36,26 @@ function LegacyBoard({
     [files, currentSubProject?.id]
   );
 
+  const todoListIds = useMemo(() => {
+    if (currentBoardType !== 'todo') return { doneListId: null, defaultListId: null };
+    const lists = Array.isArray(data?.lists) ? data.lists : [];
+    if (lists.length === 0) return { doneListId: null, defaultListId: null };
+
+    const normalize = (value) => String(value || '').trim().toLowerCase();
+
+    const done =
+      lists.find((l) => normalize(l.id) === 'l3') ||
+      lists.find((l) => normalize(l.title).includes('conclu')) ||
+      lists[lists.length - 1];
+
+    const defaults = lists.find((l) => normalize(l.id) === 'l1') || lists[0];
+
+    return {
+      doneListId: done?.id || null,
+      defaultListId: defaults?.id || null
+    };
+  }, [currentBoardType, data?.lists]);
+
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)]">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-zinc-900 pb-4 gap-4">
@@ -100,7 +120,16 @@ function LegacyBoard({
                   <div className="bg-black border-t border-zinc-900">
                     {list.tasks?.map(task => (
                       <div key={task.id} className="p-3 flex items-center gap-4 border-b border-zinc-900 hover:bg-zinc-950/50 transition-colors group">
-                        <Checkbox checked={list.title === 'Concluído'} className="border-zinc-800 data-[state=checked]:bg-white data-[state=checked]:text-black rounded-none w-4 h-4" />
+                        <Checkbox
+                          checked={todoListIds.doneListId ? list.id === todoListIds.doneListId : false}
+                          onCheckedChange={(checked) => {
+                            const isChecked = checked === true;
+                            const targetListId = isChecked ? todoListIds.doneListId : todoListIds.defaultListId;
+                            if (!targetListId || targetListId === list.id) return;
+                            handleTaskAction('move', { taskId: task.id, fromListId: list.id, toListId: targetListId });
+                          }}
+                          className="border-zinc-800 data-[state=checked]:bg-white data-[state=checked]:text-black rounded-none w-4 h-4"
+                        />
                         <div className="flex-1 cursor-pointer" onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}>
                           <p className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors uppercase tracking-wide">{task.title}</p>
                         </div>
