@@ -100,17 +100,17 @@ const withVersion = (state, version) => {
 const getAllMasterUsers = async () => {
   try {
     const { rows } = await query(`
-      SELECT username, password as pin, display_name, role, avatar, color 
+      SELECT username, password_hash, name 
       FROM master_users
     `);
     
     return rows.map(u => ({
       username: u.username,
-      displayName: u.display_name || u.username,
-      role: u.role || 'member',
-      pin: u.pin, 
-      avatar: u.avatar || '',
-      color: u.color || 'zinc'
+      displayName: u.name || u.username,
+      role: (u.username === 'Gabriel' || u.username === 'admin') ? 'owner' : 'member', // Hardcoded role based on username for now
+      pin: u.password_hash, 
+      avatar: '', // Default
+      color: 'zinc' // Default
     }));
   } catch (err) {
     // Silently fail if table doesn't exist yet (initDB will fix)
@@ -361,8 +361,15 @@ app.post('/api/auth/register', async (req, res) => {
     const hashed = await bcrypt.hash(String(pin), salt);
 
     await query(
-      'INSERT INTO master_users (username, password, display_name, role, color) VALUES ($1, $2, $3, $4, $5)',
-      [username, hashed, displayName || String(username), role || 'member', 'zinc']
+      `INSERT INTO master_users (id, username, password_hash, name, email, created_at) 
+       VALUES ($1, $2, $3, $4, $5, CURRENT_DATE)`,
+      [
+        randomUUID(), 
+        username, 
+        hashed, 
+        displayName || String(username),
+        `${username}@brickflow.local` // Dummy email since it's required but not used in this flow
+      ]
     );
 
     res.json({ ok: true });
@@ -823,25 +830,23 @@ const initDB = async () => {
 
     // Master Users & Seeding
     try {
-      await query(`
-        CREATE TABLE IF NOT EXISTS master_users (
-          username TEXT PRIMARY KEY,
-          password TEXT NOT NULL,
-          display_name TEXT,
-          role TEXT DEFAULT 'member',
-          avatar TEXT,
-          color TEXT
-        );
-      `);
-      
       // Seed Gabriel
+      // Using ON CONFLICT (username) if username is unique, otherwise we might need another strategy.
+      // Assuming username is unique based on typical auth schemas.
       await query(`
-        INSERT INTO master_users (username, password, display_name, role, color)
-        VALUES ('Gabriel', '$2b$10$V5RIP3w.qoyLKbMx9EZWDu8d/0UCbp5aJUhyK0SkrQzfQ5eh9qJXW', 'Gabriel', 'owner', 'red')
+        INSERT INTO master_users (id, username, password_hash, name, email, created_at)
+        VALUES (
+          gen_random_uuid(), 
+          'Gabriel', 
+          '$2b$10$V5RIP3w.qoyLKbMx9EZWDu8d/0UCbp5aJUhyK0SkrQzfQ5eh9qJXW', 
+          'Gabriel', 
+          'gabriel@brickflow.com', 
+          CURRENT_DATE
+        )
         ON CONFLICT (username) DO UPDATE 
-        SET role = 'owner', password = EXCLUDED.password;
+        SET password_hash = EXCLUDED.password_hash;
       `);
-      console.log('✅ Tabela master_users verificada e usuário Gabriel garantido.');
+      console.log('✅ Usuário Gabriel garantido na tabela master_users.');
     } catch (e) {
       console.error('⚠️ Erro ao configurar master_users:', e.message);
     }
