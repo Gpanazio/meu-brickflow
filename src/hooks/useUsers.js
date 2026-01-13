@@ -39,18 +39,22 @@ export function useUsers(_globalUsers, _updateGlobalUsers) {
         try {
           const controller = new AbortController()
           const timeoutId = setTimeout(() => controller.abort(), 30000)
-          const response = await fetch('/api/health', { signal: controller.signal })
-          clearTimeout(timeoutId)
-
-          if (response.ok) {
-            return 'ready'
-          }
-
-          if (response.status === 503) {
-            const payload = await response.json().catch(() => null)
-            if (payload?.code === 'MISSING_DATABASE_URL') {
-              return 'db_missing'
+          
+          try {
+            const response = await fetch('/api/health', { signal: controller.signal })
+            
+            if (response.ok) {
+              return 'ready'
             }
+
+            if (response.status === 503) {
+              const payload = await response.json().catch(() => null)
+              if (payload?.code === 'MISSING_DATABASE_URL') {
+                return 'db_missing'
+              }
+            }
+          } finally {
+            clearTimeout(timeoutId)
           }
         } catch {
           // server is likely waking up or network error

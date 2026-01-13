@@ -11,7 +11,7 @@ export function useSearch(projects) {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
     const results = [];
 
-    projects.forEach(project => {
+    (projects || []).forEach(project => {
       if (project.name.toLowerCase().includes(lowerCaseSearchTerm)) {
         results.push({ type: 'Project', ...project });
       }

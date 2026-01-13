@@ -8,7 +8,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 import { 
   Plus, Trash2, X, CheckSquare, 
   MessageSquare, History
@@ -23,7 +23,7 @@ const BADGE_COLOR_CLASSES = {
   orange: 'bg-orange-600/20 text-orange-500 border-orange-900/50 hover:bg-orange-600/30',
   zinc: 'bg-zinc-600/20 text-zinc-400 border-zinc-900/50 hover:bg-zinc-600/30'
 };
-const LABEL_SWATCH_CLASSES = {
+const labelSwatchClasses = {
   blue: 'bg-blue-600',
   red: 'bg-red-600',
   green: 'bg-green-600',
@@ -224,7 +224,7 @@ function LegacyModal({
                         key={label.color}
                         className={cn(
                           'rounded-none px-2 py-1 text-[10px] uppercase tracking-widest font-medium cursor-pointer',
-                          BADGE_COLOR_CLASSES[label.color] ?? BADGE_COLOR_CLASSES.zinc
+                          badgeColorClasses[label.color] ?? badgeColorClasses.zinc
                         )}
                         onClick={() => removeLabel(label.color)}
                       >
