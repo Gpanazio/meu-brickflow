@@ -499,16 +499,19 @@ export default function App() {
             try {
               const controller = new AbortController();
               const timeoutId = setTimeout(() => controller.abort(), 15000);
-              const response = await fetch('/api/health', { signal: controller.signal });
-              clearTimeout(timeoutId);
+              try {
+                const response = await fetch('/api/health', { signal: controller.signal });
 
-              if (response.ok) return true;
+                if (response.ok) return true;
 
-              if (response.status === 503) {
-                const payload = await response.json().catch(() => null);
-                if (payload?.code === 'MISSING_DATABASE_URL') {
-                  return false;
+                if (response.status === 503) {
+                  const payload = await response.json().catch(() => null);
+                  if (payload?.code === 'MISSING_DATABASE_URL') {
+                    return false;
+                  }
                 }
+              } finally {
+                clearTimeout(timeoutId);
               }
             } catch {
               // ignore and retry
@@ -529,8 +532,12 @@ export default function App() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 90000);
 
-        const response = await fetch('/api/projects', { signal: controller.signal });
-        clearTimeout(timeoutId);
+        let response;
+        try {
+          response = await fetch('/api/projects', { signal: controller.signal });
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));

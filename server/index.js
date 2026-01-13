@@ -39,7 +39,11 @@ const parseCookies = (cookieHeader) => {
     if (!rawKey) return;
     const key = rawKey.trim();
     const value = rest.join('=');
-    result[key] = decodeURIComponent(value);
+    try {
+      result[key] = decodeURIComponent(value);
+    } catch {
+      // Ignore malformed cookies to prevent crashing the auth check
+    }
   });
   return result;
 };
