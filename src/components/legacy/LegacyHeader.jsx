@@ -85,7 +85,7 @@ function LegacyHeader({
             <DropdownMenuContent className="w-56 glass-panel rounded-none p-0" align="end">
               <DropdownMenuLabel className="p-4 pb-2">
                 <p className="text-xs font-black text-white uppercase tracking-tighter">{currentUser?.displayName}</p>
-                <p className="text-[10px] text-zinc-600 font-mono tracking-widest mt-1 font-medium">@{currentUser?.username}</p>
+                <p className="text-xs text-zinc-600 font-mono tracking-widest mt-1 font-medium">@{currentUser?.username}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-zinc-900 m-0" />
 

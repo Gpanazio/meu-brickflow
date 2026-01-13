@@ -76,14 +76,14 @@ const ProjectMonolith = ({ title, description, color, isProtected }) => {
         <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-[0.85] group-hover:translate-x-1 transition-transform duration-300">
           {title}
         </h3>
-        <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest line-clamp-2 leading-relaxed max-w-[90%]">
+        <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest line-clamp-2 leading-relaxed max-w-[90%]">
           {description}
         </p>
       </div>
 
       <div className="flex justify-end items-end border-t border-white/5 pt-4 z-10">
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-          <span className="text-[9px] font-bold uppercase text-white tracking-widest">Acessar</span>
+          <span className="text-xs font-bold uppercase text-white tracking-widest">Acessar</span>
           <ArrowRight className="w-3 h-3 text-white" />
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function DesignSystemLab() {
              <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
                <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
              </div>
-             <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">Iniciar Nova Matriz</span>
+             <span className="text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">Iniciar Nova Matriz</span>
           </PrismaticPanel>
 
         </div>

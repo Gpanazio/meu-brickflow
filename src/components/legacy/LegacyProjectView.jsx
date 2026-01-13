@@ -53,13 +53,13 @@ function LegacyProjectView({
     return (
       <div className="space-y-6 animate-in fade-in duration-500 pb-20">
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest">
+          <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-10 px-4 uppercase text-xs tracking-widest">
             <ArrowLeft className="mr-2 h-3 w-3" /> Voltar
           </Button>
         </div>
         <div className="border border-zinc-900 bg-black/60 p-6 text-center">
           <h2 className="text-lg font-bold text-white uppercase tracking-widest">Projeto indisponível</h2>
-          <p className="mt-2 text-[10px] text-zinc-500 font-mono uppercase tracking-widest">Selecione um projeto válido para continuar.</p>
+          <p className="mt-2 text-xs text-zinc-500 font-mono uppercase tracking-widest">Selecione um projeto válido para continuar.</p>
         </div>
       </div>
     );
@@ -69,7 +69,7 @@ function LegacyProjectView({
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
       <div className="flex flex-col gap-6 border-b border-white/10 pb-6">
         <div className="flex justify-between items-center">
-           <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest cursor-pointer"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
+           <Button variant="outline" onClick={() => setCurrentView('home')} className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-500 hover:text-white rounded-none h-10 px-4 uppercase text-xs tracking-widest cursor-pointer"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
            <Button onClick={() => setModalState({ type: 'subProject', mode: 'create', isOpen: true })} className="bg-white hover:bg-zinc-200 text-black rounded-none uppercase text-xs font-bold tracking-widest h-10 px-6 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.2)]"><Plus className="mr-2 h-4 w-4" /> Nova Área</Button>
         </div>
         
@@ -78,7 +78,7 @@ function LegacyProjectView({
             {currentProject.name} 
             {currentProject.isProtected && <Lock className="h-6 w-6 text-zinc-800"/>}
           </h1>
-          <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-widest mt-2">{currentProject.description}</p>
+          <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest mt-2">{currentProject.description}</p>
         </div>
       </div>
       
@@ -89,7 +89,7 @@ function LegacyProjectView({
               <History className="h-4 w-4" /> Histórico
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+              <span className="text-xs text-zinc-600 font-mono uppercase tracking-widest">
                 {isHistoryLoading ? 'Carregando...' : `${history?.length || 0} eventos`}
               </span>
               <ChevronDown className="h-4 w-4 text-zinc-600" />
@@ -99,11 +99,11 @@ function LegacyProjectView({
         <CollapsibleContent>
           <div className="glass-panel p-6 space-y-4 mt-2">
             {historyError && (
-              <div className="text-[10px] text-red-500 font-mono uppercase tracking-widest">Erro ao carregar histórico.</div>
+              <div className="text-xs text-red-500 font-mono uppercase tracking-widest">Erro ao carregar histórico.</div>
             )}
 
             {!historyError && !isHistoryLoading && (!history || history.length === 0) && (
-              <div className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">Nenhuma alteração registrada.</div>
+              <div className="text-xs text-zinc-600 font-mono uppercase tracking-widest">Nenhuma alteração registrada.</div>
             )}
 
             {!historyError && history && history.length > 0 && (
@@ -114,13 +114,13 @@ function LegacyProjectView({
                       <div className="text-xs uppercase tracking-widest text-zinc-300 font-bold">
                         {formatAction(event.action_type)}
                       </div>
-                      <div className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+                      <div className="text-xs text-zinc-600 font-mono uppercase tracking-widest">
                         {usersMap.get(event.user_id) || event.user_id || 'Sistema'} • {formatTimestamp(event.timestamp)}
                       </div>
                     </div>
                     <Button
                       variant="outline"
-                      className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-none h-8 px-3 uppercase text-[10px] tracking-widest"
+                      className="border-zinc-800 bg-black hover:bg-zinc-900 text-zinc-400 hover:text-white rounded-none h-10 px-4 uppercase text-xs tracking-widest"
                       onClick={() => onRestoreEvent && onRestoreEvent(event.id)}
                     >
                       Restaurar
@@ -153,7 +153,7 @@ function LegacyProjectView({
               
               <div>
                  <CardTitle className="text-lg font-bold uppercase tracking-tight text-white mb-1">{sub.name}</CardTitle>
-                 <span className="text-zinc-500 text-[9px] font-mono uppercase tracking-widest line-clamp-1">{sub.description || "---"}</span>
+                 <span className="text-zinc-500 text-xs font-mono uppercase tracking-widest line-clamp-1">{sub.description || "---"}</span>
               </div>
             </div>
           );
@@ -163,7 +163,7 @@ function LegacyProjectView({
           className="glass-panel flex flex-col items-center justify-center cursor-pointer group hover:bg-white/5 transition-colors h-48"
         >
           <Plus className="h-6 w-6 text-zinc-600 group-hover:text-zinc-400 mb-2 transition-colors" />
-          <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">Adicionar</span>
+          <span className="text-xs font-mono uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">Adicionar</span>
         </div>
       </div>
     </div>

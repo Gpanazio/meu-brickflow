@@ -6,6 +6,7 @@ import SudokuGame from '@/components/SudokuGame';
 import { getUserTasks } from '@/utils/userTasks';
 import { hasPermission, PERMISSIONS } from '@/utils/accessControl';
 import PrismaticPanel from '@/components/ui/PrismaticPanel';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Cores definidas internamente para blindagem visual
 const DEFAULT_COLORS = {
@@ -28,7 +29,8 @@ function LegacyHome({
   handleDrop,
   handleAccessProject,
   handleDeleteProject,
-  onTaskClick
+  onTaskClick,
+  isLoading
 }) {
   const safeProjects = Array.isArray(projects) ? projects : [];
   const safeMegaSena = Array.isArray(megaSenaNumbers) ? megaSenaNumbers : [0,0,0,0,0,0];
@@ -77,7 +79,7 @@ function LegacyHome({
              <h1 className="brick-title text-2xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
                Olá, <span className="text-zinc-700">{currentUser?.displayName || 'Visitante'}</span>
              </h1>
-             <p className="brick-mono mt-4 text-[10px] md:text-[11px] text-zinc-600 tracking-[0.2em] uppercase font-medium">
+             <p className="brick-mono mt-4 text-xs text-zinc-600 tracking-[0.2em] uppercase font-medium">
                {currentDate}
              </p>
           </div>
@@ -86,10 +88,10 @@ function LegacyHome({
           <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[150px]">
               <div className="flex items-center gap-3">
                   <Sparkles className="w-3 h-3 text-red-600" />
-                  <span className="brick-mono text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-[0.2em] font-medium">Sorte do Dia</span>
+                  <span className="brick-mono text-xs text-zinc-500 uppercase tracking-[0.2em] font-medium">Sorte do Dia</span>
               </div>
               <div className="flex-1 flex items-center mt-3">
-                  <p className="font-sans text-[10px] md:text-sm text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
+                  <p className="font-sans text-xs md:text-sm text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
                    "{dailyPhrase || "O silêncio é uma resposta."}"
                    </p>
               </div>
@@ -99,12 +101,12 @@ function LegacyHome({
           <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[180px]">
               <div className="flex items-center gap-3 mb-2 md:mb-0">
                   <Dna className="w-3 h-3 text-emerald-600" />
-                  <span className="brick-mono text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-[0.2em] font-medium">Probabilidade</span>
+                  <span className="brick-mono text-xs text-zinc-500 uppercase tracking-[0.2em] font-medium">Probabilidade</span>
               </div>
               <div className="flex-1 flex items-center">
                   <div className="flex gap-1 md:gap-2 w-full justify-between">
                       {safeMegaSena.map((n, i) => (
-                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-[10px] md:text-xs font-medium hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-xs font-medium hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                               {n.toString().padStart(2, '0')}
                           </div>
                       ))}
@@ -120,15 +122,15 @@ function LegacyHome({
           </PrismaticPanel>
         )}
 
-        {/* SECTION: MINHAS TAREFAS */}
-        <PrismaticPanel className="mx-6 md:mx-10 mt-6">
+        {/* SECTION: MINHAS TAREFAS (Simplified Design) */}
+        <div className="mx-6 md:mx-10 mt-6 glass-panel border-white/5 bg-white/[0.02]">
           <div className="px-6 md:px-10 py-6">
             <div className="flex items-center gap-3 mb-6">
-              <CheckSquare className="w-4 h-4 text-red-600" />
+              <CheckSquare className="w-4 h-4 text-zinc-500" />
               <h2 className="brick-mono text-xs text-zinc-500 uppercase tracking-[0.2em] font-medium">
                 Minhas Tarefas
               </h2>
-              <span className="brick-mono text-[10px] text-zinc-700 uppercase tracking-widest font-medium">
+              <span className="brick-mono text-xs text-zinc-700 uppercase tracking-widest font-medium">
                 ({userTasks.length})
               </span>
             </div>
@@ -141,21 +143,21 @@ function LegacyHome({
                     <div
                       key={task.id}
                       onClick={() => onTaskClick && onTaskClick(task)}
-                      className="group flex flex-col justify-between bg-black/40 hover:bg-white/5 border border-zinc-900 hover:border-zinc-700 transition-all cursor-pointer p-4 h-24"
+                      className="group flex flex-col justify-between bg-black/20 hover:bg-white/5 border border-white/5 hover:border-white/10 transition-all cursor-pointer p-4 h-24"
                     >
                       <div>
                         <div className="flex justify-between items-start mb-2">
                            <h3 className="brick-title text-sm text-white uppercase tracking-wide truncate pr-4">
                              {task.title}
                            </h3>
-                           <div className={`w-1.5 h-1.5 rounded-full ${colors.bg} ${colors.shadow}`} />
+                           <div className={`w-1 h-1 rounded-full ${colors.bg}`} />
                         </div>
-                        <p className="brick-mono text-xs text-zinc-600 uppercase tracking-widest font-medium">
+                        <p className="brick-mono text-[10px] text-zinc-600 uppercase tracking-widest font-medium">
                           {task.projectName}
                         </p>
                       </div>
                       <div className="flex justify-between items-end mt-2">
-                         <span className="brick-mono text-[10px] text-zinc-700 font-medium">{task.subProjectName}</span>
+                         <span className="brick-mono text-[9px] text-zinc-700 font-medium">{task.subProjectName}</span>
                          <ArrowRight className="w-3 h-3 text-zinc-800 group-hover:text-white transition-colors" />
                       </div>
                     </div>
@@ -170,7 +172,7 @@ function LegacyHome({
               </div>
             )}
           </div>
-        </PrismaticPanel>
+        </div>
 
         {/* SECTION: PROJETOS */}
         <div className="px-8 mt-12">
@@ -187,7 +189,27 @@ function LegacyHome({
 
           {/* Lista de Projetos Prismáticos */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activeProjects.map(project => {
+            {isLoading ? (
+              // Skeletons de Carregamento
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-64 glass-panel p-8 flex flex-col justify-between overflow-hidden">
+                   <div className="flex justify-between items-start">
+                      <Skeleton className="w-4 h-4 rounded-full" />
+                      <Skeleton className="w-4 h-8" />
+                   </div>
+                   <div className="space-y-4">
+                      <Skeleton className="h-10 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6" />
+                   </div>
+                   <div className="flex justify-between items-end border-t border-white/5 pt-4">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-3 w-16" />
+                   </div>
+                </div>
+              ))
+            ) : (
+              activeProjects.map(project => {
               const colors = DEFAULT_COLORS[project.color] || DEFAULT_COLORS['blue'];
               
               return (
@@ -236,18 +258,18 @@ function LegacyHome({
                   </div>
 
                   <div className="flex justify-between items-end border-t border-white/5 pt-4 z-10">
-                     <span className="brick-mono text-[10px] text-zinc-600 uppercase tracking-widest font-medium">
+                     <span className="brick-mono text-xs text-zinc-600 uppercase tracking-widest font-medium">
                         {project.subProjects?.length || 0} ÁREAS
                      </span>
                      
                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                        <span className="text-[10px] font-bold uppercase text-white tracking-widest">Acessar</span>
+                        <span className="text-xs font-bold uppercase text-white tracking-widest">Acessar</span>
                         <ArrowRight className="w-3 h-3 text-white" />
                      </div>
                   </div>
                 </PrismaticPanel>
               );
-            })}
+            }))}
             
             {/* CARD DE ADICIONAR PROJETO */}
             {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
