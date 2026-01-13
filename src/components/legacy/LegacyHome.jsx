@@ -74,7 +74,7 @@ function LegacyHome({
              <h1 className="brick-title text-2xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
                Olá, <span className="text-zinc-700">{currentUser?.displayName || 'Visitante'}</span>
              </h1>
-             <p className="brick-mono mt-4 text-[8px] md:text-[10px] text-zinc-600 tracking-[0.2em] uppercase">
+             <p className="brick-mono mt-4 text-[10px] md:text-[11px] text-zinc-600 tracking-[0.2em] uppercase font-medium">
                {currentDate}
              </p>
           </div>
@@ -83,7 +83,7 @@ function LegacyHome({
           <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[150px]">
               <div className="flex items-center gap-3">
                   <Sparkles className="w-3 h-3 text-red-600" />
-                  <span className="brick-mono text-[8px] md:text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Sorte do Dia</span>
+                  <span className="brick-mono text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-[0.2em] font-medium">Sorte do Dia</span>
               </div>
               <div className="flex-1 flex items-center mt-3">
                   <p className="font-sans text-[10px] md:text-sm text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
@@ -96,12 +96,12 @@ function LegacyHome({
           <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[180px]">
               <div className="flex items-center gap-3 mb-2 md:mb-0">
                   <Dna className="w-3 h-3 text-emerald-600" />
-                  <span className="brick-mono text-[8px] md:text-[9px] text-zinc-500 uppercase tracking-[0.2em]">Probabilidade</span>
+                  <span className="brick-mono text-[10px] md:text-[11px] text-zinc-500 uppercase tracking-[0.2em] font-medium">Probabilidade</span>
               </div>
               <div className="flex-1 flex items-center">
                   <div className="flex gap-1 md:gap-2 w-full justify-between">
                       {safeMegaSena.map((n, i) => (
-                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-[9px] md:text-xs hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-[10px] md:text-xs font-medium hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                               {n.toString().padStart(2, '0')}
                           </div>
                       ))}
@@ -122,10 +122,10 @@ function LegacyHome({
           <div className="px-6 md:px-10 py-6">
             <div className="flex items-center gap-3 mb-6">
               <CheckSquare className="w-4 h-4 text-red-600" />
-              <h2 className="brick-mono text-[10px] text-zinc-500 uppercase tracking-[0.2em]">
+              <h2 className="brick-mono text-xs text-zinc-500 uppercase tracking-[0.2em] font-medium">
                 Minhas Tarefas
               </h2>
-              <span className="brick-mono text-[9px] text-zinc-700 uppercase tracking-widest">
+              <span className="brick-mono text-[10px] text-zinc-700 uppercase tracking-widest font-medium">
                 ({userTasks.length})
               </span>
             </div>
@@ -147,12 +147,12 @@ function LegacyHome({
                            </h3>
                            <div className={`w-1.5 h-1.5 rounded-full ${colors.bg} ${colors.shadow}`} />
                         </div>
-                        <p className="brick-mono text-[9px] text-zinc-600 uppercase tracking-widest">
+                        <p className="brick-mono text-xs text-zinc-600 uppercase tracking-widest font-medium">
                           {task.projectName}
                         </p>
                       </div>
                       <div className="flex justify-between items-end mt-2">
-                         <span className="brick-mono text-[8px] text-zinc-700">{task.subProjectName}</span>
+                         <span className="brick-mono text-[10px] text-zinc-700 font-medium">{task.subProjectName}</span>
                          <ArrowRight className="w-3 h-3 text-zinc-800 group-hover:text-white transition-colors" />
                       </div>
                     </div>
@@ -172,11 +172,11 @@ function LegacyHome({
         {/* SECTION: PROJETOS */}
         <div className="px-8 mt-12">
           <div className="flex justify-between items-end mb-8 border-b border-white/10 pb-4">
-            <h2 className="brick-mono text-[10px] text-zinc-400 uppercase tracking-[0.2em]">Projetos Ativos</h2>
+            <h2 className="brick-mono text-xs text-zinc-400 uppercase tracking-[0.2em] font-medium">Projetos Ativos</h2>
 
             <Button
               onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-              className="bg-white text-black hover:bg-zinc-200 h-10 px-6 text-[10px] uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+              className="bg-white text-black hover:bg-zinc-200 h-10 px-6 text-xs uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
               <Plus className="mr-2 h-3 w-3" /> Novo Projeto
             </Button>
@@ -211,10 +211,10 @@ function LegacyHome({
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="glass-panel rounded-none min-w-[140px] bg-black border-zinc-800">
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-[10px] uppercase tracking-widest h-9 cursor-pointer text-zinc-400 hover:text-white focus:bg-white/10">
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-xs uppercase tracking-widest h-9 cursor-pointer text-zinc-400 hover:text-white focus:bg-white/10 font-medium">
                               Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-900 focus:text-red-500 focus:bg-white/10 text-[10px] uppercase tracking-widest cursor-pointer h-9" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>
+                            <DropdownMenuItem className="text-red-900 focus:text-red-500 focus:bg-white/10 text-xs uppercase tracking-widest cursor-pointer h-9 font-medium" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>
                               Eliminar
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -226,18 +226,18 @@ function LegacyHome({
                     <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-[0.85] group-hover:translate-x-1 transition-transform duration-300 drop-shadow-xl">
                       {project.name}
                     </h3>
-                    <p className="brick-mono text-[10px] text-zinc-500 uppercase tracking-widest line-clamp-2 leading-relaxed">
+                    <p className="brick-mono text-xs text-zinc-500 uppercase tracking-widest line-clamp-2 leading-relaxed font-medium">
                       {project.description || "SEM DESCRIÇÃO"}
                     </p>
                   </div>
 
                   <div className="flex justify-between items-end border-t border-white/5 pt-4 z-10">
-                     <span className="brick-mono text-[9px] text-zinc-600 uppercase tracking-widest">
+                     <span className="brick-mono text-[10px] text-zinc-600 uppercase tracking-widest font-medium">
                         {project.subProjects?.length || 0} ÁREAS
                      </span>
                      
                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                        <span className="text-[9px] font-bold uppercase text-white tracking-widest">Acessar</span>
+                        <span className="text-[10px] font-bold uppercase text-white tracking-widest">Acessar</span>
                         <ArrowRight className="w-3 h-3 text-white" />
                      </div>
                   </div>
@@ -255,7 +255,7 @@ function LegacyHome({
                 <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
                   <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
                 </div>
-                <span className="brick-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">Iniciar Nova Matriz</span>
+                <span className="brick-mono text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">Iniciar Nova Matriz</span>
               </PrismaticPanel>
             )}
           </div>
