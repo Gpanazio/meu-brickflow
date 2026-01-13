@@ -68,7 +68,7 @@ function LegacyHome({
       <div className="relative z-10">
         
         {/* --- SEÇÃO SUPERIOR (HERO + WIDGETS) --- */}
-        <PrismaticPanel className="mx-6 md:mx-10 mt-6 flex flex-row divide-x divide-white/10 min-h-[8rem] md:min-h-[10rem] overflow-x-auto no-scrollbar">
+        <PrismaticPanel className="mx-6 md:mx-10 mt-6 flex flex-row divide-x divide-white/10 min-h-[8rem] md:min-h-[10rem] overflow-x-auto no-scrollbar !p-0">
           {/* COLUNA 1: HERO */}
           <div className="w-[50%] md:w-1/2 px-4 md:px-10 py-6 flex flex-col justify-center min-w-[200px]">
              <h1 className="brick-title text-2xl md:text-6xl uppercase leading-[0.85] tracking-tighter">

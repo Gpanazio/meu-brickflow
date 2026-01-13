@@ -20,7 +20,7 @@ export default function PrismaticPanel({ children, className, hoverEffect = fals
       <div className="absolute inset-0 bg-noise z-0" />
 
       {/* Conteúdo */}
-      <div className="relative z-10 w-full h-full">
+      <div className={cn("relative z-10 w-full h-full", className)}>
         {children}
       </div>
     </div>
