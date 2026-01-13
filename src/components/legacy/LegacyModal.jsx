@@ -8,10 +8,29 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
+import { cn } from '../../lib/utils';
 import { 
   Plus, Trash2, X, CheckSquare, 
   MessageSquare, History
 } from 'lucide-react';
+
+const LABEL_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'zinc'];
+const badgeColorClasses = {
+  blue: 'bg-blue-600/20 text-blue-500 border-blue-900/50 hover:bg-blue-600/30',
+  red: 'bg-red-600/20 text-red-500 border-red-900/50 hover:bg-red-600/30',
+  green: 'bg-green-600/20 text-green-500 border-green-900/50 hover:bg-green-600/30',
+  purple: 'bg-purple-600/20 text-purple-500 border-purple-900/50 hover:bg-purple-600/30',
+  orange: 'bg-orange-600/20 text-orange-500 border-orange-900/50 hover:bg-orange-600/30',
+  zinc: 'bg-zinc-600/20 text-zinc-400 border-zinc-900/50 hover:bg-zinc-600/30'
+};
+const labelSwatchClasses = {
+  blue: 'bg-blue-600',
+  red: 'bg-red-600',
+  green: 'bg-green-600',
+  purple: 'bg-purple-600',
+  orange: 'bg-orange-600',
+  zinc: 'bg-zinc-600'
+};
 
 function LegacyModal({
   modalState,
@@ -155,24 +174,6 @@ function LegacyModal({
     return Math.round((completed / taskState.checklists.length) * 100);
   };
 
-  const LABEL_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'zinc'];
-  const badgeColorClasses = {
-    blue: 'bg-blue-600/20 text-blue-500 border-blue-900/50 hover:bg-blue-600/30',
-    red: 'bg-red-600/20 text-red-500 border-red-900/50 hover:bg-red-600/30',
-    green: 'bg-green-600/20 text-green-500 border-green-900/50 hover:bg-green-600/30',
-    purple: 'bg-purple-600/20 text-purple-500 border-purple-900/50 hover:bg-purple-600/30',
-    orange: 'bg-orange-600/20 text-orange-500 border-orange-900/50 hover:bg-orange-600/30',
-    zinc: 'bg-zinc-600/20 text-zinc-400 border-zinc-900/50 hover:bg-zinc-600/30'
-  };
-  const labelSwatchClasses = {
-    blue: 'bg-blue-600',
-    red: 'bg-red-600',
-    green: 'bg-green-600',
-    purple: 'bg-purple-600',
-    orange: 'bg-orange-600',
-    zinc: 'bg-zinc-600'
-  };
-
   return (
     <Dialog open={modalState.isOpen} onOpenChange={(open) => !open && setModalState({ ...modalState, isOpen: false })}>
       <DialogContent className={`bg-black border border-zinc-800 text-zinc-100 p-0 gap-0 shadow-2xl rounded-none ${modalState.type === 'task' ? 'sm:max-w-[700px]' : 'sm:max-w-[400px]'}`}>
@@ -221,7 +222,10 @@ function LegacyModal({
                     {taskState.labels?.map(label => (
                       <Badge
                         key={label.color}
-                        className={`rounded-none px-2 py-1 text-[10px] uppercase tracking-widest font-medium cursor-pointer ${badgeColorClasses[label.color] ?? badgeColorClasses.zinc}`}
+                        className={cn(
+                          'rounded-none px-2 py-1 text-[10px] uppercase tracking-widest font-medium cursor-pointer',
+                          badgeColorClasses[label.color] ?? badgeColorClasses.zinc
+                        )}
                         onClick={() => removeLabel(label.color)}
                       >
                         {label.text} <X className="ml-1 h-2 w-2" />
