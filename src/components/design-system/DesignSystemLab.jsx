@@ -56,7 +56,11 @@ const ProjectMonolith = ({ title, description, color, isProtected }) => {
   };
 
   return (
-    <PrismaticPanel hoverEffect className="h-64 p-8 flex flex-col justify-between">
+    <PrismaticPanel 
+      hoverEffect 
+      className="h-64"
+      contentClassName="p-8 flex flex-col justify-between"
+    >
       <div className="flex justify-between items-start z-10">
         <div className={`w-1.5 h-1.5 rounded-full ${colors[color] || colors.zinc} animate-pulse`} />
         
@@ -183,7 +187,11 @@ export default function DesignSystemLab() {
             isProtected={false}
           />
 
-          <PrismaticPanel hoverEffect className="h-64 flex flex-col items-center justify-center gap-4 border-dashed border-zinc-800 hover:border-zinc-600 group">
+          <PrismaticPanel 
+            hoverEffect 
+            className="h-64 border-dashed border-zinc-800 hover:border-zinc-600 group"
+            contentClassName="flex flex-col items-center justify-center gap-4"
+          >
              <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
                <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
              </div>

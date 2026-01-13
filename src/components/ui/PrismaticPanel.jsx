@@ -1,6 +1,13 @@
 import { cn } from '@/lib/utils';
 
-export default function PrismaticPanel({ children, className, hoverEffect = false, onClick, ...props }) {
+export default function PrismaticPanel({ 
+  children, 
+  className, 
+  contentClassName, 
+  hoverEffect = false, 
+  onClick, 
+  ...props 
+}) {
   return (
     <div 
       onClick={onClick}
@@ -20,7 +27,7 @@ export default function PrismaticPanel({ children, className, hoverEffect = fals
       <div className="absolute inset-0 bg-noise z-0" />
 
       {/* Conteúdo */}
-      <div className={cn("relative z-10 w-full h-full", className)}>
+      <div className={cn("relative z-10 w-full h-full", contentClassName)}>
         {children}
       </div>
     </div>

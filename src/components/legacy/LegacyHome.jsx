@@ -68,7 +68,10 @@ function LegacyHome({
       <div className="relative z-10">
         
         {/* --- SEÇÃO SUPERIOR (HERO + WIDGETS) --- */}
-        <PrismaticPanel className="mx-6 md:mx-10 mt-6 flex flex-row divide-x divide-white/10 min-h-[8rem] md:min-h-[10rem] overflow-x-auto no-scrollbar !p-0">
+        <PrismaticPanel 
+          className="mx-6 md:mx-10 mt-6" 
+          contentClassName="flex flex-row divide-x divide-white/10 min-h-[8rem] md:min-h-[10rem] overflow-x-auto no-scrollbar !p-0"
+        >
           {/* COLUNA 1: HERO */}
           <div className="w-[50%] md:w-1/2 px-4 md:px-10 py-6 flex flex-col justify-center min-w-[200px]">
              <h1 className="brick-title text-2xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
@@ -112,7 +115,7 @@ function LegacyHome({
 
         {/* SUDOKU (Apenas Fran) */}
         {currentUser?.displayName === 'Fran' && (
-          <PrismaticPanel className="mx-6 md:mx-10 mt-6 p-8">
+          <PrismaticPanel className="mx-6 md:mx-10 mt-6" contentClassName="p-8">
              <SudokuGame />
           </PrismaticPanel>
         )}
@@ -196,7 +199,8 @@ function LegacyHome({
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop && handleDrop(e, project.id, 'project')}
                   onClick={() => handleAccessProject(project)} 
-                  className="h-64 p-8 flex flex-col justify-between"
+                  className="h-64"
+                  contentClassName="p-8 flex flex-col justify-between"
                 >
                   <div className="flex justify-between items-start z-10">
                     {/* LED de Status */}
@@ -250,7 +254,8 @@ function LegacyHome({
               <PrismaticPanel 
                 hoverEffect
                 onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-                className="h-64 flex flex-col items-center justify-center gap-4 border-dashed border-zinc-800 hover:border-zinc-600"
+                className="h-64 border-dashed border-zinc-800 hover:border-zinc-600"
+                contentClassName="flex flex-col items-center justify-center gap-4"
               >
                 <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
                   <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
