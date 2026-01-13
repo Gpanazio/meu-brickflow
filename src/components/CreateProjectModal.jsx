@@ -61,19 +61,19 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
           
           {/* NOME DO PROJETO */}
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Nome do Projeto</Label>
+            <Label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Nome do Projeto</Label>
             <Input 
               name="name" 
               required 
               autoFocus
-              className="bg-zinc-950 border border-zinc-800 text-white focus:ring-1 focus:ring-white/20 focus:border-zinc-600 h-12 rounded-none placeholder:text-zinc-800 transition-all font-medium" 
+              className="bg-zinc-950 border border-zinc-800 text-white focus:ring-1 focus:ring-white/20 focus:border-zinc-600 h-12 rounded-none placeholder:text-zinc-800 transition-all font-medium text-sm" 
               placeholder="" 
             />
           </div>
 
           {/* DESCRIÇÃO */}
           <div className="space-y-2">
-            <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Descrição</Label>
+            <Label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Descrição</Label>
             <textarea 
               name="description" 
               className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-4 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-zinc-600 min-h-[100px] resize-none placeholder:text-zinc-800 transition-all"
@@ -83,7 +83,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
 
           {/* MÓDULOS ATIVOS (GRID 2x2) */}
           <div className="space-y-3">
-            <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Módulos Ativos</Label>
+            <Label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Módulos Ativos</Label>
             <div className="grid grid-cols-2 gap-3">
               <ModuleToggle 
                 active={modules.todo} 
@@ -117,7 +117,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
             
             {/* COR */}
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Cor</Label>
+              <Label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Cor</Label>
               <div className="relative">
                 <select 
                   value={selectedColor}
@@ -148,7 +148,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
                  <div className={cn("w-4 h-4 rounded-sm border flex items-center justify-center transition-colors", isProtected ? "bg-white border-white" : "border-zinc-700 bg-black")}>
                     {isProtected && <div className="w-2 h-2 bg-black rounded-[1px]" />}
                  </div>
-                 <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 leading-tight">Proteger com<br/>Senha</span>
+                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 leading-tight">Proteger com<br/>Senha</span>
                </div>
             </div>
           </div>
@@ -156,12 +156,12 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
           {/* SENHA (CONDICIONAL) */}
           {isProtected && (
             <div className="space-y-2 animate-in slide-in-from-top-2 fade-in duration-300">
-               <Label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Senha (Opcional)</Label>
+               <Label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Senha (Opcional)</Label>
                <Input 
                  name="password" 
                  type="password" 
                  placeholder="••••••" 
-                 className="bg-zinc-950 border border-zinc-800 h-12 text-white tracking-[0.5em] text-center rounded-none focus:border-white transition-colors" 
+                 className="bg-zinc-950 border border-zinc-800 h-12 text-white tracking-[0.5em] text-center rounded-none focus:border-white transition-colors text-sm" 
                />
             </div>
           )}
@@ -172,13 +172,13 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
                 type="button" 
                 variant="ghost" 
                 onClick={onClose} 
-                className="text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-500 hover:text-white h-10 rounded-none hover:bg-transparent px-4"
+                className="text-xs uppercase font-bold tracking-[0.2em] text-zinc-500 hover:text-white h-10 rounded-none hover:bg-transparent px-4"
             >
                 Cancelar
             </Button>
             <Button 
                 type="submit" 
-                className="bg-white text-black hover:bg-zinc-200 text-[10px] uppercase font-black tracking-[0.2em] h-10 px-8 rounded-none transition-transform active:scale-95"
+                className="bg-white text-black hover:bg-zinc-200 text-xs uppercase font-black tracking-[0.2em] h-10 px-8 rounded-none transition-transform active:scale-95"
             >
                 Salvar
             </Button>
@@ -210,7 +210,7 @@ function ModuleToggle({ active, onClick, icon: Icon, label }) {
       </div>
       <div className="flex items-center gap-3">
          <Icon className={cn("w-3 h-3", active ? "text-white" : "text-zinc-600 group-hover:text-zinc-400")} />
-         <span className={cn("text-[9px] font-bold uppercase tracking-widest pt-0.5", active ? "text-white" : "text-zinc-600 group-hover:text-zinc-400")}>{label}</span>
+         <span className={cn("text-[10px] font-bold uppercase tracking-widest pt-0.5", active ? "text-white" : "text-zinc-600 group-hover:text-zinc-400")}>{label}</span>
       </div>
     </div>
   );

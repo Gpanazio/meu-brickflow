@@ -60,15 +60,15 @@ function LegacyBoard({
     <div className="flex flex-col h-[calc(100vh-6rem)]">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-zinc-900 pb-4 gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setCurrentView(currentSubProject ? 'project' : 'home')} className="text-zinc-500 hover:text-white uppercase text-[10px] tracking-widest rounded-none px-0"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
+          <Button variant="ghost" size="sm" onClick={() => setCurrentView(currentSubProject ? 'project' : 'home')} className="text-zinc-500 hover:text-white uppercase text-xs tracking-widest rounded-none px-0 font-medium"><ArrowLeft className="mr-2 h-3 w-3" /> Voltar</Button>
           <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">{entityName}</h2>
         </div>
         <Tabs value={currentBoardType} onValueChange={setCurrentBoardType}>
           <TabsList className="bg-transparent border-b border-transparent rounded-none h-8 p-0 gap-4">
-            {enabledTabs.includes('kanban') && <TabsTrigger value="kanban" className="rounded-none uppercase text-[10px] font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Kanban</TabsTrigger>}
-            {enabledTabs.includes('todo') && <TabsTrigger value="todo" className="rounded-none uppercase text-[10px] font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Lista</TabsTrigger>}
-            {enabledTabs.includes('files') && <TabsTrigger value="files" className="rounded-none uppercase text-[10px] font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Arquivos</TabsTrigger>}
-            {enabledTabs.includes('goals') && <TabsTrigger value="goals" className="rounded-none uppercase text-[10px] font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Metas</TabsTrigger>}
+            {enabledTabs.includes('kanban') && <TabsTrigger value="kanban" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Kanban</TabsTrigger>}
+            {enabledTabs.includes('todo') && <TabsTrigger value="todo" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Lista</TabsTrigger>}
+            {enabledTabs.includes('files') && <TabsTrigger value="files" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Arquivos</TabsTrigger>}
+            {enabledTabs.includes('goals') && <TabsTrigger value="goals" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Metas</TabsTrigger>}
           </TabsList>
         </Tabs>
       </div>
@@ -82,8 +82,8 @@ function LegacyBoard({
                 <div key={list.id} className="w-72 flex flex-col h-full bg-black border-r border-zinc-900"
                      onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, list.id, 'list')}>
                   <div className="p-4 border-b border-zinc-900 flex justify-between items-center">
-                    <span className="font-bold text-[10px] uppercase tracking-[0.2em] text-zinc-500">{list.title}</span>
-                    <span className="text-zinc-700 text-[10px] font-mono">{(list.tasks?.length ?? 0).toString().padStart(2, '0')}</span>
+                    <span className="font-bold text-xs uppercase tracking-[0.2em] text-zinc-500">{list.title}</span>
+                    <span className="text-zinc-700 text-xs font-mono font-medium">{(list.tasks?.length ?? 0).toString().padStart(2, '0')}</span>
                   </div>
                   <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black">
                     {list.tasks?.map(task => (
@@ -97,11 +97,11 @@ function LegacyBoard({
                         </div>
                         <div className="flex items-center justify-between pt-2 border-t border-zinc-900/50 mt-2">
                           {task.responsibleUsers?.length > 0 && <ResponsibleUsersButton users={task.responsibleUsers} />}
-                          {task.endDate && <span className="text-[9px] text-zinc-600 font-mono">{new Date(task.endDate).toLocaleDateString().slice(0,5)}</span>}
+                          {task.endDate && <span className="text-[10px] text-zinc-600 font-mono font-medium">{new Date(task.endDate).toLocaleDateString().slice(0,5)}</span>}
                         </div>
                     </div>
                   ))}
-                  <Button variant="ghost" className="w-full border border-dashed border-zinc-900 text-zinc-700 hover:text-white hover:bg-zinc-950 rounded-none h-10 uppercase text-[9px] tracking-widest"
+                  <Button variant="ghost" className="w-full border border-dashed border-zinc-900 text-zinc-700 hover:text-white hover:bg-zinc-950 rounded-none h-10 uppercase text-xs tracking-widest font-medium"
                     onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
                     <Plus className="h-3 w-3 mr-2" /> Adicionar
                   </Button>
@@ -116,7 +116,7 @@ function LegacyBoard({
             <div className="max-w-4xl mx-auto space-y-8">
               {data.lists ? data.lists.map(list => (
                 <div key={list.id} className="space-y-0">
-                  <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] mb-2 pl-4 border-l-2 border-red-600">{list.title}</h3>
+                  <h3 className="text-xs font-bold text-zinc-600 uppercase tracking-[0.3em] mb-2 pl-4 border-l-2 border-red-600">{list.title}</h3>
                   <div className="bg-black border-t border-zinc-900">
                     {list.tasks?.map(task => (
                       <div key={task.id} className="p-3 flex items-center gap-4 border-b border-zinc-900 hover:bg-zinc-950/50 transition-colors group">
@@ -134,7 +134,7 @@ function LegacyBoard({
                           <p className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors uppercase tracking-wide">{task.title}</p>
                         </div>
                         <div className="opacity-0 group-hover:opacity-100 flex items-center gap-4">
-                          <span className="text-[9px] font-mono uppercase text-zinc-600">{task.priority}</span>
+                          <span className="text-[10px] font-mono uppercase text-zinc-600 font-medium">{task.priority}</span>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-700 hover:text-red-600 hover:bg-transparent rounded-none" 
                                   onClick={() => handleTaskAction('delete', { taskId: task.id })}>
                             <Trash2 className="h-4 w-4" />
@@ -142,7 +142,7 @@ function LegacyBoard({
                         </div>
                       </div>
                     ))}
-                    <Button variant="ghost" className="w-full text-[10px] text-zinc-600 hover:text-white justify-start h-10 px-4 uppercase tracking-widest rounded-none hover:bg-zinc-950" onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
+                    <Button variant="ghost" className="w-full text-xs text-zinc-600 hover:text-white justify-start h-10 px-4 uppercase tracking-widest rounded-none hover:bg-zinc-950 font-medium" onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}>
                       <Plus className="h-3 w-3 mr-2" /> Inserir Dados
                     </Button>
                   </div>
@@ -183,7 +183,7 @@ function LegacyBoard({
                     multiple 
                     onChange={handleFileUploadWithFeedback} 
                   />
-                  <Button className="bg-white text-black hover:bg-zinc-200 uppercase tracking-widest text-[10px] font-bold rounded-none h-10 px-6">
+                  <Button className="bg-white text-black hover:bg-zinc-200 uppercase tracking-widest text-xs font-bold rounded-none h-10 px-6">
                     <Upload className="mr-2 h-4 w-4" /> Upload
                   </Button>
                 </div>
@@ -200,8 +200,8 @@ function LegacyBoard({
                     <div className="mb-3 opacity-50 group-hover:opacity-100 transition-opacity">
                       {file.type?.includes('image') ? <Eye className="w-6 h-6 text-white"/> : <FileText className="w-6 h-6 text-white"/>}
                     </div>
-                    <p className="text-[10px] text-zinc-500 font-mono truncate w-full text-center group-hover:text-white transition-colors">{file.name}</p>
-                    <p className="text-[8px] text-zinc-700 uppercase tracking-widest mt-1">{formatFileSize(file.size)}</p>
+                    <p className="text-xs text-zinc-500 font-mono truncate w-full text-center group-hover:text-white transition-colors font-medium">{file.name}</p>
+                    <p className="text-[10px] text-zinc-700 uppercase tracking-widest mt-1 font-medium">{formatFileSize(file.size)}</p>
                     <a href={file.data} download={file.name} className="absolute inset-0 z-10" />
                   </div>
                 ))}

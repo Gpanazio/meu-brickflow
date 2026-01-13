@@ -42,7 +42,7 @@ function LegacyHeader({
             <Button
               variant="ghost"
               onClick={() => setCurrentView('home')}
-              className={`brick-tech uppercase tracking-[0.2em] text-[10px] rounded-none h-10 px-4 ${currentView === 'home' ? 'text-white' : 'text-zinc-600 hover:text-white'}`}
+              className={`brick-tech uppercase tracking-[0.2em] text-xs rounded-none h-10 px-4 font-medium ${currentView === 'home' ? 'text-white' : 'text-zinc-600 hover:text-white'}`}
             >
               Central
             </Button>
@@ -54,7 +54,7 @@ function LegacyHeader({
                 <Button
                   variant="ghost"
                   onClick={() => setCurrentView('project')}
-                  className="brick-tech uppercase tracking-[0.2em] text-[10px] text-zinc-600 hover:text-white rounded-none h-10 px-4"
+                  className="brick-tech uppercase tracking-[0.2em] text-xs text-zinc-600 hover:text-white rounded-none h-10 px-4 font-medium"
                 >
                   {currentProject.name}
                 </Button>
@@ -85,24 +85,24 @@ function LegacyHeader({
             <DropdownMenuContent className="w-56 glass-panel rounded-none p-0" align="end">
               <DropdownMenuLabel className="p-4 pb-2">
                 <p className="text-xs font-black text-white uppercase tracking-tighter">{currentUser?.displayName}</p>
-                <p className="text-[9px] text-zinc-600 font-mono tracking-widest mt-1">@{currentUser?.username}</p>
+                <p className="text-[10px] text-zinc-600 font-mono tracking-widest mt-1 font-medium">@{currentUser?.username}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-zinc-900 m-0" />
 
               {canManageTeam && (
-                <DropdownMenuItem onClick={onOpenTeamManagement} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] font-bold tracking-widest h-10 rounded-none px-4">
+                <DropdownMenuItem onClick={onOpenTeamManagement} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs font-bold tracking-widest h-10 rounded-none px-4">
                   <Users className="mr-3 h-3 w-3" /> Gerenciar Equipe
                 </DropdownMenuItem>
               )}
 
-              <DropdownMenuItem onClick={onOpenSettings} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] font-bold tracking-widest h-10 rounded-none px-4">
+              <DropdownMenuItem onClick={onOpenSettings} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs font-bold tracking-widest h-10 rounded-none px-4">
                 <Settings className="mr-3 h-3 w-3" /> Configurações
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-[9px] font-bold tracking-widest h-10 rounded-none px-4">
+              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs font-bold tracking-widest h-10 rounded-none px-4">
                 <RotateCcw className="mr-3 h-3 w-3" /> Trocar Conta
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-zinc-900 m-0" />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-900 focus:text-red-500 focus:bg-zinc-900 cursor-pointer uppercase text-[9px] font-bold tracking-widest h-10 rounded-none px-4">
+              <DropdownMenuItem onClick={handleLogout} className="text-red-900 focus:text-red-500 focus:bg-zinc-900 cursor-pointer uppercase text-xs font-bold tracking-widest h-10 rounded-none px-4">
                 <LogOut className="mr-3 h-3 w-3" /> Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
