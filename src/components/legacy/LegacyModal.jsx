@@ -8,7 +8,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 import { 
   Plus, Trash2, X, CheckSquare, 
   MessageSquare, History
