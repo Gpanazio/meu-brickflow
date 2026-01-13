@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 const LABEL_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'zinc'];
-const badgeColorClasses = {
+const BADGE_COLOR_CLASSES = {
   blue: 'bg-blue-600/20 text-blue-500 border-blue-900/50 hover:bg-blue-600/30',
   red: 'bg-red-600/20 text-red-500 border-red-900/50 hover:bg-red-600/30',
   green: 'bg-green-600/20 text-green-500 border-green-900/50 hover:bg-green-600/30',
