@@ -470,7 +470,7 @@ function LegacyModal({
                            if (isReadOnly) return;
                            taskState.labels?.some(l => l.color === color) ? removeLabel(color) : addLabel(color);
                          }}
-                        className={`h-4 w-8 rounded-sm transition-all hover:scale-110 ${LABEL_SWATCH_CLASSES[color] ?? LABEL_SWATCH_CLASSES.zinc} ${taskState.labels?.some(l => l.color === color) ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : 'opacity-40'}`}
+                        className={cn('h-4 w-8 rounded-sm transition-all hover:scale-110', LABEL_SWATCH_CLASSES[color] ?? LABEL_SWATCH_CLASSES.zinc, taskState.labels?.some(l => l.color === color) ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : 'opacity-40')}
                        />
                      ))}
                    </div>
