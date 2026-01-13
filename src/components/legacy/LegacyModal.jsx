@@ -156,6 +156,22 @@ function LegacyModal({
   };
 
   const LABEL_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'zinc'];
+  const badgeColorClasses = {
+    blue: 'bg-blue-600/20 text-blue-500 border-blue-900/50 hover:bg-blue-600/30',
+    red: 'bg-red-600/20 text-red-500 border-red-900/50 hover:bg-red-600/30',
+    green: 'bg-green-600/20 text-green-500 border-green-900/50 hover:bg-green-600/30',
+    purple: 'bg-purple-600/20 text-purple-500 border-purple-900/50 hover:bg-purple-600/30',
+    orange: 'bg-orange-600/20 text-orange-500 border-orange-900/50 hover:bg-orange-600/30',
+    zinc: 'bg-zinc-600/20 text-zinc-400 border-zinc-900/50 hover:bg-zinc-600/30'
+  };
+  const labelSwatchClasses = {
+    blue: 'bg-blue-600',
+    red: 'bg-red-600',
+    green: 'bg-green-600',
+    purple: 'bg-purple-600',
+    orange: 'bg-orange-600',
+    zinc: 'bg-zinc-600'
+  };
 
   return (
     <Dialog open={modalState.isOpen} onOpenChange={(open) => !open && setModalState({ ...modalState, isOpen: false })}>
@@ -203,7 +219,11 @@ function LegacyModal({
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
                     {taskState.labels?.map(label => (
-                      <Badge key={label.color} className={`bg-${label.color}-600/20 text-${label.color}-500 border-${label.color}-900/50 rounded-none px-2 py-1 text-[10px] uppercase tracking-widest font-medium hover:bg-${label.color}-600/30 cursor-pointer`} onClick={() => removeLabel(label.color)}>
+                      <Badge
+                        key={label.color}
+                        className={`rounded-none px-2 py-1 text-[10px] uppercase tracking-widest font-medium cursor-pointer ${badgeColorClasses[label.color] ?? badgeColorClasses.zinc}`}
+                        onClick={() => removeLabel(label.color)}
+                      >
                         {label.text} <X className="ml-1 h-2 w-2" />
                       </Badge>
                     ))}
@@ -446,7 +466,7 @@ function LegacyModal({
                            if (isReadOnly) return;
                            taskState.labels?.some(l => l.color === color) ? removeLabel(color) : addLabel(color);
                          }}
-                         className={`h-4 w-8 rounded-sm bg-${color}-600 transition-all hover:scale-110 ${taskState.labels?.some(l => l.color === color) ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : 'opacity-40'}`}
+                         className={`h-4 w-8 rounded-sm transition-all hover:scale-110 ${labelSwatchClasses[color] ?? labelSwatchClasses.zinc} ${taskState.labels?.some(l => l.color === color) ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : 'opacity-40'}`}
                        />
                      ))}
                    </div>
