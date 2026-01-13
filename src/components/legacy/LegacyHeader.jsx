@@ -19,7 +19,9 @@ function LegacyHeader({
   onOpenTeamManagement,
 
   projects,
-  onSearchNavigate
+  onSearchNavigate,
+  isSearchOpen,
+  setIsSearchOpen
 }) {
   const canManageTeam = ['gabriel', 'lufe'].includes(String(currentUser?.username || '').toLowerCase());
 
@@ -38,7 +40,7 @@ function LegacyHeader({
           <Separator orientation="vertical" className="h-8 bg-zinc-800" />
 
           {/* Navegação Primária */}
-          <nav className="flex items-center gap-4">
+          <nav className="hidden md:flex items-center gap-4">
             <Button
               variant="ghost"
               onClick={() => setCurrentView('home')}
@@ -64,8 +66,21 @@ function LegacyHeader({
         </div>
 
         {/* LADO DIREITO - AVATAR DE VOLTA */}
-        <div className="flex items-center gap-6">
-          <Search projects={projects} onNavigate={onSearchNavigate} />
+        <div className="flex items-center gap-3 md:gap-6">
+          <div className="hidden md:block">
+            <Search projects={projects} onNavigate={onSearchNavigate} />
+          </div>
+          
+          {/* Search Trigger oculto mas funcional via props para o MobileTabBar abrir o Command Palette */}
+          <div className="md:hidden h-0 w-0 overflow-hidden">
+             <Search 
+                projects={projects} 
+                onNavigate={onSearchNavigate} 
+                open={isSearchOpen} 
+                setOpen={setIsSearchOpen} 
+             />
+          </div>
+
           {isSyncing && <div className="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />}
 
           <DropdownMenu>

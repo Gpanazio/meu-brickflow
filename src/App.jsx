@@ -13,6 +13,7 @@ import LegacyHeader from './components/legacy/LegacyHeader';
 import LegacyModal from './components/legacy/LegacyModal';
 import CreateProjectModal from './components/CreateProjectModal'; // COMPONENTE IMPORTADO
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
+import { MobileTabBar } from './components/MobileTabBar';
 import { SyncNotificationContainer } from './components/SyncNotification';
 import { Toaster } from './components/ui/sonner';
 import { useUsers, useFiles } from './hooks';
@@ -148,6 +149,7 @@ const USER_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'zinc'];
 
 export default function App() {
   const [appData, setAppData] = useState(null); 
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const appDataRef = useRef(null);
   const currentUserRef = useRef(null);
   const saveQueueRef = useRef(Promise.resolve());
@@ -1307,10 +1309,12 @@ export default function App() {
         onExportBackup={handleExportBackup}
         projects={appData.projects}
         onSearchNavigate={handleSearchNavigation}
+        isSearchOpen={isSearchOpen}
+        setIsSearchOpen={setIsSearchOpen}
       />
 
       <main className="flex-1 overflow-hidden relative">
-        <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-6 custom-scrollbar">
+        <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-6 pb-20 md:pb-8 custom-scrollbar">
           {connectionError && (
             <div className="mb-4 mx-auto max-w-2xl bg-red-950/30 border border-red-900/50 p-3 rounded flex items-center justify-between">
               <div className="flex items-center gap-2 text-red-400 text-xs font-bold uppercase tracking-wide">
@@ -1467,6 +1471,15 @@ export default function App() {
          onClose={() => setShowTeamManagementModal(false)}
          currentUser={currentUser}
        />
+
+      <MobileTabBar 
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenCreateProject={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+        currentUser={currentUser}
+      />
 
       <Toaster />
     </div>

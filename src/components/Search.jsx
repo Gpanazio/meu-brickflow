@@ -10,8 +10,12 @@ import {
   CommandItem,
 } from './ui/command';
 
-export function Search({ projects, onNavigate }) {
-  const [open, setOpen] = useState(false);
+export function Search({ projects, onNavigate, open: controlledOpen, setOpen: setControlledOpen }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = setControlledOpen !== undefined ? setControlledOpen : setInternalOpen;
+
   const { searchTerm, setSearchTerm, searchResults } = useSearch(projects);
 
   // Atalho de teclado Cmd+K ou Ctrl+K
