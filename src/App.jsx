@@ -11,7 +11,6 @@ import LegacyModal from './components/legacy/LegacyModal';
 import CreateProjectModal from './components/CreateProjectModal';
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { MobileTabBar } from './components/MobileTabBar';
-import { SyncNotificationContainer } from './components/SyncNotification';
 import { Toaster } from './components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,7 +66,6 @@ export default function App() {
   
   const dragTaskRef = useRef(null);
   const [dragOverTargetId, setDragOverTargetId] = useState(null);
-  const [dragOverListId, setDragOverListId] = useState(null);
 
   const currentUserRef = useRef(null);
 
@@ -89,7 +87,7 @@ export default function App() {
       });
       
       if (response.status === 409) {
-        addNotification('warning', 'Conflito de sincronização! Recarregue a página.');
+        console.warn('Conflito de sincronização! Recarregue a página.');
         return;
       }
       
@@ -100,17 +98,15 @@ export default function App() {
            appDataRef.current = next;
            return next;
         });
-        addNotification('success', 'Salvo com sucesso', 1500);
         setConnectionError(false);
       }
     } catch (e) {
       console.error("Erro save:", e);
       setConnectionError(true);
-      addNotification('error', 'Falha ao salvar dados.');
     } finally {
       setIsSyncing(false);
     }
-  }, [addNotification]);
+  }, []);
 
   const updateProjects = (updater) => {
     setAppData(prev => {
@@ -136,11 +132,8 @@ export default function App() {
     isAuthLoading,
     authError,
     handleLogin,
-    handleCreateUser,
     handleLogout,
-    handleSwitchUser,
-    showCreateUserModal,
-    setShowCreateUserModal
+    handleSwitchUser
   } = useUsers(appData?.users, updateUsers);
 
   useEffect(() => {
@@ -177,96 +170,12 @@ export default function App() {
     return () => clearTimeout(slowLoadTimer);
   }, []);
 
-  const saveDataToApi = useCallback(async (newData) => {
-    setIsSyncing(true);
-    try {
-      const requestId = generateId('req');
-      const payload = {
-        data: newData,
-        version: newData?.version ?? 0,
-        client_request_id: requestId,
-        userId: currentUserRef.current?.username
-      };
-      
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      if (response.status === 409) {
-        addNotification('warning', 'Conflito de sincronização! Recarregue a página.');
-        return;
-      }
-      
-      if (response.ok) {
-        const result = await response.json();
-        setAppData(prev => {
-           const next = { ...prev, version: result.version };
-           appDataRef.current = next;
-           return next;
-        });
-        addNotification('success', 'Salvo com sucesso', 1500);
-        setConnectionError(false);
-      }
-    } catch (e) {
-      console.error("Erro save:", e);
-      setConnectionError(true);
-      addNotification('error', 'Falha ao salvar dados.');
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [addNotification]);
-
-  const updateProjects = (updater) => {
-    setAppData(prev => {
-      const newProjects = typeof updater === 'function' ? updater(prev.projects) : updater;
-      const newState = { ...prev, projects: newProjects };
-      appDataRef.current = newState;
-      saveDataToApi(newState);
-      return newState;
-    });
-  };
-
-  const updateUsers = (newUsersList) => {
-    setAppData(prev => {
-      const newState = { ...prev, users: newUsersList };
-      saveDataToApi(newState);
-      return newState;
-    });
-  };
-
-  const {
-    currentUser,
-    isLoggedIn,
-    isAuthLoading,
-    authError,
-    handleLogin,
-    handleCreateUser,
-    handleLogout,
-    handleSwitchUser
-  } = useUsers(appData?.users, updateUsers);
-
   useEffect(() => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
   const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } = 
     useFiles(currentProject, currentSubProject, updateProjects);
-
-  const handleSaveProject = useCallback((formData) => {
-    if (modalState.type === 'project') {
-      updateProjects(prev => prev.map(p => p.id === modalState.data.id ? { ...p, ...formData } : p));
-    } else if (modalState.type === 'subProject') {
-      const targetProjId = currentProject.id;
-      updateProjects(prev => prev.map(p => 
-        p.id === targetProjId 
-          ? { ...p, subProjects: p.subProjects.map(sp => sp.id === modalState.data.id ? { ...sp, ...formData } : sp) } 
-          : p
-      ));
-    }
-    setModalState({ isOpen: false, type: null });
-  }, [modalState, currentProject]);
 
   const handleTaskAction = useCallback((action, data) => {
     if (action === 'save') {
@@ -300,9 +209,9 @@ export default function App() {
                                     })
                                 }
                             }
-                        }
+                        };
                     })
-                }
+                };
              }));
         }
         setModalState({ isOpen: false, type: null });
@@ -325,9 +234,9 @@ export default function App() {
                                      lists: board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }))
                                  }
                              }
-                         }
-                     }
-                 }
+                         };
+                     })
+                 };
              }));
          }
     } else if (action === 'move') {
@@ -336,7 +245,7 @@ export default function App() {
          // Implement drag move logic if needed
        }
     }
-  }, [currentProject, currentSubProject, currentBoardType, modalState]);
+  }, [currentProject, currentSubProject, currentBoardType, modalState, generateId]);
   
   const handleDragStart = (e, item, type, listId) => {
     if (type !== 'task' || !item?.id || !listId) return;
@@ -356,8 +265,7 @@ export default function App() {
   const handleDragEnter = (e, taskId, listId) => {
      if (!taskId) return;
      setDragOverTargetId(taskId);
-     setDragOverListId(listId);
-  };
+   };
 
   if ((!appData || isAuthLoading) && !connectionError) {
     return (
@@ -449,14 +357,14 @@ export default function App() {
           )}
 
           {currentView === 'trash' && (
-             <TrashView 
-                trashItems={trashItems} 
-                isLoading={isTrashLoading}
-                onReturnHome={() => setCurrentView('home')}
-                onRestoreItem={(item) => {
-                   console.log("Restore item:", item);
-                }}
-             />
+              <TrashView 
+                 trashItems={[]} 
+                 isLoading={false}
+                 onReturnHome={() => setCurrentView('home')}
+                 onRestoreItem={(item) => {
+                    console.log("Restore item:", item);
+                 }}
+              />
           )}
           
           {currentView === 'project' && currentProject && (
@@ -470,9 +378,9 @@ export default function App() {
                     setCurrentView('subproject');
                     setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
                 }}
-                history={projectHistory}
-                isHistoryLoading={isHistoryLoading}
-                historyError={historyError}
+                 history={[]}
+                 isHistoryLoading={false}
+                 historyError={null}
              />
           )}
           
@@ -537,8 +445,8 @@ export default function App() {
         isOpen={showSettingsModal} 
         onClose={() => setShowSettingsModal(false)}
         currentUser={currentUser}
-        backups={backups}
-        isBackupsLoading={isBackupsLoading}
+        backups={[]}
+        isBackupsLoading={false}
         onRefreshBackups={() => { }}
         onRestoreBackup={(id) => {
            console.log("Restore backup:", id);
