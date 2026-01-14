@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LoadingState, { ConnectionError } from '@/components/ui/LoadingState';
 
+// Contexts
+import { useApp } from './contexts/AppContext';
+
 // Novos Componentes Extraídos - Lazy Loaded
 const LegacyHome = lazy(() => import('./components/legacy/LegacyHome'));
 const LegacyProjectView = lazy(() => import('./components/legacy/LegacyProjectView'));
@@ -73,11 +76,10 @@ export default function App() {
   
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
-  
+   
   const dragTaskRef = useRef(null);
   const [dragOverTargetId, setDragOverTargetId] = useState(null);
 
-  const currentUserRef = useRef(null);
 
   const saveDataToApi = useCallback(async (newData) => {
     setIsSyncing(true);
@@ -87,7 +89,7 @@ export default function App() {
         data: newData,
         version: newData?.version ?? 0,
         client_request_id: requestId,
-        userId: currentUserRef.current?.username
+        userId: appContext.currentUser?.username
       };
       
       const response = await fetch('/api/projects', {
@@ -177,15 +179,11 @@ export default function App() {
       }
     };
     
-    loadData();
-    return () => clearTimeout(slowLoadTimer);
-  }, []);
-
-  useEffect(() => {
-    currentUserRef.current = currentUser;
-  }, [currentUser]);
-
-  const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } = 
+     loadData();
+     return () => clearTimeout(slowLoadTimer);
+   }, []);
+ 
+   const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } =
     useFiles(currentProject, currentSubProject, updateProjects);
 
   const handleTaskAction = useCallback((action, data) => {
@@ -238,18 +236,11 @@ export default function App() {
     }
   }, [currentProject, currentSubProject, currentBoardType, modalState, updateProjects]);
 
-  // Context accessors
-  const { currentView: appCurrentView, setCurrentView: appSetCurrentView } = require('./contexts/AppContext');
-  // Note: The above dynamic require is a placeholder approach; in real code this would use useApp()
-
-  // For the patch, we'll rely on context via a real import
-  // eslint-disable-next-line
-  const { useApp } = require('./contexts/AppContext');
-  const appContext = useApp ? useApp() : {};
+  const appContext = useApp();
   const viewFromContext = appContext?.currentView;
-  // Prefer context view if available, else fallback to local state (backwards compatibility)
-  const view = viewFromContext ?? 'home';
   const setView = appContext?.setCurrentView ?? ((v) => setCurrentView(v));
+  const currentUser = appContext?.currentUser;
+  const setCurrentUser = appContext?.setCurrentUser;
 
   // Legacy components navigation helpers will use context setters if available
   const handleAccessProject = (item, type) => {
