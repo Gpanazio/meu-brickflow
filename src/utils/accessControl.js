@@ -232,96 +232,38 @@ export function canDeleteProject(user, project) {
   return user.role === ROLES.OWNER || user.role === ROLES.ADMIN;
 }
 
-/**
- * Filtra projetos baseado no acesso do usuário
- * @param {Array} projects - Array de projetos
- * @param {Object} user - Objeto do usuário
- * @returns {Array} Projetos filtrados
- */
-export function filterProjectsByAccess(projects, user) {
-  if (!user || !projects) return [];
 
-  // Owner e Admin veem todos os projetos
-  return projects;
-}
 
-/**
- * Obtém o label legível de um role
- * @param {string} role - Role do usuário
- * @returns {string}
- */
-export function getRoleLabel(role) {
-  const labels = {
-    [ROLES.OWNER]: 'Proprietário',
-    [ROLES.ADMIN]: 'Administrador',
-    [ROLES.MEMBER]: 'Membro',
-    [ROLES.VIEWER]: 'Visualizador',
-    [ROLES.GUEST]: 'Convidado'
-  };
-
-  return labels[role] || 'Desconhecido';
-}
-
-/**
- * Obtém a cor do badge de um role
- * @param {string} role - Role do usuário
- * @returns {string}
- */
-export function getRoleColor(role) {
-  const colors = {
-    [ROLES.OWNER]: 'bg-red-600 text-white',
-    [ROLES.ADMIN]: 'bg-orange-600 text-white',
-    [ROLES.MEMBER]: 'bg-blue-600 text-white',
-    [ROLES.VIEWER]: 'bg-zinc-600 text-white',
-    [ROLES.GUEST]: 'bg-purple-600 text-white'
-  };
-
-  return colors[role] || 'bg-zinc-800 text-white';
-}
-
-/**
- * Gera um token de convidado único
- * @returns {string} Token único para compartilhar
- */
-export function generateGuestToken() {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 15);
-  return `guest_${timestamp}_${random}`;
-}
-
-/**
- * Verifica se um token de convidado é válido
- * @param {string} token - Token a verificar
- * @returns {boolean}
- */
-export function isValidGuestToken(token) {
-  if (!token || typeof token !== 'string') return false;
-  return token.startsWith('guest_');
-}
-
-/**
- * Cria um usuário convidado a partir de um token
- * @param {string} token - Token do convidado
- * @returns {Object} Objeto de usuário convidado
- */
-export function createGuestUser(token) {
-  return {
-    username: `guest_${token.split('_')[1]}`,
-    displayName: 'Convidado',
-    role: ROLES.GUEST,
-    color: 'purple',
-    avatar: '',
-    isGuest: true,
-    guestToken: token
-  };
-}
-
-/**
- * Gera URL de convite com token
- * @returns {string} URL completa com token de convidado
- */
-export function generateGuestInviteUrl() {
-  const token = generateGuestToken();
-  const baseUrl = window.location.origin;
-  return `${baseUrl}?guest=${token}`;
-}
+ /**
+  * Obtém o label legível de um role
+  * @param {string} role - Role do usuário
+  * @returns {string}
+  */
+ export function getRoleLabel(role) {
+   const labels = {
+     [ROLES.OWNER]: 'Proprietário',
+     [ROLES.ADMIN]: 'Administrador',
+     [ROLES.MEMBER]: 'Membro',
+     [ROLES.VIEWER]: 'Visualizador',
+     [ROLES.GUEST]: 'Convidado'
+   };
+ 
+   return labels[role] || 'Desconhecido';
+ }
+ 
+ /**
+  * Obtém a cor do badge de um role
+  * @param {string} role - Role do usuário
+  * @returns {string}
+  */
+ export function getRoleColor(role) {
+   const colors = {
+     [ROLES.OWNER]: 'bg-red-600 text-white',
+     [ROLES.ADMIN]: 'bg-orange-600 text-white',
+     [ROLES.MEMBER]: 'bg-blue-600 text-white',
+     [ROLES.VIEWER]: 'bg-zinc-600 text-white',
+     [ROLES.GUEST]: 'bg-purple-600 text-white'
+   };
+ 
+   return colors[role] || 'bg-zinc-800 text-white';
+ }

@@ -5,18 +5,9 @@ import { Plus, MoreVertical, Lock, Sparkles, Dna, CheckSquare, ArrowRight } from
 import SudokuGame from '@/components/SudokuGame';
 import { getUserTasks } from '@/utils/userTasks';
 import { hasPermission, PERMISSIONS } from '@/utils/accessControl';
+import { COLOR_VARIANTS } from '@/constants/theme';
 import PrismaticPanel from '@/components/ui/PrismaticPanel';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Cores definidas internamente para blindagem visual
-const DEFAULT_COLORS = {
-  blue: { bg: 'bg-blue-600', shadow: 'shadow-[0_0_15px_rgba(37,99,235,0.5)]' },
-  red: { bg: 'bg-red-600', shadow: 'shadow-[0_0_15px_rgba(220,38,38,0.5)]' },
-  green: { bg: 'bg-green-600', shadow: 'shadow-[0_0_15px_rgba(22,163,74,0.5)]' },
-  purple: { bg: 'bg-purple-600', shadow: 'shadow-[0_0_15px_rgba(147,51,234,0.5)]' },
-  orange: { bg: 'bg-orange-600', shadow: 'shadow-[0_0_15px_rgba(234,88,12,0.5)]' },
-  zinc: { bg: 'bg-zinc-600', shadow: 'shadow-[0_0_15px_rgba(82,82,91,0.5)]' }
-};
 
 function LegacyHome({
   currentUser,
@@ -138,7 +129,7 @@ function LegacyHome({
             {userTasks.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {userTasks.slice(0, 6).map((task) => {
-                  const colors = DEFAULT_COLORS[task.projectColor] || DEFAULT_COLORS['blue'];
+                  const colors = COLOR_VARIANTS[task.projectColor] || COLOR_VARIANTS['blue'];
                   return (
                     <div
                       key={task.id}
@@ -210,7 +201,7 @@ function LegacyHome({
               ))
             ) : (
               activeProjects.map(project => {
-              const colors = DEFAULT_COLORS[project.color] || DEFAULT_COLORS['blue'];
+              const colors = COLOR_VARIANTS[project.color] || COLOR_VARIANTS['blue'];
               
               return (
                 <PrismaticPanel

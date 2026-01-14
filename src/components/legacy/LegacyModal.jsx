@@ -13,24 +13,7 @@ import {
   Plus, Trash2, X, CheckSquare, 
   MessageSquare, History
 } from 'lucide-react';
-
-const LABEL_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'zinc'];
-const BADGE_COLOR_CLASSES = {
-  blue: 'bg-blue-600/20 text-blue-500 border-blue-900/50 hover:bg-blue-600/30',
-  red: 'bg-red-600/20 text-red-500 border-red-900/50 hover:bg-red-600/30',
-  green: 'bg-green-600/20 text-green-500 border-green-900/50 hover:bg-green-600/30',
-  purple: 'bg-purple-600/20 text-purple-500 border-purple-900/50 hover:bg-purple-600/30',
-  orange: 'bg-orange-600/20 text-orange-500 border-orange-900/50 hover:bg-orange-600/30',
-  zinc: 'bg-zinc-600/20 text-zinc-400 border-zinc-900/50 hover:bg-zinc-600/30'
-};
-const labelSwatchClasses = {
-  blue: 'bg-blue-600',
-  red: 'bg-red-600',
-  green: 'bg-green-600',
-  purple: 'bg-purple-600',
-  orange: 'bg-orange-600',
-  zinc: 'bg-zinc-600'
-};
+import { COLOR_VARIANTS, LABEL_COLORS, BADGE_COLOR_CLASSES, LABEL_SWATCH_CLASSES } from '@/constants/theme';
 
 function LegacyModal({
   modalState,

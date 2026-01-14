@@ -1,5 +1,6 @@
 import { useCallback, useState, useMemo } from 'react'
 import { formatFileSize } from '../utils/formatFileSize'
+import { generateId } from '../utils/ids'
 
 export function useFiles(currentProject, currentSubProject, updateProjects) {
   const [isDragging, setIsDragging] = useState(false)
@@ -34,18 +35,18 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
       const newFilesPromises = validFiles.map(async (file) => {
         return new Promise((resolve) => {
           const reader = new FileReader()
-          reader.onload = () => {
-            resolve({
-              id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              data: reader.result, // Base64
-              uploadDate: new Date().toISOString(),
-              projectId: currentProject.id,
-              subProjectId: currentSubProject.id
-            })
-          }
+           reader.onload = () => {
+             resolve({
+               id: generateId('file'),
+               name: file.name,
+               type: file.type,
+               size: file.size,
+               data: reader.result, // Base64
+               uploadDate: new Date().toISOString(),
+               projectId: currentProject.id,
+               subProjectId: currentSubProject.id
+             })
+           }
           reader.readAsDataURL(file)
         })
       })
