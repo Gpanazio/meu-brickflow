@@ -43,18 +43,31 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // CORS configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',') 
-  : [];
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
+  .split(',')
+  .map(o => o.trim())
+  .filter(o => o.length > 0);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || !isProd) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // 1. Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // 2. Always allow in development
+    if (!isProd) return callback(null, true);
+    
+    // 3. Allow if in whitelist
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+    
+    // 4. Fallback: Allow if it's the same origin (same domain)
+    // In many cases, if the app is served from the same domain, Origin will match Host
+    // but headers like Host include port, etc.
+    // For now, let's just log and reject, but provide a more helpful error.
+    
+    console.warn(`[CORS] Blocking origin: ${origin}. Whitelist: ${allowedOrigins.join(', ') || 'EMPTY'}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 }));
@@ -286,6 +299,16 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
 const distPath = getDistPath();
 app.use(express.static(distPath));
 app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    if (err.message === 'Not allowed by CORS') {
+        res.status(403).json({ error: 'CORS Policy: Origin not allowed' });
+    } else {
+        console.error('Unhandled Error:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 if (hasDatabaseUrl) {
     query('SELECT 1').then(() => console.log('✅ DB Connected')).catch(e => console.error('❌ DB Fail:', e.message));
