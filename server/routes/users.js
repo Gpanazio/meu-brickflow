@@ -28,7 +28,10 @@ router.post('/', async (req, res) => {
 // IMPORTANT: /me routes MUST come BEFORE /:username to avoid being captured
 router.put('/me', requireAuth, async (req, res) => {
   try {
+    console.log('📝 PUT /me called for user:', req.user?.username);
+    console.log('📝 Request body:', JSON.stringify(req.body));
     const user = await userService.updateProfile(req.user.username, req.body);
+    console.log('📝 Updated user:', JSON.stringify(user));
     res.json({ user });
   } catch (err) {
     console.error('Error updating profile:', err);
