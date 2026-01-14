@@ -41,7 +41,7 @@ export function CreateSubProjectModal({ isOpen, onClose, onCreate }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md w-full glass-panel p-0 gap-0 text-white overflow-hidden sm:rounded-none border-0">
+      <DialogContent className="max-w-md w-full glass-panel !fixed p-0 gap-0 text-white overflow-hidden sm:rounded-none border-0">
         <DialogDescription className="sr-only">Criação de uma nova área</DialogDescription>
 
         {/* HEADER: Minimalista e Tipográfico */}
@@ -107,23 +107,23 @@ export function CreateSubProjectModal({ isOpen, onClose, onCreate }) {
           {/* FOOTER ACTIONS */}
           <div className="pt-6 flex justify-end gap-4 border-t border-zinc-900 mt-2">
             <Button
-                type="button"
-                variant="ghost"
-                onClick={onClose}
-                className="text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-500 hover:text-white h-10 rounded-none hover:bg-transparent px-4"
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              className="text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-500 hover:text-white h-10 rounded-none hover:bg-transparent px-4"
             >
-                Cancelar
+              Cancelar
             </Button>
             <Button
-                type="submit"
-                className="bg-white text-black hover:bg-zinc-200 text-[10px] uppercase font-black tracking-[0.2em] h-10 px-8 rounded-none transition-transform active:scale-95"
+              type="submit"
+              className="bg-white text-black hover:bg-zinc-200 text-[10px] uppercase font-black tracking-[0.2em] h-10 px-8 rounded-none transition-transform active:scale-95"
             >
-                Salvar
+              Salvar
             </Button>
           </div>
 
-         </form>
-       </DialogContent>
+        </form>
+      </DialogContent>
     </Dialog>
   );
 }

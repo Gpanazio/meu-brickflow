@@ -1,27 +1,15 @@
+
 import { useState } from 'react';
-import { ListTodo, Kanban, FileText, Goal, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import ModuleToggle from '@/components/ui/ModuleToggle';
 import { cn } from '@/lib/utils';
 
 export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
-  // Estado local para os módulos visuais (Grid 2x2)
-  const [modules, setModules] = useState({
-    todo: true,
-    kanban: true,
-    files: false,
-    goals: false
-  });
-
   const [isProtected, setIsProtected] = useState(false);
   const [selectedColor, setSelectedColor] = useState('blue');
-
-  const toggleModule = (key) => {
-    setModules(prev => ({ ...prev, [key]: !prev[key] }));
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -34,10 +22,10 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
       color: selectedColor,
       isProtected: isProtected,
       password: formData.get('password'),
-      enabledTabs: Object.keys(modules).filter(k => modules[k]),
+      enabledTabs: [], // Projetos pai não têm módulos diretos, apenas as áreas (subprojetos)
       boardData: {
-        todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'CONCLUÍDO', tasks: [] }] },
-        kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] },
+        todo: { lists: [] },
+        kanban: { lists: [] },
         files: { files: [] }
       }
     };
@@ -78,37 +66,6 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
               className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-4 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-zinc-600 min-h-[100px] resize-none placeholder:text-zinc-800 transition-all"
               placeholder=""
             />
-          </div>
-
-          {/* MÓDULOS ATIVOS (GRID 2x2) */}
-          <div className="space-y-3">
-            <Label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Módulos Ativos</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <ModuleToggle
-                active={modules.todo}
-                onClick={() => toggleModule('todo')}
-                icon={ListTodo}
-                label="Lista"
-              />
-              <ModuleToggle
-                active={modules.kanban}
-                onClick={() => toggleModule('kanban')}
-                icon={Kanban}
-                label="Kanban"
-              />
-              <ModuleToggle
-                active={modules.files}
-                onClick={() => toggleModule('files')}
-                icon={FileText}
-                label="Arquivos"
-              />
-              <ModuleToggle
-                active={modules.goals}
-                onClick={() => toggleModule('goals')}
-                icon={Goal}
-                label="Metas"
-              />
-            </div>
           </div>
 
           {/* GRID DE OPÇÕES INFERIORES */}
