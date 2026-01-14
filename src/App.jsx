@@ -393,6 +393,8 @@ function AppShell() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
+      {/* DEBUG: Verificar se currentUser tem avatar */}
+      {(() => { console.log('👤 App rendering Header. CurrentUser:', currentUser, 'Avatar:', currentUser?.avatar); })()}
       <LegacyHeader
         currentView={currentView}
         setCurrentView={setCurrentView}
