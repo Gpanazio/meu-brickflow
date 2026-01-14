@@ -207,7 +207,7 @@ function LegacyModal({
                         key={label.color}
                         className={cn(
                           'rounded-none px-2 py-1 text-[10px] uppercase tracking-widest font-medium cursor-pointer',
-                          badgeColorClasses[label.color] ?? badgeColorClasses.zinc
+                          BADGE_COLOR_CLASSES[label.color] ?? BADGE_COLOR_CLASSES.zinc
                         )}
                         onClick={() => removeLabel(label.color)}
                       >

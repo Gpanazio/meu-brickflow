@@ -1,4 +1,5 @@
 import React from 'react';
+/* eslint-disable-next-line no-unused-vars */
 import { Home, Search, Folder, User, Settings, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -56,15 +57,15 @@ export function MobileTabBar({
   );
 }
 
-function TabButton({ icon: Icon, label, active, onClick }) {
-  return (
-    <button 
-      onClick={onClick}
-      className={cn(
-        "flex flex-col items-center justify-center gap-1 transition-colors min-w-[60px]",
-        active ? "text-white" : "text-zinc-600 hover:text-zinc-400"
-      )}
-    >
+function TabButton({ icon: Icon /* eslint-disable-line no-unused-vars */, label, active, onClick }) {
+   return (
+     <button 
+       onClick={onClick}
+       className={cn(
+         "flex flex-col items-center justify-center gap-1 transition-colors min-w-[60px]",
+         active ? "text-white" : "text-zinc-600 hover:text-zinc-400"
+       )}
+     >
       <Icon size={20} className={cn(active && "animate-in zoom-in duration-300")} />
       <span className="text-[9px] font-bold uppercase tracking-widest">{label}</span>
     </button>

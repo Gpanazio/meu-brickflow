@@ -204,9 +204,7 @@ function LegacyHome({
               ))
             ) : (
               activeProjects.map(project => {
-              const colors = COLOR_VARIANTS[project.color] || COLOR_VARIANTS['blue'];
-              
-              return (
+               return (
                 <PrismaticPanel
                   key={project.id} 
                   hoverEffect
@@ -231,7 +229,7 @@ function LegacyHome({
                         } else {
                           alert('Senha incorreta.');
                         }
-                      } catch (err) {
+                      } catch {
                         alert('Erro ao verificar senha.');
                       }
                     } else {

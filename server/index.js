@@ -318,7 +318,7 @@ app.use(express.static(distPath));
 app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
 
 // Global Error Handler
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
     if (err.message === 'Not allowed by CORS') {
         res.status(403).json({ error: 'CORS Policy: Origin not allowed' });
     } else {
@@ -328,7 +328,7 @@ app.use((err, req, res, next) => {
 });
 
 if (hasDatabaseUrl) {
-    query('SELECT 1').then(() => console.log('✅ DB Connected')).catch(e => console.error('❌ DB Fail:', e.message));
+    // A conexão é testada e gerenciada dentro de db.js com suporte a fallback
 }
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

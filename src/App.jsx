@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { WifiOff, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import './App.css';
 
 // Components Legacy
@@ -297,6 +298,58 @@ export default function App() {
     }
   }, []);
 
+  const handleSoftDelete = useCallback((item, type, parentId) => {
+    const deletedAt = new Date().toISOString();
+    const typeKey = type.toLowerCase();
+    
+    if (typeKey === 'project') {
+      updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: deletedAt } : p));
+      toast.success('Projeto movido para a lixeira');
+    } else if (typeKey === 'subproject') {
+      updateProjects(prev => prev.map(p => {
+        if (p.id !== parentId) return p;
+        return {
+          ...p,
+          subProjects: p.subProjects.map(sp => sp.id === item.id ? { ...sp, deleted_at: deletedAt } : sp)
+        };
+      }));
+      toast.success('Área movida para a lixeira');
+    }
+  }, [updateProjects]);
+
+  const handleRestoreItem = useCallback((item, type, parentId) => {
+    const typeKey = type.toLowerCase();
+    if (typeKey === 'project') {
+      updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: null } : p));
+      toast.success('Projeto restaurado');
+    } else if (typeKey === 'subproject') {
+      updateProjects(prev => prev.map(p => {
+        if (p.id !== parentId) return p;
+        return {
+          ...p,
+          subProjects: p.subProjects.map(sp => sp.id === item.id ? { ...sp, deleted_at: null } : sp)
+        };
+      }));
+      toast.success('Área restaurada');
+    }
+  }, [updateProjects]);
+
+  const deletedItems = useMemo(() => {
+    const projects = appData?.projects || [];
+    const deletedProjects = projects.filter(p => p.deleted_at);
+    const deletedSubProjects = [];
+    
+    projects.forEach(p => {
+      (p.subProjects || []).forEach(sp => {
+        if (sp.deleted_at) {
+          deletedSubProjects.push({ ...sp, parentProjectId: p.id, parentProjectName: p.name });
+        }
+      });
+    });
+    
+    return { projects: deletedProjects, subProjects: deletedSubProjects };
+  }, [appData?.projects]);
+
   if ((!appData || isAuthLoading) && !connectionError) {
     return (
       <LoadingState 
@@ -381,10 +434,7 @@ export default function App() {
                             setCurrentView('project');
                         }
                     }}
-                    handleDeleteProject={(item) => {
-                        const deletedAt = new Date().toISOString();
-                        updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: deletedAt } : p));
-                    }}
+                    handleDeleteProject={(item) => handleSoftDelete(item, 'project')}
                     isLoading={isLoading}
                     COLOR_VARIANTS={COLOR_VARIANTS}
                     handleDragStart={handleDragStart}
@@ -395,11 +445,11 @@ export default function App() {
 
                 {currentView === 'trash' && (
                    <TrashView 
-                      trashItems={[]} 
+                      trashItems={deletedItems} 
                       isLoading={false}
                       onReturnHome={() => setCurrentView('home')}
                       onRestoreItem={(item) => {
-                         console.log("Restore item:", item);
+                         handleRestoreItem(item, item.type, item.projectId);
                       }}
                    />
                 )}
@@ -415,6 +465,7 @@ export default function App() {
                           setCurrentView('subproject');
                           setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
                       }}
+                      handleDeleteProject={(item) => handleSoftDelete(item, 'subproject', currentProject.id)}
                       history={[]}
                       isHistoryLoading={false}
                       historyError={null}

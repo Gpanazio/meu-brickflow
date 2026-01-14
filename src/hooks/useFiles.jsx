@@ -85,7 +85,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
       setIsUploading(false)
       if (event.target) event.target.value = ''
     }
-  }, [currentProject, currentSubProject, updateProjects])
+  }, [currentProject, currentSubProject, updateProjects, MAX_SIZE_BYTES])
 
   const handleDeleteFile = useCallback((fileId) => {
     if (!window.confirm('Tem certeza que deseja excluir este arquivo?')) return

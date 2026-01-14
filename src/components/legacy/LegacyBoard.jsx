@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Checkbox } from '../ui/checkbox';
 import { Upload, ArrowLeft, Plus, Trash2, Eye, FileText } from 'lucide-react';
 import { formatFileSize } from '../../utils/formatFileSize';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import MechButton from '../ui/MechButton';
 import StatusLED from '../ui/StatusLED';
 
@@ -16,7 +16,7 @@ function LegacyBoard({
   currentBoardType,
   setCurrentBoardType,
   currentSubProject,
-  currentProject,
+  // currentProject kept for prop consistency,
   setCurrentView,
   handleDragOver,
   handleDrop,

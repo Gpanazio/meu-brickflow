@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+// @ts-ignore - Global users params for future extensibility
 import { toast } from 'sonner'
 
-export function useUsers(_globalUsers, _updateGlobalUsers) {
+export function useUsers() {
   const [currentUser, setCurrentUser] = useState(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showCreateUserModal, setShowCreateUserModal] = useState(false)
@@ -95,8 +96,6 @@ export function useUsers(_globalUsers, _updateGlobalUsers) {
           setCurrentUser(null)
           setIsLoggedIn(false)
           setShowLoginModal(true)
-        } finally {
-          if (!alive) return
           setIsAuthLoading(false)
         }
       } else {

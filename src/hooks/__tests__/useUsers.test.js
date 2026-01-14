@@ -24,7 +24,7 @@ describe('useUsers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-
+    /* eslint-disable-next-line no-undef */
     global.fetch = vi.fn(async (url) => {
       if (url === '/api/health') {
         return { ok: true, json: async () => ({ status: 'ok' }) }

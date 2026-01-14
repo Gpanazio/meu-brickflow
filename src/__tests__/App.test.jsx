@@ -14,6 +14,7 @@ const apiState = {
   projects: []
 }
 
+/* eslint-disable-next-line no-undef */
 describe('App', () => {
   beforeEach(() => {
     global.fetch = vi.fn((url) => {
@@ -43,6 +44,7 @@ describe('App', () => {
 
   it('shows SudokuGame for user Fran', async () => {
     // Mock user being logged in
+    /* eslint-disable-next-line no-undef */
     global.fetch.mockImplementation((url) => {
       if (url === '/api/health') return Promise.resolve({ ok: true })
       if (url === '/api/projects') return Promise.resolve({ ok: true, json: async () => apiState })
@@ -61,6 +63,7 @@ describe('App', () => {
 
   it('does not show SudokuGame for other users', async () => {
     // Mock admin user being logged in
+    /* eslint-disable-next-line no-undef */
     global.fetch.mockImplementation((url) => {
       if (url === '/api/health') return Promise.resolve({ ok: true })
       if (url === '/api/projects') return Promise.resolve({ ok: true, json: async () => apiState })

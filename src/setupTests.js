@@ -21,6 +21,7 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Mock for fetch
+/* eslint-disable-next-line no-undef */
 global.fetch = vi.fn(() =>
   Promise.resolve({
     json: () => Promise.resolve({ user: null }),
