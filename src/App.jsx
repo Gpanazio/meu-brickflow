@@ -3,6 +3,10 @@ import { WifiOff, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import './App.css';
+import { AppProvider, useApp } from './contexts/AppContext';
+import { useUsers } from './hooks/useUsers';
+import { useFiles } from './hooks/useFiles';
+import { useSearch } from './hooks/useSearch';
 
 // Components Legacy
 import LegacyHeader from './components/legacy/LegacyHeader';
@@ -24,7 +28,6 @@ const TeamManagementModal = lazy(() => import('@/components/modals/TeamManagemen
 const TrashView = lazy(() => import('@/components/views/TrashView'));
 
 // Hooks & Utils
-import { useUsers, useFiles } from './hooks';
 import { generateId } from '@/utils/ids';
 import { absurdPhrases } from '@/utils/phrases';
 import { COLOR_VARIANTS, USER_COLORS } from '@/constants/theme';
@@ -52,205 +55,38 @@ const generateMegaSenaNumbers = () => {
   return numbers.sort((a, b) => a - b);
 };
 
-export default function App() {
-  const [appData, setAppData] = useState(null);
-  const appDataRef = useRef(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('home');
-  const [currentProject, setCurrentProject] = useState(null);
-  const [currentSubProject, setCurrentSubProject] = useState(null);
-  const [currentBoardType, setCurrentBoardType] = useState('kanban');
-
-  const [modalState, setModalState] = useState({ type: null, isOpen: false, data: null, mode: 'create' });
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showTeamManagementModal, setShowTeamManagementModal] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [connectionError, setConnectionError] = useState(false);
-  const [connectionErrorMessage, setConnectionErrorMessage] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showSlowLoad, setShowSlowLoad] = useState(false);
-  
-  const [dailyPhrase, setDailyPhrase] = useState('');
-  const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
-  
-  const dragTaskRef = useRef(null);
-  const [dragOverTargetId, setDragOverTargetId] = useState(null);
-
-  const currentUserRef = useRef(null);
-
-  const updateProjects = useCallback((updater) => {
-    setAppData(prev => {
-      const newProjects = typeof updater === 'function' ? updater(prev.projects) : updater;
-      const newState = { ...prev, projects: newProjects };
-      appDataRef.current = newState;
-      return newState;
-    });
-  }, []);
-
-  const saveDataToApi = useCallback(async (newData) => {
-    setIsSyncing(true);
-    try {
-      const requestId = generateId('req');
-      const payload = {
-        data: newData,
-        version: newData?.version ?? 0,
-        client_request_id: requestId,
-        userId: currentUserRef.current?.username
-      };
-
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.status === 409) {
-        console.warn('Conflito de sincronização! Recarregue a página.');
-        return;
-      }
-
-      if (response.ok) {
-        const result = await response.json();
-        setAppData(prev => {
-           const next = { ...prev, version: result.version };
-           appDataRef.current = next;
-           return next;
-        });
-        setConnectionError(false);
-      }
-    } catch (e) {
-      console.error("Erro save:", e);
-      setConnectionError(true);
-    } finally {
-      setIsSyncing(false);
-    }
-  }, []);
-
-  const updateUsers = (newUsersList) => {
-    setAppData(prev => {
-      const newState = { ...prev, users: newUsersList };
-      saveDataToApi(newState);
-      return newState;
-    });
-  };
-
+function AppContent() {
   const {
     currentUser,
-    isLoggedIn,
-    isAuthLoading,
-    authError,
-    handleLogin,
-    handleLogout,
-    handleSwitchUser
-  } = useUsers(appData?.users, updateUsers);
+    projects,
+    setProjects,
+    currentProject,
+    setCurrentProject,
+    currentSubProject,
+    setCurrentSubProject,
+    currentBoardType,
+    setCurrentBoardType,
+    modalState,
+    setModalState,
+    login,
+    logout
+  } = useApp();
 
-  useEffect(() => {
-    setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
-    setMegaSenaNumbers(generateMegaSenaNumbers());
-    
-    const slowLoadTimer = setTimeout(() => setShowSlowLoad(true), 3000);
-    
-    const loadData = async () => {
-      try {
-        const response = await fetch('/api/projects');
-        if (!response.ok) throw new Error("Falha na API");
-        
-        let data = await response.json();
-        if (!data) data = INITIAL_STATE;
-        
-        if (!data.users) data.users = [];
-        if (!data.projects) data.projects = [];
-        if (typeof data.version !== 'number') data.version = 0;
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showTeamManagementModal, setShowTeamManagementModal] = useState(false);
+  const dragTaskRef = useRef(null);
+  const [dragOverTargetId, setDragOverTargetId] = useState(null);
+  const appDataRef = useRef(null);
 
-        setAppData(data);
-      } catch (err) {
-        console.error("Erro load:", err);
-        setConnectionError(true);
-        setConnectionErrorMessage(DATA_LOAD_FALLBACK_MESSAGE);
-        setAppData(INITIAL_STATE);
-      } finally {
-        setIsLoading(false);
-        clearTimeout(slowLoadTimer);
-      }
-    };
-    
-    loadData();
-    return () => clearTimeout(slowLoadTimer);
-  }, []);
-
-  useEffect(() => {
-    currentUserRef.current = currentUser;
-  }, [currentUser]);
-
-  const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } = 
-    useFiles(currentProject, currentSubProject, updateProjects);
-
-  const handleTaskAction = useCallback((action, data) => {
-    if (action === 'save') {
-        const taskData = data;
-        const listId = modalState.listId || data.listId;
-        
-        if (currentProject && currentSubProject && listId) {
-             updateProjects(prev => prev.map(p => {
-                if (p.id !== currentProject.id) return p;
-                return {
-                    ...p,
-                    subProjects: p.subProjects.map(sp => {
-                        if (sp.id !== currentSubProject.id) return sp;
-                        const board = sp.boardData?.[currentBoardType];
-                        if (!board) return sp;
-                        
-                        return {
-                            ...sp,
-                            boardData: {
-                                ...sp.boardData,
-                                [currentBoardType]: {
-                                    ...board,
-                                    lists: board.lists.map(list => {
-                                        if (list.id !== listId) return list;
-                                        const taskIndex = list.tasks.findIndex(t => t.id === taskData.id);
-                                        if (taskIndex === -1) {
-                                            return { ...list, tasks: [...list.tasks, { ...taskData, id: taskData.id || generateId('task') }] };
-                                        } else {
-                                            return { ...list, tasks: list.tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t) };
-                                        }
-                                    })
-                                }
-                            }
-                        };
-                    })
-                };
-             }));
-        }
-        setModalState({ isOpen: false, type: null });
-    } else if (action === 'delete') {
-         if (currentProject && currentSubProject) {
-             updateProjects(prev => prev.map(p => {
-                 if (p.id !== currentProject.id) return p;
-                 return {
-                     ...p,
-                     subProjects: p.subProjects.map(sp => {
-                         if (sp.id !== currentSubProject.id) return sp;
-                         const board = sp.boardData?.[currentBoardType];
-                         if (!board) return sp;
-                         return {
-                             ...sp,
-                             boardData: {
-                                 ...sp.boardData,
-                                 [currentBoardType]: {
-                                     ...board,
-                                     lists: board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }))
-                                 }
-                             }
-                         };
-                     })
-                 };
-             }));
-         }
-    } else if (action === 'move') {
-       // Drag move logic implementation if needed
-    }
-  }, [currentProject, currentSubProject, currentBoardType, modalState, updateProjects]);
+  const {
+    files,
+    handleFileUpload,
+    isDragging,
+    setIsDragging,
+    handleDeleteFile,
+    isUploading
+  } = useFiles(currentProject, currentSubProject, setProjects);
 
   const handleDragStart = (e, item, type, listId) => {
     if (type !== 'task' || !item?.id || !listId) return;
@@ -272,6 +108,9 @@ export default function App() {
     setDragOverTargetId(taskId);
   };
 
+  const dailyPhrase = useMemo(() => absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)], []);
+  const megaSenaNumbers = useMemo(() => generateMegaSenaNumbers(), []);
+
   const handleSearchNavigate = useCallback((result) => {
     if (result.type === 'Project') {
       setCurrentProject(result);
@@ -286,7 +125,7 @@ export default function App() {
       setCurrentSubProject(result.parentSubProject);
       setCurrentView('subproject');
       setCurrentBoardType(result.boardType || 'kanban');
-      
+
       setModalState({
         type: 'task',
         isOpen: true,
@@ -295,49 +134,13 @@ export default function App() {
         mode: 'edit'
       });
     }
-  }, []);
-
-  const handleSoftDelete = useCallback((item, type, parentId) => {
-    const deletedAt = new Date().toISOString();
-    const typeKey = type.toLowerCase();
-    
-    if (typeKey === 'project') {
-      updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: deletedAt } : p));
-      toast.success('Projeto movido para a lixeira');
-    } else if (typeKey === 'subproject') {
-      updateProjects(prev => prev.map(p => {
-        if (p.id !== parentId) return p;
-        return {
-          ...p,
-          subProjects: p.subProjects.map(sp => sp.id === item.id ? { ...sp, deleted_at: deletedAt } : sp)
-        };
-      }));
-      toast.success('Área movida para a lixeira');
-    }
-  }, [updateProjects]);
-
-  const handleRestoreItem = useCallback((item, type, parentId) => {
-    const typeKey = type.toLowerCase();
-    if (typeKey === 'project') {
-      updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: null } : p));
-      toast.success('Projeto restaurado');
-    } else if (typeKey === 'subproject') {
-      updateProjects(prev => prev.map(p => {
-        if (p.id !== parentId) return p;
-        return {
-          ...p,
-          subProjects: p.subProjects.map(sp => sp.id === item.id ? { ...sp, deleted_at: null } : sp)
-        };
-      }));
-      toast.success('Área restaurada');
-    }
-  }, [updateProjects]);
+  }, [setCurrentProject, setCurrentView, setCurrentSubProject, setCurrentBoardType, setModalState]);
 
   const deletedItems = useMemo(() => {
-    const projects = appData?.projects || [];
+    const projects = projects || [];
     const deletedProjects = projects.filter(p => p.deleted_at);
     const deletedSubProjects = [];
-    
+
     projects.forEach(p => {
       (p.subProjects || []).forEach(sp => {
         if (sp.deleted_at) {
@@ -345,68 +148,158 @@ export default function App() {
         }
       });
     });
-    
+
     return { projects: deletedProjects, subProjects: deletedSubProjects };
-  }, [appData?.projects]);
+  }, [projects]);
 
-  if ((!appData || isAuthLoading) && !connectionError) {
-    return (
-      <LoadingState 
-        message={isAuthLoading ? 'Conectando ao Banco...' : 'Iniciando Sistema...'}
-        subMessage={showSlowLoad ? 'O servidor está acordando...' : null}
-      />
-    );
-  }
+  const handleRestoreItem = useCallback((item, type, parentId) => {
+    if (!currentUser) return;
+    const typeKey = type.toLowerCase();
+    if (typeKey === 'project') {
+      const updatedProjects = projects.map(p => p.id === item.id ? { ...p, deleted_at: null } : p);
+      setProjects(updatedProjects);
+      toast.success('Projeto restaurado');
+    } else if (typeKey === 'subproject') {
+      setProjects(prev => prev.map(p => {
+        if (p.id !== parentId) return p;
+        return {
+          ...p,
+          subProjects: p.subProjects.map(sp => {
+            if (sp.id !== item.id) return sp;
+            return { ...sp, deleted_at: null };
+          })
+        };
+      }));
+      toast.success('Área restaurada');
+    }
+  }, [projects, setProjects, currentUser]);
 
-  if (connectionError && !appData) {
-    return (
-      <ConnectionError 
-        message={connectionErrorMessage || DATA_LOAD_FALLBACK_MESSAGE}
-        onRetry={() => window.location.reload()}
-      />
-    );
-  }
+  const updateProjects = useCallback((updater) => {
+    setProjects(prev => {
+      const newProjects = typeof updater === 'function' ? updater(prev) : updater;
+      appDataRef.current = { ...appDataRef.current, projects: newProjects };
+      return newProjects;
+    });
+  }, []);
 
-  if (!isLoggedIn) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
-        <Toaster />
-        <div className="w-full max-w-sm glass-panel p-8 space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-xl font-bold tracking-widest text-white uppercase">BrickFlow OS</h1>
-            <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest">Acesso Restrito</p>
-          </div>
-          {authError && <p className="text-xs text-red-400 font-bold text-center">{authError}</p>}
-          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); handleLogin(fd.get('username'), fd.get('pin')); }} className="space-y-4">
-            <Input name="username" placeholder="ID" required className="h-12 bg-zinc-950 border-zinc-800 text-white" />
-            <Input name="pin" type="password" placeholder="PIN" required className="h-12 text-center tracking-[0.5em] bg-zinc-950 border-zinc-800 text-white" />
-            <Button type="submit" className="w-full bg-white text-zinc-950 hover:bg-zinc-200 uppercase font-bold tracking-widest h-12">Entrar</Button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  const handleTaskAction = useCallback((action, data) => {
+    if (action === 'save') {
+      const sp = currentSubProject;
+      const board = sp?.boardData?.[currentBoardType];
+      if (!board) return;
 
-  const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
-  const boardDataRaw = currentEntity?.boardData?.[currentBoardType] || { lists: [] };
+      const listId = modalState.listId || data.listId;
+      const updatedList = board.lists.map(list => {
+        if (list.id !== listId) return list;
+
+        const taskIndex = list.tasks.findIndex(t => t.id === data.id);
+        if (taskIndex === -1) {
+          return { ...list, tasks: [...list.tasks, { ...data, id: data.id || generateId('task') }] };
+        } else {
+          return { ...list, tasks: list.tasks.map(t => t.id === data.id ? { ...t, ...data } : t) };
+        }
+      });
+
+      setProjects(prev => {
+        if (!prev || !prev.projects) return prev;
+        const updatedProjects = prev.projects.map(p => {
+          if (p.id !== currentProject.id) return p;
+          return {
+            ...p,
+            subProjects: p.subProjects.map(sp => {
+              if (sp.id !== currentSubProject.id) return sp;
+              const spBoardData = sp.boardData || {};
+              return {
+                ...sp,
+                boardData: {
+                  ...spBoardData,
+                  [currentBoardType]: {
+                    ...board,
+                    lists: updatedList
+                  }
+                }
+              };
+            })
+          };
+        });
+        appDataRef.current = { ...appDataRef.current, projects: updatedProjects };
+        return { ...appDataRef.current, projects: updatedProjects };
+      });
+    } else if (action === 'delete') {
+      if (currentProject && currentSubProject) {
+        setProjects(prev => prev.map(p => {
+          if (p.id !== currentProject.id) return p;
+          return {
+            ...p,
+            subProjects: p.subProjects.map(sp => {
+              if (sp.id !== currentSubProject.id) return sp;
+              const board = sp.boardData?.[currentBoardType];
+              if (!board) return sp;
+              return {
+                ...sp,
+                boardData: {
+                  ...sp.boardData,
+                  [currentBoardType]: {
+                    ...board,
+                    lists: board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }))
+                  }
+                }
+              };
+            });
+          };
+        }));
+      }
+    } else if (action === 'move') {
+    }
+  }, [currentProject, currentSubProject, currentBoardType, modalState, setProjects]);
+
+  const handleAccessProject = (item, type) => {
+    if (type === 'project') {
+      setCurrentProject(item);
+      setCurrentView('project');
+    }
+  };
+
+  const [currentView, setCurrentView] = useState('home');
+
+  const { searchTerm, setSearchTerm, searchResults } = useSearch(projects);
+
+  const safeProjects = useMemo(() => Array.isArray(projects) ? projects : [], [projects]);
+  const safeMegaSena = useMemo(() => Array.isArray(megaSenaNumbers) ? megaSenaNumbers : [0,0,0,0,0], [megaSenaNumbers]);
+  const currentDate = useMemo(() => {
+    return new Date().toLocaleDateString('pt-BR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    }).toUpperCase();
+  }, []);
+
+  const activeProjects = useMemo(() => {
+    return safeProjects.filter(p => !p.isArchived && !p.deleted_at);
+  }, [safeProjects]);
+
+  const safeMegaSenaArray = useMemo(() => Array.isArray(megaSenaNumbers) ? megaSenaNumbers : [], [megaSenaNumbers]);
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
-      <LegacyHeader
-        currentView={currentView}
-        setCurrentView={setCurrentView}
-        currentProject={currentProject}
-        isSyncing={isSyncing}
-        currentUser={currentUser}
-        handleSwitchUser={handleSwitchUser}
-        handleLogout={handleLogout}
-        onOpenSettings={() => setShowSettingsModal(true)}
-        onOpenTeamManagement={() => setShowTeamManagementModal(true)}
-        projects={appData.projects}
-        onNavigate={handleSearchNavigate}
-        isSearchOpen={isSearchOpen}
-        setIsSearchOpen={setIsSearchOpen}
-      />
+    <div className="min-h-screen bg-black text-white pb-20 relative overflow-hidden">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div
+          className="absolute inset-0 opacity-[0.15]"
+          style={{
+            backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+            maskImage: 'radial-gradient(circle at center, black, transparent 80%)',
+            WebkitMaskImage: 'radial-gradient(circle at center, black, transparent 80%)'
+          }}
+        />
+        <div className="absolute inset-0 opacity-[0.15]">
+          <div
+            className="absolute inset-0 opacity-[0.15]"
+            style={{
+              backgroundImage: `linear-gradient(to right, #222 1px, transparent 1px), linear-gradient(to bottom, #222 1px, transparent 1px)`,
+              backgroundSize: '40px 40px'
+            }}
+          />
+        </div>
+      </div>
 
       <main className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-6 pb-20 md:pb-8 custom-scrollbar">
@@ -424,144 +317,221 @@ export default function App() {
                   <LegacyHome
                     currentUser={currentUser}
                     dailyPhrase={dailyPhrase}
-                    megaSenaNumbers={megaSenaNumbers}
-                    projects={appData.projects}
+                    megaSenaNumbers={safeMegaSenaArray}
+                    projects={projects}
                     setModalState={setModalState}
-                    handleAccessProject={(item, type) => {
-                        if (type === 'project') {
-                            setCurrentProject(item);
-                            setCurrentView('project');
-                        }
-                    }}
-                    handleDeleteProject={(item) => handleSoftDelete(item, 'project')}
-                    isLoading={isLoading}
-                    COLOR_VARIANTS={COLOR_VARIANTS}
-                    handleDragStart={handleDragStart}
-                    handleDragOver={handleDragOver}
-                    handleDrop={handleDrop}
+                    handleAccessProject={handleAccessProject}
+                    updateProjects={updateProjects}
                   />
                 )}
 
-                {currentView === 'trash' && (
-                   <TrashView 
-                      trashItems={deletedItems} 
-                      isLoading={false}
-                      onReturnHome={() => setCurrentView('home')}
-                      onRestoreItem={(item) => {
-                         handleRestoreItem(item, item.type, item.projectId);
-                      }}
-                   />
-                )}
-                
                 {currentView === 'project' && currentProject && (
-                   <LegacyProjectView 
-                      currentProject={currentProject}
-                      setCurrentView={setCurrentView}
-                      setModalState={setModalState}
-                      COLOR_VARIANTS={COLOR_VARIANTS}
-                      handleAccessProject={(sub) => {
-                          setCurrentSubProject(sub);
-                          setCurrentView('subproject');
-                          setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
-                      }}
-                      handleDeleteProject={(item) => handleSoftDelete(item, 'subproject', currentProject.id)}
-                      history={[]}
-                      isHistoryLoading={false}
-                      historyError={null}
-                   />
-                )}
-                
-                 {currentView === 'subproject' && currentSubProject && (
-                  <LegacyBoard 
-                     data={boardDataRaw} 
-                     entityName={currentSubProject.name}
-                     enabledTabs={currentSubProject.enabledTabs || []}
-                     currentBoardType={currentBoardType}
-                     setCurrentBoardType={setCurrentBoardType}
-                     currentSubProject={currentSubProject}
-                     currentProject={currentProject}
-                     setCurrentView={setCurrentView}
-                     setModalState={setModalState}
-                     handleTaskAction={handleTaskAction}
-                     handleDragStart={handleDragStart}
-                     handleDragOver={handleDragOver}
-                     handleDrop={handleDrop}
-                     handleDragEnter={handleDragEnter}
-                     dragOverTargetId={dragOverTargetId}
-                     files={files}
-                     handleFileUploadWithFeedback={handleFileUpload}
-                     isUploading={isUploading}
-                     isFileDragging={isDragging}
-                     setIsFileDragging={setIsDragging}
-                     handleDeleteFile={handleDeleteFile}
+                  <LegacyProjectView
+                    currentProject={currentProject}
+                    setCurrentSubProject={setCurrentSubProject}
+                    setCurrentView={setCurrentView}
+                    currentBoardType={currentBoardType}
+                    setCurrentBoardType={setCurrentBoardType}
+                    handleTaskAction={handleTaskAction}
+                    modalState={modalState}
+                    setModalState={setModalState}
+                    updateProjects={updateProjects}
                   />
-                 )}
+                )}
+
+                {currentView === 'subproject' && currentSubProject && (
+                  <LegacyBoard
+                    data={currentSubProject}
+                    entityName={currentSubProject.name}
+                    enabledTabs={currentSubProject.enabledTabs || ['kanban', 'calendar', 'files']}
+                    currentBoardType={currentBoardType}
+                    setCurrentBoardType={setCurrentBoardType}
+                    currentSubProject={currentSubProject}
+                    setCurrentView={setCurrentView}
+                    handleDragOver={handleDragOver}
+                    handleDragStart={handleDragStart}
+                    handleDragEnter={handleDragEnter}
+                    setModalState={setModalState}
+                    handleTaskAction={handleTaskAction}
+                    dragOverTargetId={dragOverTargetId}
+                    setDragOverTargetId={setDragOverTargetId}
+                    isFileDragging={isDragging}
+                    setIsFileDragging={setIsDragging}
+                    handleFileDrop={handleFileDrop}
+                    files={files}
+                    isUploading={isUploading}
+                    handleDeleteFile={handleDeleteFile}
+                    handleFileUpload={handleFileUpload}
+                  />
+                )}
               </Suspense>
             </motion.div>
-          </AnimatePresence>
-        </div>
-      </main>
+          </div>
+        </main>
 
-      <Suspense fallback={null}>
-        <CreateProjectModal 
-          isOpen={modalState.isOpen && modalState.type === 'project' && modalState.mode === 'create'}
-          onClose={() => setModalState({ isOpen: false })}
-          onCreate={(data) => {
-               const newProj = { id: generateId('proj'), ...data, members: [], isArchived: false };
-               updateProjects(prev => [...prev, newProj]);
+        <LegacyModal
+          modalState={modalState}
+          setModalState={setModalState}
+          handlePasswordSubmit={() => {
+            const password = prompt('Este projeto é protegido. Digite a senha:');
+            if (!password) return;
+            fetch('/api/projects/verify-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ projectId: modalState.data?.id || modalState.data?.projectId, password })
+            }).then(res => {
+              if (res.ok) {
+                handleAccessProject(modalState.data || modalState.data?.projectId, modalState.type);
+              } else {
+                alert('Senha incorreta.');
+              }
+            });
           }}
+          handleSaveProject={handleTaskAction}
+          handleTaskAction={handleTaskAction}
+          USER_COLORS={USER_COLORS}
+          isReadOnly={!currentUser || currentUser.role === 'user'}
+          users={currentUser ? [currentUser] : []}
         />
-        
-        <CreateSubProjectModal 
-          isOpen={modalState.isOpen && modalState.type === 'subProject' && modalState.mode === 'create'}
-           onClose={() => setModalState({ isOpen: false })}
-           onCreate={(data) => {
-               updateProjects(prev => prev.map(p => p.id === currentProject.id ? { ...p, subProjects: [...(p.subProjects||[]), { id: generateId('sub'), ...data }] } : p));
-           }}
-        />
-        
-        {modalState.type === 'task' && (
-            <LegacyModal 
-               modalState={modalState}
-               setModalState={setModalState}
-               handleTaskAction={handleTaskAction}
-               isReadOnly={false}
-               users={appData.users}
-               USER_COLORS={USER_COLORS}
-            />
-        )}
 
-        <UserSettingsModal 
-          isOpen={showSettingsModal} 
+        <CreateProjectModal
+          modalState={modalState}
+          setModalState={setModalState}
+          updateProjects={updateProjects}
+        />
+
+        <CreateSubProjectModal
+          modalState={modalState}
+          setModalState={setModalState}
+          currentProject={currentProject}
+          setCurrentView={setCurrentView}
+          updateProjects={updateProjects}
+        />
+
+        <UserSettingsModal
+          isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
           currentUser={currentUser}
-          backups={[]}
-          isBackupsLoading={false}
-          onRefreshBackups={() => { }}
-          onRestoreBackup={(id) => {
-             console.log("Restore backup:", id);
-          }}
-          onExportBackup={(id) => {
-             console.log("Export backup:", id);
-          }}
+          updateUsers={updateProjects}
         />
-        
+
         <TeamManagementModal
           isOpen={showTeamManagementModal}
           onClose={() => setShowTeamManagementModal(false)}
           currentUser={currentUser}
+          users={currentUser ? [currentUser] : []}
+          updateUsers={updateProjects}
         />
-      </Suspense>
 
-      <MobileTabBar 
-        currentView={currentView}
-        setCurrentView={setCurrentView}
-        onOpenSearch={() => setIsSearchOpen(true)}
+        <TrashView
+          deletedItems={deletedItems}
+          handleRestoreItem={handleRestoreItem}
+          currentUser={currentUser}
+        />
+
+        <LegacyHeader
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          currentProject={currentProject}
+          setCurrentSubProject={setCurrentSubProject}
+          setCurrentBoardType={setCurrentBoardType}
+          setModalState={setModalState}
+        />
+
+        <MobileTabBar
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          onOpenSearch={() => setIsSearchOpen(true)}
+          onOpenSettings={() => setShowSettingsModal(true)}
+          onOpenCreateProject={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+        />
+
+        <Toaster />
+
+        <GlobalSearch
+          isOpen={isSearchOpen}
+          onNavigate={handleSearchNavigate}
+          isSearchOpen={isSearchOpen}
+          setIsSearchOpen={setIsSearchOpen}
+          projects={projects}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          searchResults={searchResults}
+          onNavigate={handleSearchNavigate}
+        />
+      </div>
+
+      <CreateProjectModal
+        modalState={modalState}
+        setModalState={setModalState}
+        updateProjects={updateProjects}
+        onClose={() => setShowTeamManagementModal(false)}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenCreateProject={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
       />
 
-      <Toaster />
+      <CreateProjectModal
+        modalState={modalState}
+        setModalState={setModalState}
+        updateProjects={updateProjects}
+        onClose={() => setShowTeamManagementModal(false)}
+        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenCreateProject={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+      />
+
+      <CreateProjectModal
+        modalState={modalState}
+        setModalState={setModalState}
+        updateProjects={updateProjects}
+        onClose={() => setShowTeamManagementModal(false)}
+        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenCreateProject={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+      />
     </div>
   );
 }
+
+function App() {
+  const { isLoading, isLoggedIn, currentUser, isAuthLoading, login } = useUsers();
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
+        <Toaster />
+        <div className="w-full max-w-sm glass-panel p-8 space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-xl font-bold tracking-widest text-white uppercase">BrickFlow OS</h1>
+            <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest">Acesso Restrito</p>
+          </div>
+          {(isAuthLoading || isLoading) && <div className="flex justify-center py-4"><Loader2 className="w-8 h-8 animate-spin text-zinc-500" /></div>}
+          {isAuthError && <p className="text-xs text-red-400 font-bold text-center">{isAuthError}</p>}
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); login(fd.get('username'), fd.get('pin')); }} className="space-y-4">
+            <Input name="username" placeholder="ID" required className="h-12 bg-zinc-950 border-zinc-800 text-white" />
+            <Input name="pin" type="password" placeholder="PIN" required className="h-12 text-center tracking-[0.5em] bg-zinc-950 border-zinc-800 text-white" />
+            <Button type="submit" className="w-full bg-white text-zinc-950 hover:bg-zinc-200 uppercase font-bold tracking-widest h-12">Entrar</Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
+        <Toaster />
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+          <p className="text-zinc-500 font-mono animate-pulse uppercase tracking-widest">Iniciando Sistema...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
+  );
+}
+
+export default App;
