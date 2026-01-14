@@ -478,6 +478,33 @@ function AppContent() {
           onNavigate={handleSearchNavigate}
         />
       </div>
+
+      <CreateProjectModal
+        modalState={modalState}
+        setModalState={setModalState}
+        updateProjects={updateProjects}
+        onClose={() => setShowTeamManagementModal(false)}
+        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenCreateProject={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+      />
+
+      <CreateProjectModal
+        modalState={modalState}
+        setModalState={setModalState}
+        updateProjects={updateProjects}
+        onClose={() => setShowTeamManagementModal(false)}
+        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenCreateProject={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+      />
+
+      <CreateProjectModal
+        modalState={modalState}
+        setModalState={setModalState}
+        updateProjects={updateProjects}
+        onClose={() => setShowTeamManagementModal(false)}
+        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenCreateProject={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+      />
     </div>
   );
 }
