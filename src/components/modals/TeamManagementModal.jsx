@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Power, X, Edit, Trash2, ChevronDown } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { COLOR_VARIANTS } from '@/constants/theme';
@@ -120,9 +120,9 @@ export default function TeamManagementModal({ isOpen, onClose, currentUser }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-black border border-zinc-800 text-zinc-100 p-0 gap-0 shadow-2xl rounded-none sm:max-w-md">
       <div className="p-6 border-b border-white/10 flex justify-between items-center">
-        <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+        <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
           <Power className="w-5 h-5 text-green-500" /> Gerenciar Equipe
-        </h2>
+        </DialogTitle>
         <button onClick={onClose}><X className="w-5 h-5 text-zinc-500 hover:text-white" /></button>
       </div>
 

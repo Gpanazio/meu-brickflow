@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Settings, X, Upload, Sparkles, Save } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -71,7 +71,9 @@ export default function UserSettingsModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-black border border-zinc-800 text-zinc-100 p-0 gap-0 shadow-2xl rounded-none sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
       <div className="p-6 border-b border-white/10 flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2"><Settings className="w-5 h-5 text-zinc-500" /> Configurações</h2>
+          <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
+            <Settings className="w-5 h-5 text-zinc-500" /> Configurações
+          </DialogTitle>
           <button onClick={onClose}><X className="w-5 h-5 text-zinc-500 hover:text-white" /></button>
       </div>
       <div className="p-6 overflow-y-auto custom-scrollbar flex-1">

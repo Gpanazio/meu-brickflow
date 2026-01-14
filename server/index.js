@@ -62,13 +62,21 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
 app.use('/api', (req, res, next) => {
   const origin = req.headers.origin;
   const host = req.headers.host;
-  const protocol = isProd ? 'https' : req.protocol;
-  const selfOrigin = `${protocol}://${host}`;
-
-  // Allow same-origin OR whitelist OR dev mode
-  const isSameOrigin = origin === selfOrigin;
+  
+  // Whitelist from env
   const isWhitelisted = origin ? allowedOrigins.includes(origin) : true;
-  const shouldAllow = !isProd || isSameOrigin || isWhitelisted || !origin;
+  
+  // Specific check for the known production domain to avoid issues with Host vs Origin mismatch
+  const isKnownProd = origin === 'https://flow.brick.mov';
+  
+  // Check if it's same-origin manually if host is available
+  let isSameOrigin = false;
+  if (origin && host) {
+    const protocol = isProd ? 'https' : req.protocol;
+    isSameOrigin = origin === `${protocol}://${host}`;
+  }
+
+  const shouldAllow = !isProd || isWhitelisted || isKnownProd || isSameOrigin || !origin;
 
   if (shouldAllow) {
     cors({
