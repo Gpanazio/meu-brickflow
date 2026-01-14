@@ -48,6 +48,7 @@ export default function UserSettingsModal({
       const response = await fetch('/api/users/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ avatar: avatarPreview })
       });
 
