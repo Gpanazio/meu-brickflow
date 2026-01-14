@@ -35,7 +35,18 @@ const CACHE_TTL = 60000; // 1 minute
 // Security Middleware
 app.set('trust proxy', 1);
 app.use(helmet({
-  contentSecurityPolicy: isProd ? undefined : false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "https://api.dicebear.com", "https://*.githubusercontent.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'", "https://flow.brick.mov", "https://*.railway.app"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 }));
 
