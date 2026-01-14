@@ -87,19 +87,18 @@ let pool = null;
 const createPool = (connStr) => {
   const info = describeConnection(connStr);
    return {
-     info,
-     pool: new Pool({
-       connectionString: connStr,
-       ssl: info.useSSL ? { rejectUnauthorized: false } : false,
-       connectionTimeoutMillis: 30000,
-       idleTimeoutMillis: 60000,
-       max: 15,
-       min: 3,
-       application_name: 'brickflow-prod',
-       log: ['error', 'slow']
-     })
-   };
-};
+      info,
+      pool: new Pool({
+        connectionString: connStr,
+        ssl: info.useSSL ? { rejectUnauthorized: false } : false,
+        connectionTimeoutMillis: 30000,
+        idleTimeoutMillis: 60000,
+        max: 15,
+        min: 3,
+        application_name: 'brickflow-prod'
+      })
+    };
+  };
 
 const shouldFallback = (err) => {
   const msg = String(err?.message || '');
