@@ -69,7 +69,7 @@ function LegacyHome({
           {/* COLUNA 1: HERO */}
           <div className="w-[50%] md:w-1/2 px-4 md:px-10 py-6 flex flex-col justify-center min-w-[200px]">
             <h1 className="brick-title text-2xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
-              Olá, <span className="text-zinc-700">{currentUser?.displayName || 'Visitante'}</span>
+              Olá, <span className="text-zinc-700">{currentUser?.name || currentUser?.username || 'Visitante'}</span>
             </h1>
             <p className="brick-mono mt-4 text-[10px] text-zinc-600 tracking-[0.2em] uppercase font-medium">
               <MonoScramble>{currentDate}</MonoScramble>

@@ -85,10 +85,10 @@ function LegacyHeader({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-14 w-14 rounded-full p-0 hover:bg-white/10 border border-transparent hover:border-white/20 transition-all">
-                <Avatar className="h-12 w-12 border-2 border-zinc-900">
+                <Avatar key={currentUser?.avatar || 'fallback'} className="h-12 w-12 border-2 border-zinc-900">
                   <AvatarImage src={currentUser?.avatar} className="object-cover" />
                   <AvatarFallback className="bg-zinc-800 text-zinc-400 text-lg font-bold">
-                    {(currentUser?.name || currentUser?.username || '?').charAt(0).toUpperCase()}
+                    {(currentUser?.name || currentUser?.username || 'U').charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </Button>

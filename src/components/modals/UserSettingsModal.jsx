@@ -84,10 +84,10 @@ export default function UserSettingsModal({
             <div>
               <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Avatar do Usuário</h3>
               <div className="flex items-center gap-4">
-                <Avatar className="w-20 h-20 border-2 border-zinc-800">
+                <Avatar key={avatarPreview || 'preview'} className="w-20 h-20 border-2 border-zinc-800">
                   <AvatarImage src={avatarPreview} className="object-cover" />
                   <AvatarFallback className="bg-zinc-900 text-zinc-500 text-2xl font-bold">
-                    {(currentUser?.name || currentUser?.username || '?').charAt(0).toUpperCase()}
+                    {(currentUser?.name || currentUser?.username || 'U').charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">

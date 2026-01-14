@@ -16,7 +16,7 @@ export const userService = {
 
       console.log('📦 Cache MISS: users');
       const { rows } = await query(
-        'SELECT id, username, name, email, avatar, color, role, created_at FROM master_users ORDER BY username ASC'
+        'SELECT id, username, name, name as "displayName", email, avatar, color, role, created_at FROM master_users ORDER BY username ASC'
       );
 
       await cache.set(CACHE_KEY_USERS, rows, CACHE_TTL_USERS);
@@ -78,6 +78,7 @@ export const userService = {
       }
 
       const { password_hash: _, ...safeUser } = user;
+      safeUser.displayName = safeUser.name;
       return { success: true, user: safeUser };
     } catch (err) {
       console.error('❌ Erro ao verificar login:', err);
@@ -87,14 +88,19 @@ export const userService = {
 
   async updateProfile(username, data) {
     try {
-      const { name, email, avatar, color } = data;
+      const { name, displayName, email, avatar, color } = data;
+      const finalName = name || displayName;
+
       const { rows } = await query(
         'UPDATE master_users SET name = COALESCE($2, name), email = COALESCE($3, email), avatar = COALESCE($4, avatar), color = COALESCE($5, color) WHERE username = $1 RETURNING id, username, name, email, avatar, color, role, created_at',
-        [username, name, email, avatar, color]
+        [username, finalName, email, avatar, color]
       );
 
+      const updatedUser = rows[0];
+      if (updatedUser) updatedUser.displayName = updatedUser.name;
+
       await cache.del(CACHE_KEY_USERS);
-      return rows[0];
+      return updatedUser;
     } catch (err) {
       console.error('❌ Erro ao atualizar perfil:', err);
       throw err;
