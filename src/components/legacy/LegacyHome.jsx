@@ -289,7 +289,7 @@ function LegacyHome({
                 <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
                   <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
                 </div>
-                <span className="brick-mono text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">Iniciar Nova Matriz</span>
+                <span className="brick-mono text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">NOVO PROJETO</span>
               </PrismaticPanel>
             )}
           </div>
