@@ -25,6 +25,18 @@ router.post('/', async (req, res) => {
   }
 });
 
+// IMPORTANT: /me routes MUST come BEFORE /:username to avoid being captured
+router.put('/me', requireAuth, async (req, res) => {
+  try {
+    const user = await userService.updateProfile(req.user.username, req.body);
+    res.json({ user });
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// Dynamic route MUST be last
 router.get('/:username', requireAuth, async (req, res) => {
   try {
     const { username } = req.params;
@@ -37,16 +49,6 @@ router.get('/:username', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Error fetching user:', err);
     res.status(500).json({ error: 'Failed to fetch user' });
-  }
-});
-
-router.put('/me', requireAuth, async (req, res) => {
-  try {
-    const user = await userService.updateProfile(req.user.username, req.body);
-    res.json({ user });
-  } catch (err) {
-    console.error('Error updating profile:', err);
-    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 
