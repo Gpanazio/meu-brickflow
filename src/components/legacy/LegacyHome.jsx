@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Lock, Sparkles, Dna, CheckSquare, ArrowRight } from 'lucide-react';
-import SudokuGame from '@/components/SudokuGame';
 import { getUserTasks } from '@/utils/userTasks';
 import { hasPermission, PERMISSIONS } from '@/utils/accessControl';
 import { COLOR_VARIANTS } from '@/constants/theme';
@@ -107,13 +106,6 @@ function LegacyHome({
               </div>
           </div>
         </PrismaticPanel>
-
-        {/* SUDOKU (Apenas Fran) */}
-        {currentUser?.displayName === 'Fran' && (
-          <PrismaticPanel className="mx-6 md:mx-10 mt-6" contentClassName="p-8">
-             <SudokuGame />
-          </PrismaticPanel>
-        )}
 
         {/* SECTION: MINHAS TAREFAS (Simplified Design) */}
         <div className="mx-6 md:mx-10 mt-6 glass-panel border-white/5 bg-white/[0.02]">
