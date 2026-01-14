@@ -89,7 +89,7 @@ export const userService = {
     try {
       const { name, email, avatar, color } = data;
       const { rows } = await query(
-        'UPDATE master_users SET name = COALESCE($2, name), email = COALESCE($3, email), avatar = COALESCE($4, avatar), color = COALESCE($5, color), updated_at = NOW() WHERE username = $1 RETURNING id, username, name, email, avatar, color, role, created_at',
+        'UPDATE master_users SET name = COALESCE($2, name), email = COALESCE($3, email), avatar = COALESCE($4, avatar), color = COALESCE($5, color) WHERE username = $1 RETURNING id, username, name, email, avatar, color, role, created_at',
         [username, name, email, avatar, color]
       );
 
