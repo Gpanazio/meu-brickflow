@@ -1,8 +1,9 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 
 export function useRealtime(channel, onMessage) {
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -12,6 +13,7 @@ export function useRealtime(channel, onMessage) {
     ws.onopen = () => {
       console.log(`✅ WebSocket conectado: ${channel}`);
       ws.send(JSON.stringify({ type: 'subscribe', channel }));
+      setIsConnected(true);
     };
 
     ws.onmessage = (event) => {
@@ -28,12 +30,14 @@ export function useRealtime(channel, onMessage) {
     ws.onclose = () => {
       console.log(`❌ WebSocket desconectado: ${channel}`);
       wsRef.current = null;
+      setIsConnected(false);
       scheduleReconnect();
     };
 
     ws.onerror = (err) => {
       console.error('❌ Erro WebSocket:', err);
       wsRef.current = null;
+      setIsConnected(false);
       scheduleReconnect();
     };
 
@@ -68,5 +72,5 @@ export function useRealtime(channel, onMessage) {
     };
   }, [channel, connect, disconnect]);
 
-  return { isConnected: Boolean(wsRef.current), disconnect, reconnect: connect };
+  return { isConnected, disconnect, reconnect: connect };
 }
