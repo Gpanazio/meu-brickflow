@@ -354,7 +354,7 @@ function AppShell() {
     return { projects: deletedProjects, subProjects: deletedSubProjects };
   }, [appData?.projects]);
 
-  const handleAccessProject = useCallback((item, type) => {
+  const handleAccessProject = useCallback((item, type = 'project') => {
     if (type === 'project') {
       setCurrentProject(item);
       setCurrentView('project');
