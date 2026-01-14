@@ -1,30 +1,36 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { WifiOff } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { WifiOff, Loader2 } from 'lucide-react';
 import './App.css';
 
 // Components Legacy
-import LegacyHome from './components/legacy/LegacyHome';
-import LegacyProjectView from './components/legacy/LegacyProjectView';
-import LegacyBoard from './components/legacy/LegacyBoard';
 import LegacyHeader from './components/legacy/LegacyHeader';
-import LegacyModal from './components/legacy/LegacyModal';
-import CreateProjectModal from './components/CreateProjectModal';
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { MobileTabBar } from './components/MobileTabBar';
 import { Toaster } from './components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-// Novos Componentes Extraídos
-import UserSettingsModal from '@/components/modals/UserSettingsModal';
-import TeamManagementModal from '@/components/modals/TeamManagementModal';
-import TrashView from '@/components/views/TrashView';
+// Novos Componentes Extraídos - Lazy Loaded
+const LegacyHome = lazy(() => import('./components/legacy/LegacyHome'));
+const LegacyProjectView = lazy(() => import('./components/legacy/LegacyProjectView'));
+const LegacyBoard = lazy(() => import('./components/legacy/LegacyBoard'));
+const LegacyModal = lazy(() => import('./components/legacy/LegacyModal'));
+const CreateProjectModal = lazy(() => import('./components/CreateProjectModal'));
+const UserSettingsModal = lazy(() => import('@/components/modals/UserSettingsModal'));
+const TeamManagementModal = lazy(() => import('@/components/modals/TeamManagementModal'));
+const TrashView = lazy(() => import('@/components/views/TrashView'));
 
 // Hooks & Utils
 import { useUsers, useFiles } from './hooks';
 import { generateId } from '@/utils/ids';
 import { absurdPhrases } from '@/utils/phrases';
 import { COLOR_VARIANTS, USER_COLORS } from '@/constants/theme';
+
+const LoadingView = () => (
+  <div className="flex-1 flex items-center justify-center p-20">
+    <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+  </div>
+);
 
 const INITIAL_STATE = {
   users: [],
@@ -331,136 +337,139 @@ export default function App() {
 
       <main className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-6 pb-20 md:pb-8 custom-scrollbar">
-          {currentView === 'home' && (
-            <LegacyHome
-              currentUser={currentUser}
-              dailyPhrase={dailyPhrase}
-              megaSenaNumbers={megaSenaNumbers}
-              projects={appData.projects}
-              setModalState={setModalState}
-              handleAccessProject={(item, type) => {
-                  if (type === 'project') {
-                      setCurrentProject(item);
-                      setCurrentView('project');
-                  }
-              }}
-              handleDeleteProject={(item) => {
-                  const deletedAt = new Date().toISOString();
-                  updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: deletedAt } : p));
-              }}
-              isLoading={isLoading}
-              COLOR_VARIANTS={COLOR_VARIANTS}
-              handleDragStart={handleDragStart}
-              handleDragOver={handleDragOver}
-              handleDrop={handleDrop}
-            />
-          )}
-
-          {currentView === 'trash' && (
-              <TrashView 
-                 trashItems={[]} 
-                 isLoading={false}
-                 onReturnHome={() => setCurrentView('home')}
-                 onRestoreItem={(item) => {
-                    console.log("Restore item:", item);
-                 }}
-              />
-          )}
-          
-          {currentView === 'project' && currentProject && (
-             <LegacyProjectView 
-                currentProject={currentProject}
-                setCurrentView={setCurrentView}
+          <Suspense fallback={<LoadingView />}>
+            {currentView === 'home' && (
+              <LegacyHome
+                currentUser={currentUser}
+                dailyPhrase={dailyPhrase}
+                megaSenaNumbers={megaSenaNumbers}
+                projects={appData.projects}
                 setModalState={setModalState}
-                COLOR_VARIANTS={COLOR_VARIANTS}
-                handleAccessProject={(sub) => {
-                    setCurrentSubProject(sub);
-                    setCurrentView('subproject');
-                    setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
+                handleAccessProject={(item, type) => {
+                    if (type === 'project') {
+                        setCurrentProject(item);
+                        setCurrentView('project');
+                    }
                 }}
-                 history={[]}
-                 isHistoryLoading={false}
-                 historyError={null}
-             />
-          )}
-          
-           {currentView === 'subproject' && currentSubProject && (
-            <LegacyBoard 
-               data={boardDataRaw} 
-               entityName={currentSubProject.name}
-               enabledTabs={currentSubProject.enabledTabs || []}
-               currentBoardType={currentBoardType}
-               setCurrentBoardType={setCurrentBoardType}
-               currentSubProject={currentSubProject}
-               currentProject={currentProject}
-               setCurrentView={setCurrentView}
-               setModalState={setModalState}
-               handleTaskAction={handleTaskAction}
-               handleDragStart={handleDragStart}
-               handleDragOver={handleDragOver}
-               handleDrop={handleDrop}
-               handleDragEnter={handleDragEnter}
-               dragOverTargetId={dragOverTargetId}
-               files={files}
-               handleFileUploadWithFeedback={handleFileUpload}
-               isUploading={isUploading}
-               isFileDragging={isDragging}
-               setIsFileDragging={setIsDragging}
-               handleDeleteFile={handleDeleteFile}
-            />
-           )}
+                handleDeleteProject={(item) => {
+                    const deletedAt = new Date().toISOString();
+                    updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: deletedAt } : p));
+                }}
+                isLoading={isLoading}
+                COLOR_VARIANTS={COLOR_VARIANTS}
+                handleDragStart={handleDragStart}
+                handleDragOver={handleDragOver}
+                handleDrop={handleDrop}
+              />
+            )}
 
+            {currentView === 'trash' && (
+               <TrashView 
+                  trashItems={[]} 
+                  isLoading={false}
+                  onReturnHome={() => setCurrentView('home')}
+                  onRestoreItem={(item) => {
+                     console.log("Restore item:", item);
+                  }}
+               />
+            )}
+            
+            {currentView === 'project' && currentProject && (
+               <LegacyProjectView 
+                  currentProject={currentProject}
+                  setCurrentView={setCurrentView}
+                  setModalState={setModalState}
+                  COLOR_VARIANTS={COLOR_VARIANTS}
+                  handleAccessProject={(sub) => {
+                      setCurrentSubProject(sub);
+                      setCurrentView('subproject');
+                      setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
+                  }}
+                  history={[]}
+                  isHistoryLoading={false}
+                  historyError={null}
+               />
+            )}
+            
+             {currentView === 'subproject' && currentSubProject && (
+              <LegacyBoard 
+                 data={boardDataRaw} 
+                 entityName={currentSubProject.name}
+                 enabledTabs={currentSubProject.enabledTabs || []}
+                 currentBoardType={currentBoardType}
+                 setCurrentBoardType={setCurrentBoardType}
+                 currentSubProject={currentSubProject}
+                 currentProject={currentProject}
+                 setCurrentView={setCurrentView}
+                 setModalState={setModalState}
+                 handleTaskAction={handleTaskAction}
+                 handleDragStart={handleDragStart}
+                 handleDragOver={handleDragOver}
+                 handleDrop={handleDrop}
+                 handleDragEnter={handleDragEnter}
+                 dragOverTargetId={dragOverTargetId}
+                 files={files}
+                 handleFileUploadWithFeedback={handleFileUpload}
+                 isUploading={isUploading}
+                 isFileDragging={isDragging}
+                 setIsFileDragging={setIsDragging}
+                 handleDeleteFile={handleDeleteFile}
+              />
+             )}
+          </Suspense>
         </div>
       </main>
 
-      <CreateProjectModal 
-        isOpen={modalState.isOpen && modalState.type === 'project' && modalState.mode === 'create'}
-        onClose={() => setModalState({ isOpen: false })}
-        onCreate={(data) => {
-             const newProj = { id: generateId('proj'), ...data, members: [], isArchived: false };
-             updateProjects(prev => [...prev, newProj]);
-        }}
-      />
-      
-      <CreateSubProjectModal 
-        isOpen={modalState.isOpen && modalState.type === 'subProject' && modalState.mode === 'create'}
-         onClose={() => setModalState({ isOpen: false })}
-         onCreate={(data) => {
-             updateProjects(prev => prev.map(p => p.id === currentProject.id ? { ...p, subProjects: [...(p.subProjects||[]), { id: generateId('sub'), ...data }] } : p));
-         }}
-      />
-      
-      {modalState.type === 'task' && (
-          <LegacyModal 
-             modalState={modalState}
-             setModalState={setModalState}
-             handleTaskAction={handleTaskAction}
-             isReadOnly={false}
-             users={appData.users}
-             USER_COLORS={USER_COLORS}
-          />
-      )}
+      <Suspense fallback={null}>
+        <CreateProjectModal 
+          isOpen={modalState.isOpen && modalState.type === 'project' && modalState.mode === 'create'}
+          onClose={() => setModalState({ isOpen: false })}
+          onCreate={(data) => {
+               const newProj = { id: generateId('proj'), ...data, members: [], isArchived: false };
+               updateProjects(prev => [...prev, newProj]);
+          }}
+        />
+        
+        <CreateSubProjectModal 
+          isOpen={modalState.isOpen && modalState.type === 'subProject' && modalState.mode === 'create'}
+           onClose={() => setModalState({ isOpen: false })}
+           onCreate={(data) => {
+               updateProjects(prev => prev.map(p => p.id === currentProject.id ? { ...p, subProjects: [...(p.subProjects||[]), { id: generateId('sub'), ...data }] } : p));
+           }}
+        />
+        
+        {modalState.type === 'task' && (
+            <LegacyModal 
+               modalState={modalState}
+               setModalState={setModalState}
+               handleTaskAction={handleTaskAction}
+               isReadOnly={false}
+               users={appData.users}
+               USER_COLORS={USER_COLORS}
+            />
+        )}
 
-      <UserSettingsModal 
-        isOpen={showSettingsModal} 
-        onClose={() => setShowSettingsModal(false)}
-        currentUser={currentUser}
-        backups={[]}
-        isBackupsLoading={false}
-        onRefreshBackups={() => { }}
-        onRestoreBackup={(id) => {
-           console.log("Restore backup:", id);
-        }}
-        onExportBackup={(id) => {
-           console.log("Export backup:", id);
-        }}
-      />
-      
-      <TeamManagementModal
-        isOpen={showTeamManagementModal}
-        onClose={() => setShowTeamManagementModal(false)}
-        currentUser={currentUser}
-      />
+        <UserSettingsModal 
+          isOpen={showSettingsModal} 
+          onClose={() => setShowSettingsModal(false)}
+          currentUser={currentUser}
+          backups={[]}
+          isBackupsLoading={false}
+          onRefreshBackups={() => { }}
+          onRestoreBackup={(id) => {
+             console.log("Restore backup:", id);
+          }}
+          onExportBackup={(id) => {
+             console.log("Export backup:", id);
+          }}
+        />
+        
+        <TeamManagementModal
+          isOpen={showTeamManagementModal}
+          onClose={() => setShowTeamManagementModal(false)}
+          currentUser={currentUser}
+        />
+      </Suspense>
 
       <MobileTabBar 
         currentView={currentView}

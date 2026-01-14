@@ -26,6 +26,11 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Simple Cache Store
+let stateCache = null;
+let stateCacheTime = 0;
+const CACHE_TTL = 60000; // 1 minute
+
 // Security Middleware
 app.set('trust proxy', 1);
 app.use(helmet({
@@ -150,6 +155,11 @@ app.post('/api/auth/logout', async (req, res) => {
 
 app.get('/api/projects', async (req, res) => {
     try {
+        const now = Date.now();
+        if (stateCache && (now - stateCacheTime < CACHE_TTL)) {
+            return res.json(stateCache);
+        }
+
         const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
         if (rows.length > 0) {
             const data = normalizeStateData(rows[0].data);
@@ -157,7 +167,13 @@ app.get('/api/projects', async (req, res) => {
             if (data.projects) {
               data.projects = data.projects.map(p => ({ ...p, password: p.password ? '****' : '' }));
             }
-            res.json({ ...data, version: rows[0].version });
+            const result = { ...data, version: rows[0].version };
+            
+            // Update Cache
+            stateCache = result;
+            stateCacheTime = now;
+            
+            res.json(result);
         } else {
             res.json(null);
         }
@@ -212,6 +228,10 @@ app.post('/api/projects', requireAuth, writeLimiter, async (req, res) => {
         );
 
         await client.query('COMMIT');
+        
+        // Invalidate Cache
+        stateCache = null;
+        
         res.json({ ok: true, version: nextVersion });
     } catch (err) {
         await client.query('ROLLBACK');

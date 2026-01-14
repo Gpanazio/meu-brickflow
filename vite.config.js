@@ -36,6 +36,14 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-utils': ['lucide-react', 'sonner', 'clsx', 'tailwind-merge'],
+          }
+        }
+      }
     },
   }
 })

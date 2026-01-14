@@ -1,99 +1,76 @@
 # Meu Brickflow
 
-Projeto full-stack com frontend em Vite e backend em Express, preparado para rodar localmente e com banco no Railway.
+Projeto full-stack com frontend em React (Vite) e backend em Node.js (Express), focado em gestão de projetos com arquitetura modular e segurança reforçada.
 
-## Requisitos
+## 🚀 Arquitetura e Limpeza (Fase 0)
+
+O projeto passou por uma refatoração massiva para garantir manutenibilidade:
+- **Frontend Modular:** Redução de 76% no tamanho do `App.jsx`, movendo componentes para módulos especializados (`/src/components/modals`, `/src/components/views`, `/src/constants`, `/src/utils`).
+- **Backend Modular:** Extração de middlewares de autenticação e helpers, reduzindo o arquivo principal em 87%.
+- **Eliminação de Código Morto:** Remoção de arquivos não utilizados e correção de todos os erros de lint.
+
+## 🛡️ Segurança (Fase 1)
+
+Implementação de camadas de segurança robustas:
+- **Validação de Dados:** Uso de `Zod` para validar todos os payloads de entrada nos endpoints de autenticação e projetos.
+- **Segurança de Cabeçalhos:** Integração com `Helmet` para proteção contra ataques comuns de web.
+- **Controle de Taxa (Rate Limiting):**
+  - `authLimiter`: Limita tentativas de login (10 req / 15 min).
+  - `apiLimiter`: Limite geral de API (100 req / 1 min).
+  - `writeLimiter`: Limite para operações de escrita/salvamento (30 req / 1 min).
+- **Criptografia:**
+  - Senhas de usuários (`master_users`) usam `bcrypt`.
+  - Senhas de projetos dentro do estado do sistema agora são hashadas no salvamento e mascaradas no retorno da API.
+- **CORS:** Whitelist dinâmica via variável de ambiente `ALLOWED_ORIGINS`.
+
+## 📦 Performance e Melhorias (Fase 2 - Em andamento)
+
+- **Otimização de Bundle:** Code splitting e React Lazy para carregamento sob demanda.
+- **Cache de Backend:** Implementação de cache em memória para reduzir latência de leitura.
+- **UX:** Melhorias em feedback visual e estados de carregamento.
+
+## 📋 Requisitos
 
 - Node.js 18+
-- pnpm (recomendado) ou npm
+- npm ou pnpm
 
-## Instalação
-
-Escolha **pnpm** ou **npm**:
-
-```bash
-pnpm install
-```
-
-ou
+## ⚙️ Instalação
 
 ```bash
 npm install
 ```
 
-## Executar localmente (frontend + backend)
-
-Para subir **frontend e backend** juntos:
+## 🛠️ Executar localmente
 
 ```bash
+# Frontend + Backend (Proxy configurado)
 npm run dev:full
 ```
 
-## Build
-
-Gere o build de produção:
+## 🏗️ Build de Produção
 
 ```bash
 npm run build
 ```
 
-## Variáveis de ambiente
+## 🔐 Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz do projeto e defina as variáveis necessárias. Exemplo:
+Crie um arquivo `.env` na raiz:
 
 ```bash
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DBNAME"
+DATABASE_URL="postgresql://..." # Obrigatória
+ALLOWED_ORIGINS="http://localhost:5173,https://meu-app.com" # Whitelist CORS
+NODE_ENV="production" # Define comportamento de segurança (SSL/Cookies)
 ```
 
-### `DATABASE_URL`
-
-- **Obrigatória** para o backend Express.
-- A aplicação espera uma URL de conexão válida do PostgreSQL (por exemplo, fornecida pelo Railway).
-
-## Proxy do Vite para `/api`
-
-O frontend usa um proxy no `vite.config.js` para encaminhar chamadas feitas para `/api` ao backend Express durante o desenvolvimento. Isso evita problemas de CORS e mantém a mesma origem no browser.
-
-Exemplo de uso no frontend:
-
-```ts
-fetch('/api/health')
-```
-
-O Vite redireciona essa chamada para o servidor Express configurado no proxy.
-
-## Regras “em pedra”: Banco + Login
-
-Esta seção descreve o **contrato** de funcionamento do Brickflow em produção (Railway) e em dev local. Se você mudar comportamento aqui, atualize também o código em `server/db.js`, `server/index.js` e o hook `src/hooks/useUsers.js`.
+## 📜 Contrato de Funcionamento
 
 ### Banco (Postgres / Railway)
+- **Primary:** `DATABASE_URL`.
+- **Fallback:** `DATABASE_URL_FALLBACK` (útil se a rede interna do Railway falhar).
+- **SSL:** Ativado automaticamente para conexões remotas; desativado para `localhost` e rede interna.
 
-- **Variável principal**: o backend usa `DATABASE_URL` (Railway) como string de conexão do Postgres.
-- **Fallback opcional**: se a URL interna (`*.railway.internal`) der timeout, o backend pode cair para `DATABASE_URL_FALLBACK` (normalmente a URL pública `*.proxy.rlwy.net`).
-- **SSL (regra determinística)**
-  - Host `*.railway.internal` → SSL **INATIVO** (rede interna).
-  - Host `*.proxy.rlwy.net` e hosts remotos → SSL **ATIVO**.
-  - Override manual via `DATABASE_SSL=true|false|auto`.
-- **Logs esperados ao subir**: o servidor imprime `Host`, `Ambiente` e `SSL` na inicialização do banco para facilitar debug.
+### Autenticação
+- **Cookie:** `bf_session` (HttpOnly, SameSite=Lax, Secure em produção).
+- **Tabelas:** `master_users` (usuários), `brickflow_sessions` (sessões), `brickflow_state` (estado global).
 
-### Login (Sessão)
-
-- **Cookie de sessão**: `bf_session` (HttpOnly, `SameSite=Lax`). Em produção, `Secure` só é aplicado quando a requisição está em HTTPS (via `x-forwarded-proto`).
-- **Persistência**: sessões ficam na tabela `brickflow_sessions` e expiram em ~30 dias.
-- **Fluxo do frontend** (resumo):
-  - `/api/health` confirma que o backend e o banco respondem.
-  - `/api/auth/me` retorna `{ user: null }` se não houver sessão válida.
-  - `/api/auth/login` valida credenciais e cria sessão.
-  - `/api/auth/logout` remove a sessão.
-
-### Usuários (fonte de verdade)
-
-- A fonte de verdade de usuários é a tabela `master_users` no Postgres.
-- O frontend **nunca** deve receber hash de senha (`password_hash`).
-- O usuário `Gabriel` é garantido como `owner` (admin) no bootstrap do backend.
-
-### Variáveis de ambiente (produção)
-
-- `DATABASE_URL` (**obrigatória**) — conexão Postgres.
-- `DATABASE_SSL` (opcional; default `auto`) — força SSL `true|false`.
-- `DATABASE_URL_FALLBACK` (opcional) — URL alternativa caso a interna dê timeout.
