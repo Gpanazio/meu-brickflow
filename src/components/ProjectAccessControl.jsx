@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { getRoleLabel, getRoleColor } from '../utils/accessControl';
 import { cn } from '../lib/utils';
 
-export function ProjectAccessControl({ project, allUsers, currentUser, onUpdateMembers, onClose }) {
+export function ProjectAccessControl({ project, allUsers, onUpdateMembers, onClose }) {
   const [selectedUser, setSelectedUser] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 

@@ -23,11 +23,24 @@ Implementação de camadas de segurança robustas:
   - Senhas de projetos dentro do estado do sistema agora são hashadas no salvamento e mascaradas no retorno da API.
 - **CORS:** Whitelist dinâmica via variável de ambiente `ALLOWED_ORIGINS`.
 
-## 📦 Performance e Melhorias (Fase 2 - Em andamento)
+## 🔍 Busca e Acesso (Fase 3)
+
+Melhorias na experiência de navegação e segurança de acesso:
+- **Verificação de Senha:** Projetos protegidos agora exigem verificação no backend (`bcrypt`) antes de permitir o acesso.
+- **Busca Global:** Atalho `Cmd+K` para busca instantânea de projetos, áreas e tarefas, com navegação automática e abertura de modais.
+
+## 🎨 Design System e UI (Fase 4 - Em andamento)
+
+Refinamento da interface e consistência visual:
+- **Componentes de Estado:** Criação de `LoadingState` e `ConnectionError` padronizados.
+- **Micro-interações:** Implementação de loaders e transições suaves entre visualizações.
+- **Design Lab:** Espaço para experimentação de novos componentes visuais e padrões.
+
+## 📦 Performance e Melhorias (Fase 2)
 
 - **Otimização de Bundle:** Code splitting e React Lazy para carregamento sob demanda.
-- **Cache de Backend:** Implementação de cache em memória para reduzir latência de leitura.
-- **UX:** Melhorias em feedback visual e estados de carregamento.
+- **Cache de Backend:** Implementação de cache em memória para reduzir latência de leitura (TTL 60s).
+
 
 ## 📋 Requisitos
 

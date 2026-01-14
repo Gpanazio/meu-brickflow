@@ -29,7 +29,7 @@ export function Search({ projects, onNavigate, open: controlledOpen, setOpen: se
 
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, []);
+  }, [setOpen]);
 
   const handleSelect = (result) => {
     onNavigate(result);

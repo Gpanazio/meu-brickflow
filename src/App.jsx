@@ -9,6 +9,7 @@ import { MobileTabBar } from './components/MobileTabBar';
 import { Toaster } from './components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import LoadingState, { ConnectionError } from '@/components/ui/LoadingState';
 
 // Novos Componentes Extraídos - Lazy Loaded
 const LegacyHome = lazy(() => import('./components/legacy/LegacyHome'));
@@ -220,8 +221,57 @@ export default function App() {
                 };
              }));
         }
-         setModalState({ isOpen: false, type: null });
-     } else if (action === 'delete') {
+        setModalState({ isOpen: false, type: null });
+    } else if (action === 'delete') {
+         if (currentProject && currentSubProject) {
+             updateProjects(prev => prev.map(p => {
+                 if (p.id !== currentProject.id) return p;
+                 return {
+                     ...p,
+                     subProjects: p.subProjects.map(sp => {
+                         if (sp.id !== currentSubProject.id) return sp;
+                         const board = sp.boardData?.[currentBoardType];
+                         if (!board) return sp;
+                         return {
+                             ...sp,
+                             boardData: {
+                                 ...sp.boardData,
+                                 [currentBoardType]: {
+                                     ...board,
+                                     lists: board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }))
+                                 }
+                             }
+                         };
+                     })
+                 };
+             }));
+         }
+    } else if (action === 'move') {
+       // Drag move logic implementation if needed
+    }
+  }, [currentProject, currentSubProject, currentBoardType, modalState, updateProjects]);
+
+  const handleDragStart = (e, item, type, listId) => {
+    if (type !== 'task' || !item?.id || !listId) return;
+    dragTaskRef.current = { taskId: item.id, fromListId: listId };
+  };
+
+  const handleDragOver = (e) => e.preventDefault();
+
+  const handleDrop = (e, toListId, dropType) => {
+    e?.preventDefault?.();
+    if (dropType !== 'list') return;
+    const drag = dragTaskRef.current;
+    if (!drag?.taskId || !drag?.fromListId || !toListId) return;
+    dragTaskRef.current = null;
+  };
+
+  const handleDragEnter = (e, taskId) => {
+    if (!taskId) return;
+    setDragOverTargetId(taskId);
+  };
+
+  const handleSearchNavigate = useCallback((result) => {
     if (result.type === 'Project') {
       setCurrentProject(result);
       setCurrentView('project');
@@ -236,7 +286,6 @@ export default function App() {
       setCurrentView('subproject');
       setCurrentBoardType(result.boardType || 'kanban');
       
-      // Auto-open task modal
       setModalState({
         type: 'task',
         isOpen: true,
@@ -249,23 +298,19 @@ export default function App() {
 
   if ((!appData || isAuthLoading) && !connectionError) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 text-center p-4">
-        <div className="text-zinc-500 font-mono animate-pulse uppercase tracking-widest">
-          {isAuthLoading ? 'Conectando ao Banco...' : 'Iniciando Sistema...'}
-        </div>
-        {showSlowLoad && <p className="text-zinc-700 text-xs font-mono">O servidor está acordando...</p>}
-      </div>
+      <LoadingState 
+        message={isAuthLoading ? 'Conectando ao Banco...' : 'Iniciando Sistema...'}
+        subMessage={showSlowLoad ? 'O servidor está acordando...' : null}
+      />
     );
   }
 
   if (connectionError && !appData) {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-red-600 gap-4 p-8 text-center">
-        <WifiOff className="w-16 h-16" />
-        <h1 className="text-2xl font-black uppercase">Falha na Conexão</h1>
-        <p className="text-zinc-500 text-sm max-w-md">{connectionErrorMessage || DATA_LOAD_FALLBACK_MESSAGE}</p>
-        <Button onClick={() => window.location.reload()} className="bg-white text-black font-bold">Tentar Novamente</Button>
-      </div>
+      <ConnectionError 
+        message={connectionErrorMessage || DATA_LOAD_FALLBACK_MESSAGE}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 
@@ -288,32 +333,6 @@ export default function App() {
       </div>
     );
   }
-
-  const handleSearchNavigate = useCallback((result) => {
-    if (result.type === 'Project') {
-      setCurrentProject(result);
-      setCurrentView('project');
-    } else if (result.type === 'SubProject') {
-      setCurrentProject(result.parentProject);
-      setCurrentSubProject(result);
-      setCurrentView('subproject');
-      setCurrentBoardType(result.enabledTabs?.[0] || 'kanban');
-    } else if (result.type === 'Task') {
-      setCurrentProject(result.parentProject);
-      setCurrentSubProject(result.parentSubProject);
-      setCurrentView('subproject');
-      setCurrentBoardType(result.boardType || 'kanban');
-      
-      // Auto-open task modal
-      setModalState({
-        type: 'task',
-        isOpen: true,
-        data: result,
-        listId: result.listId, // We might need to ensure this is in the search result
-        mode: 'edit'
-      });
-    }
-  }, []);
 
   const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
   const boardDataRaw = currentEntity?.boardData?.[currentBoardType] || { lists: [] };
