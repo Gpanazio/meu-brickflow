@@ -262,7 +262,7 @@ export default function App() {
     dragTaskRef.current = null;
   };
 
-  const handleDragEnter = (e, taskId, listId) => {
+  const handleDragEnter = (e, taskId) => {
      if (!taskId) return;
      setDragOverTargetId(taskId);
    };

@@ -1,5 +1,6 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
+import process from 'process';
 
 // Carrega .env apenas se existir (local)
 dotenv.config();

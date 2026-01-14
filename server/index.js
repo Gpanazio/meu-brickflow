@@ -2,11 +2,19 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import bcrypt from 'bcrypt';
+import helmet from 'helmet';
+import process from 'process';
 import { randomUUID } from 'crypto';
 
 // Imports Modulares
 import { getClient, hasDatabaseUrl, query } from './db.js';
 import { requireAuth } from './middleware/auth.js';
+import { authLimiter, apiLimiter, writeLimiter } from './middleware/rateLimit.js';
+import { 
+  LoginSchema, 
+  RegisterSchema, 
+  SaveProjectSchema 
+} from './utils/schemas.js';
 import { 
   isProd, 
   normalizeStateData, 
@@ -18,16 +26,42 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Security Middleware
 app.set('trust proxy', 1);
+app.use(helmet({
+  contentSecurityPolicy: isProd ? undefined : false,
+  crossOriginEmbedderPolicy: false,
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors(isProd ? undefined : { origin: true, credentials: true }));
+
+// CORS configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : [];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || !isProd) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
+// Apply general API rate limit
+app.use('/api/', apiLimiter);
 
 app.get('/api/health', async (req, res) => {
   try {
     await query('SELECT 1');
     res.json({ status: 'ok', secure: req.secure, env: process.env.NODE_ENV });
   } catch (err) {
+    console.error('Health check error:', err);
     res.status(503).json({ status: 'error', code: 'DB_ERROR' });
   }
 });
@@ -50,15 +84,19 @@ app.get('/api/auth/me', async (req, res) => {
     }
 });
 
-app.post('/api/auth/login', async (req, res) => {
-  const { username, pin } = req.body;
-  if (!username || !pin) return res.status(400).json({ error: 'Missing credentials' });
+app.post('/api/auth/login', authLimiter, async (req, res) => {
+  const result = LoginSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.errors[0].message });
+  }
+
+  const { username, pin } = result.data;
 
   try {
     const { rows } = await query('SELECT username, password_hash, name, role, avatar, color FROM master_users WHERE username = $1', [username]);
     if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const valid = await bcrypt.compare(String(pin), rows[0].password_hash);
+    const valid = await bcrypt.compare(pin, rows[0].password_hash);
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
     const sessionId = randomUUID();
@@ -71,6 +109,33 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.post('/api/auth/register', authLimiter, async (req, res) => {
+  const result = RegisterSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.errors[0].message });
+  }
+
+  const { username, pin, name, role, email, avatar, color } = result.data;
+
+  try {
+    const { rows: existing } = await query('SELECT username FROM master_users WHERE username = $1', [username]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Username already taken' });
+    }
+
+    const passwordHash = await bcrypt.hash(pin, 10);
+    await query(
+      'INSERT INTO master_users (username, password_hash, name, role, email, avatar, color) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [username, passwordHash, name, role || 'user', email || '', avatar || '', color || '#000000']
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).json({ error: 'Registration failed' });
   }
 });
 
@@ -88,27 +153,53 @@ app.get('/api/projects', async (req, res) => {
         const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
         if (rows.length > 0) {
             const data = normalizeStateData(rows[0].data);
+            // Hide project passwords in response
+            if (data.projects) {
+              data.projects = data.projects.map(p => ({ ...p, password: p.password ? '****' : '' }));
+            }
             res.json({ ...data, version: rows[0].version });
         } else {
             res.json(null);
         }
     } catch (err) {
+        console.error('Fetch projects error:', err);
         res.status(500).json({ error: 'Failed to fetch state' });
     }
 });
 
-app.post('/api/projects', requireAuth, async (req, res) => {
-    const { data, version, client_request_id } = req.body;
+app.post('/api/projects', requireAuth, writeLimiter, async (req, res) => {
+    const result = SaveProjectSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: result.error.errors[0].message });
+    }
+
+    const { data, version, client_request_id } = result.data;
     
     const client = await getClient();
     try {
         await client.query('BEGIN');
-        const current = await client.query('SELECT version FROM brickflow_state WHERE id = 1 FOR UPDATE');
+        const current = await client.query('SELECT data, version FROM brickflow_state WHERE id = 1 FOR UPDATE');
         const currentVersion = current.rows.length ? current.rows[0].version : 0;
+        const currentState = current.rows.length ? current.rows[0].data : null;
 
         if (version !== currentVersion) {
             await client.query('ROLLBACK');
             return res.status(409).json({ error: 'Conflict', version: currentVersion });
+        }
+
+        // Project Password Hashing Logic
+        // Compare with currentState to see if passwords changed and need hashing
+        if (data.projects) {
+          data.projects = await Promise.all(data.projects.map(async (p) => {
+            const existingProj = currentState?.projects?.find(ep => ep.id === p.id);
+            // If password exists and it's not the hashed placeholder and changed from existing
+            if (p.password && p.password !== '****' && p.password !== existingProj?.password) {
+              p.password = await bcrypt.hash(p.password, 10);
+            } else if (p.password === '****' && existingProj) {
+              p.password = existingProj.password; // Preserve existing hash
+            }
+            return p;
+          }));
         }
 
         const nextVersion = currentVersion + 1;
@@ -116,8 +207,8 @@ app.post('/api/projects', requireAuth, async (req, res) => {
 
         await client.query('INSERT INTO brickflow_events (client_request_id, data) VALUES ($1, $2)', [client_request_id, JSON.stringify(nextState)]);
         await client.query(
-            'INSERT INTO brickflow_state (id, data, version, updated_at) VALUES (1, $1, $2, NOW()) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, version = EXCLUDED.version, updated_at = NOW()',
-            [JSON.stringify(nextState), nextVersion]
+          'INSERT INTO brickflow_state (id, data, version, updated_at) VALUES (1, $1, $2, NOW()) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, version = EXCLUDED.version, updated_at = NOW()',
+          [JSON.stringify(nextState), nextVersion]
         );
 
         await client.query('COMMIT');
