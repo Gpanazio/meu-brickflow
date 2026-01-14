@@ -98,6 +98,7 @@ router.get('/me', async (req, res) => {
     }
 
     const { password_hash: _, ...safeUser } = user;
+    console.log('📝 GET /me returning user with avatar:', safeUser.avatar ? 'YES' : 'NO', '- username:', safeUser.username);
     res.json({ user: safeUser });
   } catch (err) {
     console.error('Error in /me:', err);
