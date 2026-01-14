@@ -1,4 +1,3 @@
-import React from 'react';
 import logoImage from '../../assets/brickflowbranco.png';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -36,7 +35,7 @@ function LegacyHeader({
         <div className="flex items-center gap-8">
           {/* Logo */}
           <div onClick={() => setCurrentView('home')} className="cursor-pointer hover:opacity-80 transition-opacity">
-             <img src={logoImage} alt="BrickFlow" className="h-7 w-auto" />
+            <img src={logoImage} alt="BrickFlow" className="h-7 w-auto" />
           </div>
 
           <Separator orientation="vertical" className="h-8 bg-zinc-800" />
@@ -70,15 +69,15 @@ function LegacyHeader({
           <div className="hidden md:block">
             <Search projects={projects} onNavigate={onSearchNavigate} />
           </div>
-          
+
           {/* Search Trigger oculto mas funcional via props para o MobileTabBar abrir o Command Palette */}
           <div className="md:hidden h-0 w-0 overflow-hidden">
-             <Search 
-                projects={projects} 
-                onNavigate={onSearchNavigate} 
-                open={isSearchOpen} 
-                setOpen={setIsSearchOpen} 
-             />
+            <Search
+              projects={projects}
+              onNavigate={onSearchNavigate}
+              open={isSearchOpen}
+              setOpen={setIsSearchOpen}
+            />
           </div>
 
           {isSyncing && <StatusLED color="red" size="sm" />}

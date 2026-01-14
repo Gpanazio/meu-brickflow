@@ -1,4 +1,4 @@
-import process from 'process';
+
 import { query } from '../db.js';
 import { cache } from '../cache.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -43,14 +43,7 @@ async function checkCache() {
 }
 
 async function checkDisk() {
-  try {
-    const fs = await import('fs').then(m => m.default);
-    const stats = await fs.promises.stat(process.cwd());
-    const freeSpacePercentage = stats?.size || 0;
-    return { status: 'ok', free_space_percent: 100 };
-  } catch (err) {
-    return { status: 'error', message: err.message, free_space_percent: null };
-  }
+  return { status: 'ok', free_space_percent: 100 };
 }
 
 export async function setupRoutes(app) {
@@ -72,7 +65,7 @@ export async function setupRoutes(app) {
     try {
       const isOwner = req.user.role === 'owner';
       const isLegacyAdmin = ['gabriel', 'lufe'].includes(req.user.username.toLowerCase());
-      
+
       if (!isOwner && !isLegacyAdmin) return res.status(403).json({ error: 'Forbidden' });
 
       const { rows } = await query('SELECT id, username, name, email, role, avatar, color, created_at FROM master_users');

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import ResponsibleUsersButton from '../ResponsibleUsersButton';
 import { Input } from '../ui/input';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
@@ -62,8 +62,8 @@ function LegacyBoard({
     <div className="flex flex-col h-[calc(100vh-6rem)]">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-zinc-900 pb-4 gap-4">
         <div className="flex items-center gap-4">
-          <MechButton 
-            onClick={() => setCurrentView(currentSubProject ? 'project' : 'home')} 
+          <MechButton
+            onClick={() => setCurrentView(currentSubProject ? 'project' : 'home')}
             className="h-8 px-3"
             icon={ArrowLeft}
           >
@@ -85,7 +85,7 @@ function LegacyBoard({
         <div className="absolute inset-0 overflow-auto pr-2">
           {/* KANBAN */}
           {currentBoardType === 'kanban' && (
-            <motion.div 
+            <motion.div
               initial="hidden"
               animate="visible"
               variants={{
@@ -94,7 +94,7 @@ function LegacyBoard({
               className="flex h-full gap-0 border-l border-zinc-900 min-w-max"
             >
               {data.lists ? data.lists.map(list => (
-                <motion.div 
+                <motion.div
                   variants={{
                     hidden: { opacity: 0, x: 20 },
                     visible: { opacity: 1, x: 0 }
@@ -108,13 +108,13 @@ function LegacyBoard({
                   <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black">
                     <AnimatePresence>
                       {list.tasks?.map(task => (
-                        <motion.div 
+                        <motion.div
                           key={task.id}
                           layout
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          draggable 
+                          draggable
                           onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
                           onDragEnter={(e) => handleDragEnter(e, task.id, list.id)}
                           onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}
@@ -126,12 +126,12 @@ function LegacyBoard({
                           </div>
                           <div className="flex items-center justify-between pt-2 border-t border-zinc-900/50 mt-2">
                             {task.responsibleUsers?.length > 0 && <ResponsibleUsersButton users={task.responsibleUsers} />}
-                            {task.endDate && <span className="text-[10px] text-zinc-600 font-mono font-medium">{new Date(task.endDate).toLocaleDateString().slice(0,5)}</span>}
+                            {task.endDate && <span className="text-[10px] text-zinc-600 font-mono font-medium">{new Date(task.endDate).toLocaleDateString().slice(0, 5)}</span>}
                           </div>
                         </motion.div>
                       ))}
                     </AnimatePresence>
-                    <MechButton 
+                    <MechButton
                       className="w-full border-dashed border-zinc-900 text-zinc-700 hover:text-white hover:bg-zinc-950 h-10"
                       icon={Plus}
                       onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}
@@ -146,7 +146,7 @@ function LegacyBoard({
 
           {/* TODO LIST */}
           {currentBoardType === 'todo' && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="max-w-4xl mx-auto space-y-8"
@@ -157,7 +157,7 @@ function LegacyBoard({
                   <div className="bg-black border-t border-zinc-900">
                     <AnimatePresence>
                       {list.tasks?.map(task => (
-                        <motion.div 
+                        <motion.div
                           key={task.id}
                           layout
                           initial={{ opacity: 0 }}
@@ -180,8 +180,8 @@ function LegacyBoard({
                           </div>
                           <div className="opacity-0 group-hover:opacity-100 flex items-center gap-4">
                             <span className="text-[10px] font-mono uppercase text-zinc-600 font-medium">{task.priority}</span>
-                            <button 
-                              className="h-8 w-8 flex items-center justify-center text-zinc-700 hover:text-red-600 transition-colors" 
+                            <button
+                              className="h-8 w-8 flex items-center justify-center text-zinc-700 hover:text-red-600 transition-colors"
                               onClick={() => handleTaskAction('delete', { taskId: task.id })}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -190,8 +190,8 @@ function LegacyBoard({
                         </motion.div>
                       ))}
                     </AnimatePresence>
-                    <MechButton 
-                      className="w-full text-zinc-600 hover:text-white justify-start h-10 px-4 border-0 hover:bg-zinc-950" 
+                    <MechButton
+                      className="w-full text-zinc-600 hover:text-white justify-start h-10 px-4 border-0 hover:bg-zinc-950"
                       icon={Plus}
                       onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}
                     >
@@ -205,7 +205,7 @@ function LegacyBoard({
 
           {/* FILES */}
           {currentBoardType === 'files' && (
-            <div 
+            <div
               className={`min-h-[400px] relative transition-all duration-300 p-0 ${isFileDragging ? 'bg-zinc-950 border-2 border-dashed border-red-900' : ''}`}
               onDragOver={(e) => { e.preventDefault(); setIsFileDragging(true); }}
               onDragLeave={(e) => { e.preventDefault(); setIsFileDragging(false); }}
@@ -214,12 +214,12 @@ function LegacyBoard({
               {(isFileDragging || isUploading) && (
                 <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/90 backdrop-blur-sm">
                   {isUploading ? (
-                     <div className="animate-pulse text-white text-xs uppercase tracking-widest">Carregando...</div>
+                    <div className="animate-pulse text-white text-xs uppercase tracking-widest">Carregando...</div>
                   ) : (
-                     <div className="text-center animate-pulse">
-                        <Upload className="w-8 h-8 text-white mx-auto mb-4" />
-                        <p className="text-white font-mono text-xs uppercase tracking-[0.5em]">Solte para Upload</p>
-                     </div>
+                    <div className="text-center animate-pulse">
+                      <Upload className="w-8 h-8 text-white mx-auto mb-4" />
+                      <p className="text-white font-mono text-xs uppercase tracking-[0.5em]">Solte para Upload</p>
+                    </div>
                   )}
                 </div>
               )}
@@ -229,22 +229,22 @@ function LegacyBoard({
                   <h3 className="text-xl font-black text-white uppercase tracking-tighter">Arquivos</h3>
                 </div>
                 <div className="relative">
-                  <Input 
-                    type="file" 
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                    multiple 
-                    onChange={handleFileUploadWithFeedback} 
+                  <Input
+                    type="file"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    multiple
+                    onChange={handleFileUploadWithFeedback}
                   />
                   <MechButton primary icon={Upload}>
                     Upload
                   </MechButton>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-px bg-zinc-900 border border-zinc-900">
                 <AnimatePresence>
                   {filesForSubProject.map(file => (
-                    <motion.div 
+                    <motion.div
                       key={file.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -252,15 +252,15 @@ function LegacyBoard({
                       className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4"
                     >
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                          <button 
-                            className="h-6 w-6 flex items-center justify-center text-zinc-600 hover:text-red-600 transition-colors" 
-                            onClick={() => handleDeleteFile(file.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
+                        <button
+                          className="h-6 w-6 flex items-center justify-center text-zinc-600 hover:text-red-600 transition-colors"
+                          onClick={() => handleDeleteFile(file.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
                       </div>
                       <div className="mb-3 opacity-50 group-hover:opacity-100 transition-opacity">
-                        {file.type?.includes('image') ? <Eye className="w-6 h-6 text-white"/> : <FileText className="w-6 h-6 text-white"/>}
+                        {file.type?.includes('image') ? <Eye className="w-6 h-6 text-white" /> : <FileText className="w-6 h-6 text-white" />}
                       </div>
                       <p className="text-xs text-zinc-500 font-mono truncate w-full text-center group-hover:text-white transition-colors font-medium">{file.name}</p>
                       <p className="text-[10px] text-zinc-700 uppercase tracking-widest mt-1 font-medium">{formatFileSize(file.size)}</p>

@@ -1,7 +1,7 @@
 import React from 'react'
 /* eslint-disable no-undef */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react'
+import { cleanup } from '@testing-library/react'
 import * as matchers from '@testing-library/jest-dom/matchers'
 import App from '../App.jsx'
 

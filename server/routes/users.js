@@ -32,7 +32,7 @@ router.get('/:username', requireAuth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    const { password_hash, ...safeUser } = user;
+    const { password_hash: _, ...safeUser } = user;
     res.json({ user: safeUser });
   } catch (err) {
     console.error('Error fetching user:', err);

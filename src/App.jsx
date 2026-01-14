@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
-import { WifiOff, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense, useMemo } from 'react';
+import { Loader2 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { toast } from 'sonner';
 import './App.css';
 
@@ -9,9 +10,6 @@ import LegacyHeader from './components/legacy/LegacyHeader';
 import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { MobileTabBar } from './components/MobileTabBar';
 import { Toaster } from './components/ui/sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import LoadingState, { ConnectionError } from '@/components/ui/LoadingState';
 
 // Contexts
 import { useApp } from './contexts/AppContext';
@@ -44,7 +42,7 @@ const INITIAL_STATE = {
   version: 0
 };
 
-const DATA_LOAD_FALLBACK_MESSAGE = 'Não foi possível carregar os dados. Verifique a internet ou se a variável DATABASE_URL está configurada no Railway.';
+
 
 const generateMegaSenaNumbers = () => {
   const numbers = [];
@@ -58,28 +56,37 @@ const generateMegaSenaNumbers = () => {
 export default function App() {
   const [appData, setAppData] = useState(null);
   const appDataRef = useRef(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  // Removed local currentView state to rely on AppContext.currentView
-  // const [currentView, setCurrentView] = useState('home');
-  const [currentProject, setCurrentProject] = useState(null);
-  const [currentSubProject, setCurrentSubProject] = useState(null);
-  const [currentBoardType, setCurrentBoardType] = useState('kanban');
+  const currentUserRef = useRef(null);
 
-  const [modalState, setModalState] = useState({ type: null, isOpen: false, data: null, mode: 'create' });
+  // App Context
+  const appContext = useApp();
+  const currentView = appContext.currentView;
+  const setCurrentView = appContext.setCurrentView;
+  const {
+    currentUser,
+    setCurrentUser,
+    currentProject,
+    setCurrentProject,
+    currentSubProject,
+    setCurrentSubProject,
+    currentBoardType,
+    setCurrentBoardType,
+    modalState,
+    setModalState
+  } = appContext;
+
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTeamManagementModal, setShowTeamManagementModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
-  const [connectionErrorMessage, setConnectionErrorMessage] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showSlowLoad, setShowSlowLoad] = useState(false);
-  
+
+
   const [dailyPhrase, setDailyPhrase] = useState('');
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
-   
+
   const dragTaskRef = useRef(null);
   const [dragOverTargetId, setDragOverTargetId] = useState(null);
-
 
   const saveDataToApi = useCallback(async (newData) => {
     setIsSyncing(true);
@@ -89,26 +96,26 @@ export default function App() {
         data: newData,
         version: newData?.version ?? 0,
         client_request_id: requestId,
-        userId: appContext.currentUser?.username
+        userId: currentUserRef.current?.username
       };
-      
+
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       if (response.status === 409) {
         console.warn('Conflito de sincronização! Recarregue a página.');
         return;
       }
-      
+
       if (response.ok) {
         const result = await response.json();
         setAppData(prev => {
-           const next = { ...prev, version: result.version };
-           appDataRef.current = next;
-           return next;
+          const next = { ...prev, version: result.version };
+          appDataRef.current = next;
+          return next;
         });
         setConnectionError(false);
       }
@@ -120,7 +127,7 @@ export default function App() {
     }
   }, []);
 
-  const updateProjects = (updater) => {
+  const updateProjects = useCallback((updater) => {
     setAppData(prev => {
       const newProjects = typeof updater === 'function' ? updater(prev.projects) : updater;
       const newState = { ...prev, projects: newProjects };
@@ -128,19 +135,18 @@ export default function App() {
       saveDataToApi(newState);
       return newState;
     });
-  };
+  }, [saveDataToApi]);
 
-  const updateUsers = (newUsersList) => {
+  const updateUsers = useCallback((newUsersList) => {
     setAppData(prev => {
       const newState = { ...prev, users: newUsersList };
       saveDataToApi(newState);
       return newState;
     });
-  };
+  }, [saveDataToApi]);
 
-  // Context hooks import alias
   const {
-    currentUser,
+    currentUser: _appCurrentUser,
     isLoggedIn,
     isAuthLoading,
     authError,
@@ -149,132 +155,259 @@ export default function App() {
     handleSwitchUser
   } = useUsers(appData?.users, updateUsers);
 
+  // Sync currentUser from hook to context
+  useEffect(() => {
+    if (_appCurrentUser !== currentUser) {
+      setCurrentUser(_appCurrentUser);
+    }
+    currentUserRef.current = _appCurrentUser;
+  }, [_appCurrentUser, currentUser, setCurrentUser]);
+
   useEffect(() => {
     setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
     setMegaSenaNumbers(generateMegaSenaNumbers());
-    
-    const slowLoadTimer = setTimeout(() => setShowSlowLoad(true), 3000);
-    
+
     const loadData = async () => {
       try {
         const response = await fetch('/api/projects');
-        if (!response.ok) throw new Error('Falha na API');
-        
+        if (!response.ok) throw new Error("Falha na API");
+
         let data = await response.json();
         if (!data) data = INITIAL_STATE;
-        
+
         if (!data.users) data.users = [];
         if (!data.projects) data.projects = [];
         if (typeof data.version !== 'number') data.version = 0;
 
         setAppData(data);
       } catch (err) {
-        console.error('Erro load:', err);
+        console.error("Erro load:", err);
         setConnectionError(true);
-        setConnectionErrorMessage(DATA_LOAD_FALLBACK_MESSAGE);
         setAppData(INITIAL_STATE);
-      } finally {
-        setIsLoading(false);
-        clearTimeout(slowLoadTimer);
       }
     };
-    
-     loadData();
-     return () => clearTimeout(slowLoadTimer);
-   }, []);
- 
-   const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } =
+
+    loadData();
+  }, []);
+
+  const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } =
     useFiles(currentProject, currentSubProject, updateProjects);
 
   const handleTaskAction = useCallback((action, data) => {
-    // simplified for brevity; keeping existing behavior intact requires broader refactor
-    // This is a placeholder maintaining compatibility with existing tests/UI wiring
     if (action === 'save') {
-      const sp = currentSubProject;
-      const board = sp?.boardData?.[currentBoardType];
-      if (!board) return;
+      const taskData = data;
       const listId = modalState.listId || data.listId;
-      const updatedList = board.lists.map(list => {
-        if (list.id !== listId) return list;
-        const taskIndex = list.tasks.findIndex(t => t.id === data.id);
-        if (taskIndex === -1) {
-          return { ...list, tasks: [...list.tasks, { ...data, id: data.id || generateId('task') }] };
-        } else {
-          return { ...list, tasks: list.tasks.map(t => t.id === data.id ? { ...t, ...data } : t) };
-        }
-      });
-      updateProjects(prev => {
-        if (!prev || !prev.projects) return prev;
-        const project = prev.projects.find(p => p.id === currentProject?.id);
-        if (!project) return prev;
-        const subProject = project.subProjects.find(sp => sp.id === currentSubProject?.id);
-        if (!subProject) return prev;
-        return {
-          ...prev,
-          projects: prev.projects.map(p => {
-            if (p.id !== currentProject?.id) return p;
-            return {
-              ...p,
-              subProjects: p.subProjects.map(sp => {
-                if (sp.id !== currentSubProject?.id) return sp;
-                const spBoardData = sp.boardData || {};
-                return {
-                  ...sp,
-                  boardData: {
-                    ...spBoardData,
-                    [currentBoardType]: {
-                      ...board,
-                      lists: [updatedList]
-                    }
+
+      if (currentProject && currentSubProject && listId) {
+        updateProjects(prev => prev.map(p => {
+          if (p.id !== currentProject.id) return p;
+          return {
+            ...p,
+            subProjects: p.subProjects.map(sp => {
+              if (sp.id !== currentSubProject.id) return sp;
+              const board = sp.boardData?.[currentBoardType];
+              if (!board) return sp;
+
+              return {
+                ...sp,
+                boardData: {
+                  ...sp.boardData,
+                  [currentBoardType]: {
+                    ...board,
+                    lists: board.lists.map(list => {
+                      if (list.id !== listId) return list;
+                      const taskIndex = list.tasks.findIndex(t => t.id === taskData.id);
+                      if (taskIndex === -1) {
+                        return { ...list, tasks: [...list.tasks, { ...taskData, id: taskData.id || generateId('task') }] };
+                      } else {
+                        return { ...list, tasks: list.tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t) };
+                      }
+                    })
                   }
-                };
-              })
-            };
-          })
-        };
-      });
+                }
+              };
+            })
+          };
+        }));
+      }
+      setModalState({ isOpen: false, type: null });
+    } else if (action === 'delete') {
+      if (currentProject && currentSubProject) {
+        updateProjects(prev => prev.map(p => {
+          if (p.id !== currentProject.id) return p;
+          return {
+            ...p,
+            subProjects: p.subProjects.map(sp => {
+              if (sp.id !== currentSubProject.id) return sp;
+              const board = sp.boardData?.[currentBoardType];
+              if (!board) return sp;
+              return {
+                ...sp,
+                boardData: {
+                  ...sp.boardData,
+                  [currentBoardType]: {
+                    ...board,
+                    lists: board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }))
+                  }
+                }
+              };
+            })
+          };
+        }));
+      }
+    } else if (action === 'move') {
+      // Drag move logic implementation if needed
     }
-  }, [currentProject, currentSubProject, currentBoardType, modalState, updateProjects]);
+  }, [currentProject, currentSubProject, currentBoardType, modalState, updateProjects, setModalState]);
 
-  const appContext = useApp();
-  const viewFromContext = appContext?.currentView;
-  const setView = appContext?.setCurrentView ?? ((v) => setCurrentView(v));
-  const currentUser = appContext?.currentUser;
-  const setCurrentUser = appContext?.setCurrentUser;
-
-  // Legacy components navigation helpers will use context setters if available
-  const handleAccessProject = (item, type) => {
-    if (type === 'project') {
-      setCurrentProject(item);
-      setView('project');
-    }
+  const handleDragStart = (e, item, type, listId) => {
+    if (type !== 'task' || !item?.id || !listId) return;
+    dragTaskRef.current = { taskId: item.id, fromListId: listId };
   };
 
-  // The rest of AppContent rendering is kept intact with minimal wiring changes
+  const handleDragOver = (e) => e.preventDefault();
 
-  // The render below uses a simplified approach to avoid large refactors in this patch;
-  // we still render the main layout, but hooks and subcomponents rely on existing props.
+  const handleDrop = (e, toListId, dropType) => {
+    e?.preventDefault?.();
+    if (dropType !== 'list') return;
+    const drag = dragTaskRef.current;
+    if (!drag?.taskId || !drag?.fromListId || !toListId) return;
+    dragTaskRef.current = null;
+  };
 
-  // Minimal guard if not loaded
-  if (!appData) {
-    return null;
+  const handleDragEnter = (e, taskId) => {
+    if (!taskId) return;
+    setDragOverTargetId(taskId);
+  };
+
+  const handleSearchNavigate = useCallback((result) => {
+    if (result.type === 'Project') {
+      setCurrentProject(result);
+      setCurrentView('project');
+    } else if (result.type === 'SubProject') {
+      setCurrentProject(result.parentProject);
+      setCurrentSubProject(result);
+      setCurrentView('subproject');
+      setCurrentBoardType(result.enabledTabs?.[0] || 'kanban');
+    } else if (result.type === 'Task') {
+      setCurrentProject(result.parentProject);
+      setCurrentSubProject(result.parentSubProject);
+      setCurrentView('subproject');
+      setCurrentBoardType(result.boardType || 'kanban');
+
+      setModalState({
+        type: 'task',
+        isOpen: true,
+        data: result,
+        listId: result.listId,
+        mode: 'edit'
+      });
+    }
+  }, [setCurrentProject, setCurrentView, setCurrentSubProject, setCurrentBoardType, setModalState]);
+
+  const handleSoftDelete = useCallback((item, type, parentId) => {
+    const deletedAt = new Date().toISOString();
+    const typeKey = type.toLowerCase();
+
+    if (typeKey === 'project') {
+      updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: deletedAt } : p));
+      toast.success('Projeto movido para a lixeira');
+    } else if (typeKey === 'subproject') {
+      updateProjects(prev => prev.map(p => {
+        if (p.id !== parentId) return p;
+        return {
+          ...p,
+          subProjects: p.subProjects.map(sp => sp.id === item.id ? { ...sp, deleted_at: deletedAt } : sp)
+        };
+      }));
+      toast.success('Área movida para a lixeira');
+    }
+  }, [updateProjects]);
+
+  const handleRestoreItem = useCallback((item, type, parentId) => {
+    const typeKey = type.toLowerCase();
+    if (typeKey === 'project') {
+      updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: null } : p));
+      toast.success('Projeto restaurado');
+    } else if (typeKey === 'subproject') {
+      updateProjects(prev => prev.map(p => {
+        if (p.id !== parentId) return p;
+        return {
+          ...p,
+          subProjects: p.subProjects.map(sp => sp.id === item.id ? { ...sp, deleted_at: null } : sp)
+        };
+      }));
+      toast.success('Área restaurada');
+    }
+  }, [updateProjects]);
+
+  const deletedItems = useMemo(() => {
+    const projects = appData?.projects || [];
+    const deletedProjects = projects.filter(p => p.deleted_at);
+    const deletedSubProjects = [];
+
+    projects.forEach(p => {
+      (p.subProjects || []).forEach(sp => {
+        if (sp.deleted_at) {
+          deletedSubProjects.push({ ...sp, parentProjectId: p.id, parentProjectName: p.name });
+        }
+      });
+    });
+
+    return { projects: deletedProjects, subProjects: deletedSubProjects };
+  }, [appData?.projects]);
+
+  const handleAccessProject = useCallback((item, type) => {
+    if (type === 'project') {
+      setCurrentProject(item);
+      setCurrentView('project');
+    }
+  }, [setCurrentProject, setCurrentView]);
+
+  // Rendering
+  if ((!appData || isAuthLoading) && !connectionError) {
+    return <LoadingView />;
   }
-  
-  // Rendering path kept minimal to preserve existing behavior; detailed porting is planned next
+
+  // Simplified login view check (assumes component handles logic, or we render simple login)
+  if (!isLoggedIn) {
+    // Legacy simple login form (simplified for this file)
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
+        <Toaster />
+        <div className="w-full max-w-sm glass-panel p-8 space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-xl font-bold tracking-widest text-white uppercase">BrickFlow OS</h1>
+            <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest">Acesso Restrito</p>
+          </div>
+          {authError && <p className="text-xs text-red-400 font-bold text-center">{authError}</p>}
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.target); handleLogin(fd.get('username'), fd.get('pin')); }} className="space-y-4">
+            <input name="username" placeholder="ID" required className="h-12 bg-zinc-950 border border-zinc-800 text-white w-full px-4 rounded" />
+            <input name="pin" type="password" placeholder="PIN" required className="h-12 text-center tracking-[0.5em] bg-zinc-950 border border-zinc-800 text-white w-full px-4 rounded" />
+            <button type="submit" className="w-full bg-white text-zinc-950 hover:bg-zinc-200 uppercase font-bold tracking-widest h-12 rounded">Entrar</button>
+          </form>
+        </div>
+      </div >
+    );
+  }
+
+  const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
+  const boardDataRaw = currentEntity?.boardData?.[currentBoardType] || { lists: [] };
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
       <LegacyHeader
-        currentView={view}
-        setCurrentView={setView}
+        currentView={currentView}
+        setCurrentView={setCurrentView}
         currentProject={currentProject}
         isSyncing={isSyncing}
-        currentUser={currentUser}
+        appCurrentUser={currentUser} // Pass correct currentUser from context
         handleSwitchUser={handleSwitchUser}
         handleLogout={handleLogout}
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenTeamManagement={() => setShowTeamManagementModal(true)}
         projects={appData.projects}
-        onNavigate={() => {}}
+        onNavigate={handleSearchNavigate}
         isSearchOpen={isSearchOpen}
         setIsSearchOpen={setIsSearchOpen}
       />
@@ -282,23 +415,153 @@ export default function App() {
       <main className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-6 pb-20 md:pb-8 custom-scrollbar">
           <AnimatePresence mode="wait">
-            <Suspense fallback={<LoadingView />}>
-              {/* Minimal rendering to keep tests green; full porting would replace with dedicated routes */}
-              {view === 'home' && (
-                <LegacyHome
-                  currentUser={currentUser}
-                  dailyPhrase={dailyPhrase}
-                  megaSenaNumbers={megaSenaNumbers}
-                  projects={appData.projects}
-                  setModalState={setModalState}
-                  handleAccessProject={handleAccessProject}
-                  updateProjects={updateProjects}
-                />
-              )}
-            </Suspense>
+            <motion.div
+              key={currentView + (currentProject?.id || '') + (currentSubProject?.id || '')}
+              initial={{ opacity: 0, y: 10, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -10, filter: 'blur(10px)' }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="min-h-full"
+            >
+              <Suspense fallback={<LoadingView />}>
+                {currentView === 'home' && (
+                  <LegacyHome
+                    currentUser={currentUser}
+                    dailyPhrase={dailyPhrase}
+                    megaSenaNumbers={megaSenaNumbers}
+                    projects={appData.projects}
+                    setModalState={setModalState}
+                    handleAccessProject={handleAccessProject} // Helper to set view/project
+                    handleDeleteProject={(item) => handleSoftDelete(item, 'project')}
+                    isLoading={!appData}
+                    COLOR_VARIANTS={COLOR_VARIANTS}
+                    handleDragStart={handleDragStart}
+                    handleDragOver={handleDragOver}
+                    handleDrop={handleDrop}
+                  />
+                )}
+
+                {currentView === 'trash' && (
+                  <TrashView
+                    trashItems={deletedItems}
+                    isLoading={false}
+                    onReturnHome={() => setCurrentView('home')}
+                    onRestoreItem={(item) => {
+                      // handleRestoreItem expects: item, type, parentId
+                      // trashItems struct: { ...sp, parentProjectId, parentProjectName, type: 'subproject' }
+                      // or { ...p, type: 'project' }
+                      handleRestoreItem(item, item.type || (item.parentProjectId ? 'subproject' : 'project'), item.parentProjectId);
+                    }}
+                  />
+                )}
+
+                {currentView === 'project' && currentProject && (
+                  <LegacyProjectView
+                    currentProject={currentProject}
+                    setCurrentView={setCurrentView}
+                    setModalState={setModalState}
+                    COLOR_VARIANTS={COLOR_VARIANTS}
+                    handleAccessProject={(sub) => {
+                      setCurrentSubProject(sub);
+                      setCurrentView('subproject');
+                      setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
+                    }}
+                    handleDeleteProject={(item) => handleSoftDelete(item, 'subproject', currentProject.id)}
+                    history={[]}
+                    isHistoryLoading={false}
+                    historyError={null}
+                  />
+                )}
+
+                {currentView === 'subproject' && currentSubProject && (
+                  <LegacyBoard
+                    data={boardDataRaw}
+                    entityName={currentSubProject.name}
+                    enabledTabs={currentSubProject.enabledTabs || []}
+                    currentBoardType={currentBoardType}
+                    setCurrentBoardType={setCurrentBoardType}
+                    currentSubProject={currentSubProject}
+                    currentProject={currentProject}
+                    setCurrentView={setCurrentView}
+                    setModalState={setModalState}
+                    handleTaskAction={handleTaskAction}
+                    handleDragStart={handleDragStart}
+                    handleDragOver={handleDragOver}
+                    handleDrop={handleDrop}
+                    handleDragEnter={handleDragEnter}
+                    dragOverTargetId={dragOverTargetId}
+                    files={files}
+                    handleFileUploadWithFeedback={handleFileUpload}
+                    isUploading={isUploading}
+                    isFileDragging={isDragging}
+                    setIsFileDragging={setIsDragging}
+                    handleDeleteFile={handleDeleteFile}
+                  />
+                )}
+              </Suspense>
+            </motion.div>
           </AnimatePresence>
         </div>
       </main>
+
+      <Suspense fallback={null}>
+        <CreateProjectModal
+          isOpen={modalState.isOpen && modalState.type === 'project' && modalState.mode === 'create'}
+          onClose={() => setModalState({ isOpen: false })}
+          onCreate={(data) => {
+            const newProj = { id: generateId('proj'), ...data, members: [], isArchived: false };
+            updateProjects(prev => [...prev, newProj]);
+          }}
+        />
+
+        <CreateSubProjectModal
+          isOpen={modalState.isOpen && modalState.type === 'subProject' && modalState.mode === 'create'}
+          onClose={() => setModalState({ isOpen: false })}
+          onCreate={(data) => {
+            updateProjects(prev => prev.map(p => p.id === currentProject.id ? { ...p, subProjects: [...(p.subProjects || []), { id: generateId('sub'), ...data }] } : p));
+          }}
+        />
+
+        {modalState.type === 'task' && (
+          <LegacyModal
+            modalState={modalState}
+            setModalState={setModalState}
+            handleTaskAction={handleTaskAction}
+            isReadOnly={false}
+            users={appData?.users || []}
+            USER_COLORS={USER_COLORS}
+          />
+        )}
+
+        <UserSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          currentUser={currentUser}
+          backups={[]}
+          isBackupsLoading={false}
+          onRefreshBackups={() => { }}
+          onRestoreBackup={(id) => {
+            console.log("Restore backup:", id);
+          }}
+          onExportBackup={(id) => {
+            console.log("Export backup:", id);
+          }}
+        />
+
+        <TeamManagementModal
+          isOpen={showTeamManagementModal}
+          onClose={() => setShowTeamManagementModal(false)}
+          currentUser={currentUser}
+        />
+      </Suspense>
+
+      <MobileTabBar
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenSettings={() => setShowSettingsModal(true)}
+        onOpenCreateProject={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+      />
 
       <Toaster />
     </div>

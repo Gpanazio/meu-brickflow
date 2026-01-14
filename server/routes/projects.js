@@ -3,7 +3,7 @@ import { query, getClient } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { writeLimiter, apiLimiter } from '../middleware/rateLimit.js';
 import { SaveProjectSchema, VerifyProjectPasswordSchema } from '../utils/schemas.js';
-import { eventService, CHANNELS } from '../services/eventService.js';
+
 import { normalizeStateData } from '../utils/helpers.js';
 import bcrypt from 'bcrypt';
 
@@ -27,10 +27,10 @@ router.get('/', async (req, res) => {
         data.projects = data.projects.map(p => ({ ...p, password: p.password ? '****' : '' }));
       }
       const result = { ...data, version: rows[0].version };
-      
+
       stateCache = result;
       stateCacheTime = now;
-      
+
       res.json(result);
     } else {
       res.json(null);
@@ -48,7 +48,7 @@ router.post('/', requireAuth, writeLimiter, async (req, res) => {
   }
 
   const { data, version, client_request_id } = result.data;
-  
+
   const client = await getClient();
   try {
     await client.query('BEGIN');
@@ -83,9 +83,9 @@ router.post('/', requireAuth, writeLimiter, async (req, res) => {
     );
 
     await client.query('COMMIT');
-    
+
     stateCache = null;
-    
+
     res.json({ ok: true, version: nextVersion });
   } catch (err) {
     await client.query('ROLLBACK');

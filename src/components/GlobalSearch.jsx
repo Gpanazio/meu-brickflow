@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Search } from 'lucide-react';
 
-const GlobalSearch = ({ isOpen, onNavigate, isSearchOpen, setIsSearchOpen, projects, searchTerm, setSearchTerm, searchResults }) => {
+const GlobalSearch = ({ isOpen, onNavigate, setIsSearchOpen, searchTerm, setSearchTerm, searchResults }) => {
   const { setModalState, setCurrentProject, setCurrentSubProject, setCurrentBoardType, setCurrentView } = useApp();
 
   const handleSelect = useCallback((result) => {

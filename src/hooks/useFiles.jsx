@@ -1,12 +1,11 @@
 import { useMemo, useState, useCallback } from 'react';
-import { formatFileSize } from '../utils/formatFileSize';
 import { generateId } from '../utils/ids';
+
+const MAX_SIZE_BYTES = 50 * 1024 * 1024;
 
 export function useFiles(currentProject, currentSubProject, updateProjects) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
-  const MAX_SIZE_BYTES = 50 * 1024 * 1024;
 
   const files = useMemo(() => {
     const rawFiles = currentSubProject?.boardData?.files?.files;

@@ -7,7 +7,7 @@ import process from 'process';
 // Imports Modulares
 import { hasDatabaseUrl } from './db.js';
 import { apiLimiter } from './middleware/rateLimit.js';
-import { setupRoutes, checkHealth } from './routes/index.js';
+import { setupRoutes } from './routes/index.js';
 import { isProd, getDistPath } from './utils/helpers.js';
 
 const app = express();
@@ -43,13 +43,13 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
 app.use('/api', (req, res, next) => {
   const origin = req.headers.origin;
   const host = req.headers.host;
-  
+
   // Whitelist from env
   const isWhitelisted = origin ? allowedOrigins.includes(origin) : true;
-  
+
   // Specific check for the known production domain to avoid issues with Host vs Origin mismatch
   const isKnownProd = origin === 'https://flow.brick.mov';
-  
+
   // Check if it's same-origin manually if host is available
   let isSameOrigin = false;
   if (origin && host) {
@@ -85,16 +85,16 @@ app.get('*', (req, res) => {
 
 // Global Error Handler
 app.use((err, req, res) => {
-    if (err.message === 'Not allowed by CORS') {
-        res.status(403).json({ error: 'CORS Policy: Origin not allowed' });
-    } else {
-        console.error('Unhandled Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
+  if (err.message === 'Not allowed by CORS') {
+    res.status(403).json({ error: 'CORS Policy: Origin not allowed' });
+  } else {
+    console.error('Unhandled Error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 if (hasDatabaseUrl) {
-    // A conexão é testada e gerenciada dentro de db.js com suporte a fallback
+  // A conexão é testada e gerenciada dentro de db.js com suporte a fallback
 }
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

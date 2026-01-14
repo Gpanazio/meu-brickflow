@@ -42,7 +42,7 @@ export function useRealtime(channel, onMessage) {
     };
 
     wsRef.current = ws;
-  }, [channel]);
+  }, [channel, onMessage, scheduleReconnect]);
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {

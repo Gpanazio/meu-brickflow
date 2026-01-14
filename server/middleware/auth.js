@@ -14,13 +14,13 @@ export const requireAuth = async (req, res, next) => {
     if (!session) {
       return res.status(401).json({ error: 'Invalid session' });
     }
-    
+
     const user = await userService.findByUsername(session.userId);
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
-    
-    const { password_hash, ...safeUser } = user;
+
+    const { password_hash: _, ...safeUser } = user;
     req.user = safeUser;
     next();
   } catch (err) {

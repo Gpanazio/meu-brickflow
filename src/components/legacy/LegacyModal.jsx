@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
-import { 
-  Plus, Trash2, X, CheckSquare, 
+import {
+  Plus, Trash2, X, CheckSquare,
   MessageSquare, History
 } from 'lucide-react';
-import { COLOR_VARIANTS, LABEL_COLORS, BADGE_COLOR_CLASSES, LABEL_SWATCH_CLASSES } from '@/constants/theme';
+import { LABEL_COLORS, BADGE_COLOR_CLASSES, LABEL_SWATCH_CLASSES } from '@/constants/theme';
 
 function LegacyModal({
   modalState,
@@ -37,7 +37,7 @@ function LegacyModal({
     const list = Array.isArray(dbUsers) && dbUsers.length > 0 ? dbUsers : (Array.isArray(users) ? users : []);
     return Array.isArray(list) ? list : [];
   }, [dbUsers, users]);
-  
+
   useEffect(() => {
     if (modalState.type === 'task') {
       setTaskState(
@@ -180,12 +180,12 @@ function LegacyModal({
             {modalState.type === 'task' && (modalState.mode === 'edit' ? taskState.title || 'Editar' : 'Novo Card')}
           </DialogTitle>
           {modalState.type === 'task' && (
-             <div className="flex items-center gap-2 mr-8">
-               <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest font-medium">ID: {taskState.id?.slice(-6)}</span>
-             </div>
+            <div className="flex items-center gap-2 mr-8">
+              <span className="text-xs font-mono text-zinc-600 uppercase tracking-widest font-medium">ID: {taskState.id?.slice(-6)}</span>
+            </div>
           )}
         </DialogHeader>
-        
+
         <div className="p-0">
           {modalState.type === 'password' ? (
             <div className="p-6">
@@ -215,14 +215,14 @@ function LegacyModal({
                       </Badge>
                     ))}
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Título do Card</Label>
-                    <Input 
-                      value={taskState.title || ''} 
+                    <Input
+                      value={taskState.title || ''}
                       disabled={isReadOnly}
                       onChange={(e) => setTaskState(prev => ({ ...prev, title: e.target.value }))}
-                      className="bg-transparent border-none p-0 h-auto text-2xl font-black text-white focus-visible:ring-0 rounded-none placeholder:text-zinc-800" 
+                      className="bg-transparent border-none p-0 h-auto text-2xl font-black text-white focus-visible:ring-0 rounded-none placeholder:text-zinc-800"
                       placeholder="NOME DA TAREFA..."
                     />
                   </div>
@@ -233,11 +233,11 @@ function LegacyModal({
                     <MessageSquare className="h-4 w-4" />
                     <Label className="text-xs uppercase tracking-widest font-bold">Descrição</Label>
                   </div>
-                  <Textarea 
+                  <Textarea
                     value={taskState.description || ''}
                     disabled={isReadOnly}
                     onChange={(e) => setTaskState(prev => ({ ...prev, description: e.target.value }))}
-                    className="bg-zinc-950 border-zinc-900 rounded-none min-h-[120px] text-sm text-zinc-300 focus:border-zinc-700 p-4 leading-relaxed" 
+                    className="bg-zinc-950 border-zinc-900 rounded-none min-h-[120px] text-sm text-zinc-300 focus:border-zinc-700 p-4 leading-relaxed"
                     placeholder="Adicione uma descrição detalhada (suporta Markdown)..."
                   />
                 </div>
@@ -246,32 +246,32 @@ function LegacyModal({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-zinc-400">
                       <CheckSquare className="h-4 w-4" />
-                    <Label className="text-xs uppercase tracking-widest font-bold">Checklist</Label>
+                      <Label className="text-xs uppercase tracking-widest font-bold">Checklist</Label>
                     </div>
                     {taskState.checklists?.length > 0 && (
                       <span className="text-xs font-mono text-zinc-600 font-medium">{calculateProgress()}%</span>
                     )}
                   </div>
-                  
+
                   {taskState.checklists?.length > 0 && (
                     <div className="space-y-2">
                       <Progress value={calculateProgress()} className="h-1.5 bg-zinc-900" />
                       <div className="space-y-1 mt-4">
                         {taskState.checklists.map(item => (
                           <div key={item.id} className="flex items-center gap-3 group">
-                            <Checkbox 
-                              checked={item.completed} 
+                            <Checkbox
+                              checked={item.completed}
                               onCheckedChange={(checked) => updateChecklistItem(item.id, 'completed', checked)}
                               className="border-zinc-800 rounded-none"
                             />
-                            <Input 
+                            <Input
                               value={item.text}
                               onChange={(e) => updateChecklistItem(item.id, 'text', e.target.value)}
                               className={`bg-transparent border-none h-8 text-sm focus-visible:ring-0 ${item.completed ? 'text-zinc-600 line-through' : 'text-zinc-300'}`}
                             />
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => removeChecklistItem(item.id)}
                               className="h-6 w-6 opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-600 transition-all"
                             >
@@ -295,7 +295,7 @@ function LegacyModal({
                   <div className="flex gap-3">
                     <div className="h-8 w-8 rounded-full bg-zinc-900 flex items-center justify-center shrink-0 uppercase font-bold text-zinc-600 text-[10px]">A</div>
                     <div className="flex-1 space-y-2">
-                      <Textarea 
+                      <Textarea
                         placeholder="Escreva um comentário (use @ para mencionar)..."
                         disabled={isReadOnly}
                         className="bg-zinc-950 border-zinc-900 rounded-none min-h-[60px] text-sm text-zinc-300 focus:border-zinc-700 p-3"
@@ -380,88 +380,88 @@ function LegacyModal({
                   <Label className="text-xs uppercase tracking-[0.2em] text-zinc-600 font-bold">Ações</Label>
                   <div className="grid grid-cols-1 gap-2">
                     <div className="space-y-2">
-                        <Label className="text-xs uppercase text-zinc-500 font-medium">Prioridade</Label>
-                        <Select value={taskState.priority || 'medium'} onValueChange={(val) => { if (isReadOnly) return; setTaskState(prev => ({ ...prev, priority: val })); }}>
-                          <SelectTrigger className="bg-black border-zinc-900 rounded-none h-8 text-xs uppercase tracking-widest font-medium"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-black border-zinc-800 rounded-none">
-                            <SelectItem value="low" className="text-xs uppercase font-medium">Baixa</SelectItem>
-                            <SelectItem value="medium" className="text-xs uppercase font-medium">Média</SelectItem>
-                            <SelectItem value="high" className="text-xs uppercase text-red-600 font-medium">Alta</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <Label className="text-xs uppercase text-zinc-500 font-medium">Prioridade</Label>
+                      <Select value={taskState.priority || 'medium'} onValueChange={(val) => { if (isReadOnly) return; setTaskState(prev => ({ ...prev, priority: val })); }}>
+                        <SelectTrigger className="bg-black border-zinc-900 rounded-none h-8 text-xs uppercase tracking-widest font-medium"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-black border-zinc-800 rounded-none">
+                          <SelectItem value="low" className="text-xs uppercase font-medium">Baixa</SelectItem>
+                          <SelectItem value="medium" className="text-xs uppercase font-medium">Média</SelectItem>
+                          <SelectItem value="high" className="text-xs uppercase text-red-600 font-medium">Alta</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label className="text-xs uppercase text-zinc-500 font-medium">Data e Hora de Entrega</Label>
-                        <Input 
-                          type="datetime-local" 
-                          value={taskState.endDate || ''} 
-                          disabled={isReadOnly}
-                          onChange={(e) => setTaskState(prev => ({ ...prev, endDate: e.target.value }))}
-                          className="bg-black border-zinc-900 rounded-none h-8 text-sm uppercase text-zinc-300" 
-                        />
+                      <Label className="text-xs uppercase text-zinc-500 font-medium">Data e Hora de Entrega</Label>
+                      <Input
+                        type="datetime-local"
+                        value={taskState.endDate || ''}
+                        disabled={isReadOnly}
+                        onChange={(e) => setTaskState(prev => ({ ...prev, endDate: e.target.value }))}
+                        className="bg-black border-zinc-900 rounded-none h-8 text-sm uppercase text-zinc-300"
+                      />
                     </div>
                   </div>
                 </div>
 
-                 <div className="space-y-3">
-                   <Label className="text-xs uppercase tracking-[0.2em] text-zinc-600 font-bold">Responsáveis</Label>
-                   <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                      {isUsersLoading && (
-                        <p className="text-xs text-zinc-700 uppercase font-mono tracking-widest font-medium">Carregando usuários...</p>
-                      )}
-                      {!isUsersLoading && responsibleOptions.map((u) => {
-                        const username = u?.username;
-                        if (!username) return null;
-                        const checked = (taskState.responsibleUsers || []).includes(username);
-                        return (
-                          <label key={username} className={`flex items-center gap-2 text-xs uppercase tracking-widest font-medium ${isReadOnly ? 'opacity-60' : 'cursor-pointer'}`}>
-                            <Checkbox
-                              checked={checked}
-                              disabled={isReadOnly}
-                              onCheckedChange={(nextChecked) => {
-                                if (isReadOnly) return;
-                                setTaskState((prev) => {
-                                  const prevList = Array.isArray(prev.responsibleUsers) ? prev.responsibleUsers : [];
-                                  const nextList = nextChecked
-                                    ? Array.from(new Set([...prevList, username]))
-                                    : prevList.filter((x) => x !== username);
-                                  return { ...prev, responsibleUsers: nextList };
-                                });
-                              }}
-                              className="border-zinc-800 rounded-none"
-                            />
-                            <span className="text-zinc-400">@{username}</span>
-                            <span className="text-zinc-600 ml-auto truncate">{u.displayName || username}</span>
-                          </label>
-                        );
-                      })}
-                      {!isUsersLoading && responsibleOptions.length === 0 && (
-                        <p className="text-xs text-zinc-700 uppercase font-mono tracking-widest font-medium">Nenhum usuário disponível.</p>
-                      )}
-                   </div>
-                 </div>
+                <div className="space-y-3">
+                  <Label className="text-xs uppercase tracking-[0.2em] text-zinc-600 font-bold">Responsáveis</Label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                    {isUsersLoading && (
+                      <p className="text-xs text-zinc-700 uppercase font-mono tracking-widest font-medium">Carregando usuários...</p>
+                    )}
+                    {!isUsersLoading && responsibleOptions.map((u) => {
+                      const username = u?.username;
+                      if (!username) return null;
+                      const checked = (taskState.responsibleUsers || []).includes(username);
+                      return (
+                        <label key={username} className={`flex items-center gap-2 text-xs uppercase tracking-widest font-medium ${isReadOnly ? 'opacity-60' : 'cursor-pointer'}`}>
+                          <Checkbox
+                            checked={checked}
+                            disabled={isReadOnly}
+                            onCheckedChange={(nextChecked) => {
+                              if (isReadOnly) return;
+                              setTaskState((prev) => {
+                                const prevList = Array.isArray(prev.responsibleUsers) ? prev.responsibleUsers : [];
+                                const nextList = nextChecked
+                                  ? Array.from(new Set([...prevList, username]))
+                                  : prevList.filter((x) => x !== username);
+                                return { ...prev, responsibleUsers: nextList };
+                              });
+                            }}
+                            className="border-zinc-800 rounded-none"
+                          />
+                          <span className="text-zinc-400">@{username}</span>
+                          <span className="text-zinc-600 ml-auto truncate">{u.displayName || username}</span>
+                        </label>
+                      );
+                    })}
+                    {!isUsersLoading && responsibleOptions.length === 0 && (
+                      <p className="text-xs text-zinc-700 uppercase font-mono tracking-widest font-medium">Nenhum usuário disponível.</p>
+                    )}
+                  </div>
+                </div>
 
-                 <div className="space-y-3">
-                   <Label className="text-xs uppercase tracking-[0.2em] text-zinc-600 font-bold">Etiquetas</Label>
-                   <div className="flex flex-wrap gap-1.5">
-                     {LABEL_COLORS.map(color => (
-                       <button 
-                         key={color} 
-                         type="button"
-                         disabled={isReadOnly}
-                         onClick={() => {
-                           if (isReadOnly) return;
-                           taskState.labels?.some(l => l.color === color) ? removeLabel(color) : addLabel(color);
-                         }}
+                <div className="space-y-3">
+                  <Label className="text-xs uppercase tracking-[0.2em] text-zinc-600 font-bold">Etiquetas</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {LABEL_COLORS.map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        disabled={isReadOnly}
+                        onClick={() => {
+                          if (isReadOnly) return;
+                          taskState.labels?.some(l => l.color === color) ? removeLabel(color) : addLabel(color);
+                        }}
                         className={cn('h-4 w-8 rounded-sm transition-all hover:scale-110', LABEL_SWATCH_CLASSES[color] ?? LABEL_SWATCH_CLASSES.zinc, taskState.labels?.some(l => l.color === color) ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : 'opacity-40')}
-                       />
-                     ))}
-                   </div>
-                 </div>
+                      />
+                    ))}
+                  </div>
+                </div>
 
 
                 <div className="pt-6 border-t border-zinc-900 flex flex-col gap-2">
-                  <Button 
+                  <Button
                     disabled={isReadOnly}
                     className="w-full bg-white text-black hover:bg-zinc-200 rounded-none h-10 uppercase font-black tracking-widest text-xs"
                     onClick={() => {
@@ -479,8 +479,8 @@ function LegacyModal({
                   >
                     Salvar Tudo
                   </Button>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     disabled={isReadOnly}
                     className="w-full text-zinc-600 hover:text-white rounded-none h-10 uppercase tracking-widest text-xs font-medium"
                     onClick={() => {
@@ -491,8 +491,8 @@ function LegacyModal({
                   >
                     <History className="h-3 w-3 mr-2" /> {taskState.isArchived ? 'Desarquivar' : 'Arquivar'}
                   </Button>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     disabled={isReadOnly}
                     className="w-full text-zinc-600 hover:text-red-600 rounded-none h-10 uppercase tracking-widest text-xs font-medium"
                     onClick={() => {
@@ -515,16 +515,16 @@ function LegacyModal({
                 const formData = Object.fromEntries(new FormData(e.target));
                 if (modalState.type === 'project' || modalState.type === 'subProject') handleSaveProject(formData);
               }} className="space-y-4">
-                
+
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Nome</Label>
-                   <Input name="name" disabled={isReadOnly} defaultValue={modalState.data?.name} required className="bg-zinc-950 border-zinc-800 rounded-none h-10 focus:border-white text-white text-sm" />
+                  <Input name="name" disabled={isReadOnly} defaultValue={modalState.data?.name} required className="bg-zinc-950 border-zinc-800 rounded-none h-10 focus:border-white text-white text-sm" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Descrição</Label>
-                   <Textarea name="description" disabled={isReadOnly} defaultValue={modalState.data?.description} className="bg-zinc-950 border-zinc-800 rounded-none min-h-[80px] text-zinc-300 focus:border-white text-sm" />
+                  <Textarea name="description" disabled={isReadOnly} defaultValue={modalState.data?.description} className="bg-zinc-950 border-zinc-800 rounded-none min-h-[80px] text-zinc-300 focus:border-white text-sm" />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Cor</Label>
@@ -541,12 +541,12 @@ function LegacyModal({
                   </div>
                 </div>
                 {modalState.data?.isProtected && (
-                   <Input name="password" type="password" defaultValue={modalState.data?.password} placeholder="Senha do projeto" className="bg-zinc-950 border-zinc-800 rounded-none h-10" />
+                  <Input name="password" type="password" defaultValue={modalState.data?.password} placeholder="Senha do projeto" className="bg-zinc-950 border-zinc-800 rounded-none h-10" />
                 )}
 
                 <DialogFooter className="pt-6 border-t border-zinc-900 gap-2">
                   <Button type="button" variant="ghost" onClick={() => setModalState({ ...modalState, isOpen: false })} className="hover:bg-zinc-900 hover:text-white text-zinc-500 rounded-none uppercase text-xs tracking-widest h-10 px-4 font-medium">Cancelar</Button>
-                   <Button type="submit" disabled={isReadOnly} className="bg-white text-black hover:bg-zinc-200 rounded-none uppercase text-xs font-bold tracking-widest h-10 px-6">Salvar</Button>
+                  <Button type="submit" disabled={isReadOnly} className="bg-white text-black hover:bg-zinc-200 rounded-none uppercase text-xs font-bold tracking-widest h-10 px-6">Salvar</Button>
                 </DialogFooter>
               </form>
             </div>

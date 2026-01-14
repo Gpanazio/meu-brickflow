@@ -77,7 +77,7 @@ export const userService = {
         return { success: false, message: 'PIN incorreto' };
       }
 
-      const { password_hash, ...safeUser } = user;
+      const { password_hash: _, ...safeUser } = user;
       return { success: true, user: safeUser };
     } catch (err) {
       console.error('❌ Erro ao verificar login:', err);
