@@ -97,7 +97,8 @@ router.get('/me', async (req, res) => {
       return res.json({ user: null });
     }
 
-    res.json({ user });
+    const { password_hash: _, ...safeUser } = user;
+    res.json({ user: safeUser });
   } catch (err) {
     console.error('Error in /me:', err);
     res.status(500).json({ error: 'Failed to get user' });
