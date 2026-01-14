@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import ModuleToggle from '@/components/ui/ModuleToggle';
-import { cn } from '@/lib/utils';
 
 export function CreateSubProjectModal({ isOpen, onClose, onCreate }) {
   // Estado local para os módulos visuais (Grid 2x2)

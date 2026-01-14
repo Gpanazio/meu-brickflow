@@ -220,58 +220,32 @@ export default function App() {
                 };
              }));
         }
-        setModalState({ isOpen: false, type: null });
-    } else if (action === 'delete') {
-         if (currentProject && currentSubProject) {
-             updateProjects(prev => prev.map(p => {
-                 if (p.id !== currentProject.id) return p;
-                 return {
-                     ...p,
-                     subProjects: p.subProjects.map(sp => {
-                         if (sp.id !== currentSubProject.id) return sp;
-                         const board = sp.boardData?.[currentBoardType];
-                         if (!board) return sp;
-                         return {
-                             ...sp,
-                             boardData: {
-                                 ...sp.boardData,
-                                 [currentBoardType]: {
-                                     ...board,
-                                     lists: board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }))
-                                 }
-                             }
-                         };
-                     })
-                 };
-             }));
-         }
-    } else if (action === 'move') {
-       const drag = dragTaskRef.current;
-       if (drag && currentProject && currentSubProject) {
-         // Implement drag move logic if needed
-       }
+         setModalState({ isOpen: false, type: null });
+     } else if (action === 'delete') {
+    if (result.type === 'Project') {
+      setCurrentProject(result);
+      setCurrentView('project');
+    } else if (result.type === 'SubProject') {
+      setCurrentProject(result.parentProject);
+      setCurrentSubProject(result);
+      setCurrentView('subproject');
+      setCurrentBoardType(result.enabledTabs?.[0] || 'kanban');
+    } else if (result.type === 'Task') {
+      setCurrentProject(result.parentProject);
+      setCurrentSubProject(result.parentSubProject);
+      setCurrentView('subproject');
+      setCurrentBoardType(result.boardType || 'kanban');
+      
+      // Auto-open task modal
+      setModalState({
+        type: 'task',
+        isOpen: true,
+        data: result,
+        listId: result.listId,
+        mode: 'edit'
+      });
     }
-  }, [currentProject, currentSubProject, currentBoardType, modalState, generateId]);
-  
-  const handleDragStart = (e, item, type, listId) => {
-    if (type !== 'task' || !item?.id || !listId) return;
-    dragTaskRef.current = { taskId: item.id, fromListId: listId };
-  };
-
-  const handleDragOver = (e) => e.preventDefault();
-
-  const handleDrop = (e, toListId, dropType) => {
-    e?.preventDefault?.();
-    if (dropType !== 'list') return;
-    const drag = dragTaskRef.current;
-    if (!drag?.taskId || !drag?.fromListId || !toListId) return;
-    dragTaskRef.current = null;
-  };
-
-  const handleDragEnter = (e, taskId) => {
-     if (!taskId) return;
-     setDragOverTargetId(taskId);
-   };
+  }, []);
 
   if ((!appData || isAuthLoading) && !connectionError) {
     return (
@@ -315,6 +289,32 @@ export default function App() {
     );
   }
 
+  const handleSearchNavigate = useCallback((result) => {
+    if (result.type === 'Project') {
+      setCurrentProject(result);
+      setCurrentView('project');
+    } else if (result.type === 'SubProject') {
+      setCurrentProject(result.parentProject);
+      setCurrentSubProject(result);
+      setCurrentView('subproject');
+      setCurrentBoardType(result.enabledTabs?.[0] || 'kanban');
+    } else if (result.type === 'Task') {
+      setCurrentProject(result.parentProject);
+      setCurrentSubProject(result.parentSubProject);
+      setCurrentView('subproject');
+      setCurrentBoardType(result.boardType || 'kanban');
+      
+      // Auto-open task modal
+      setModalState({
+        type: 'task',
+        isOpen: true,
+        data: result,
+        listId: result.listId, // We might need to ensure this is in the search result
+        mode: 'edit'
+      });
+    }
+  }, []);
+
   const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
   const boardDataRaw = currentEntity?.boardData?.[currentBoardType] || { lists: [] };
 
@@ -331,6 +331,7 @@ export default function App() {
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenTeamManagement={() => setShowTeamManagementModal(true)}
         projects={appData.projects}
+        onNavigate={handleSearchNavigate}
         isSearchOpen={isSearchOpen}
         setIsSearchOpen={setIsSearchOpen}
       />

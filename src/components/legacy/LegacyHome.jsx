@@ -211,7 +211,30 @@ function LegacyHome({
                   onDragStart={(e) => handleDragStart && handleDragStart(e, project, 'project')}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop && handleDrop(e, project.id, 'project')}
-                  onClick={() => handleAccessProject(project)} 
+                  onClick={async () => {
+                    if (project.isProtected) {
+                      const password = prompt('Este projeto é protegido. Digite a senha:');
+                      if (!password) return;
+                      
+                      try {
+                        const res = await fetch('/api/projects/verify-password', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ projectId: project.id, password })
+                        });
+                        
+                        if (res.ok) {
+                          handleAccessProject(project);
+                        } else {
+                          alert('Senha incorreta.');
+                        }
+                      } catch (err) {
+                        alert('Erro ao verificar senha.');
+                      }
+                    } else {
+                      handleAccessProject(project);
+                    }
+                  }} 
                   className="h-64"
                   contentClassName="p-8 flex flex-col justify-between"
                 >

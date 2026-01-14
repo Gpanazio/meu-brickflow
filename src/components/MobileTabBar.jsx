@@ -7,8 +7,7 @@ export function MobileTabBar({
   setCurrentView, 
   onOpenSearch, 
   onOpenSettings,
-  onOpenCreateProject,
-  currentUser 
+  onOpenCreateProject
 }) {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-t border-white/10 h-16 px-4 flex items-center justify-between safe-area-pb">

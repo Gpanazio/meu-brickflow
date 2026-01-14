@@ -30,3 +30,8 @@ export const CreateProjectSchema = z.object({
   password: z.string().optional().or(z.literal('')),
   enabledTabs: z.array(z.string()).optional(),
 });
+
+export const VerifyProjectPasswordSchema = z.object({
+  projectId: z.string().min(1),
+  password: z.string().min(1)
+});

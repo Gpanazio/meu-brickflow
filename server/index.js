@@ -13,7 +13,8 @@ import { authLimiter, apiLimiter, writeLimiter } from './middleware/rateLimit.js
 import { 
   LoginSchema, 
   RegisterSchema, 
-  SaveProjectSchema 
+  SaveProjectSchema,
+  VerifyProjectPasswordSchema
 } from './utils/schemas.js';
 import { 
   isProd, 
@@ -239,6 +240,36 @@ app.post('/api/projects', requireAuth, writeLimiter, async (req, res) => {
         res.status(500).json({ error: 'Internal Error' });
     } finally {
         client.release();
+    }
+});
+
+app.post('/api/projects/verify-password', apiLimiter, async (req, res) => {
+    const result = VerifyProjectPasswordSchema.safeParse(req.body);
+    if (!result.success) {
+        return res.status(400).json({ error: result.error.errors[0].message });
+    }
+
+    const { projectId, password } = result.data;
+
+    try {
+        const { rows } = await query('SELECT data FROM brickflow_state WHERE id = 1');
+        if (rows.length === 0) return res.status(404).json({ error: 'State not found' });
+
+        const data = normalizeStateData(rows[0].data);
+        const project = data.projects?.find(p => p.id === projectId);
+
+        if (!project) return res.status(404).json({ error: 'Project not found' });
+        if (!project.password) return res.json({ ok: true }); // No password needed
+
+        const valid = await bcrypt.compare(password, project.password);
+        if (valid) {
+            res.json({ ok: true });
+        } else {
+            res.status(401).json({ error: 'Invalid password' });
+        }
+    } catch (err) {
+        console.error('Verify password error:', err);
+        res.status(500).json({ error: 'Internal Error' });
     }
 });
 
