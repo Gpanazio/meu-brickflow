@@ -1,5 +1,6 @@
-import { query } from '../db.js';
 import { parseCookies } from '../utils/helpers.js';
+import { sessionService } from '../services/sessionService.js';
+import { userService } from '../services/userService.js';
 
 export const requireAuth = async (req, res, next) => {
   const cookies = parseCookies(req.headers.cookie);
@@ -9,17 +10,18 @@ export const requireAuth = async (req, res, next) => {
   }
 
   try {
-    const { rows } = await query('SELECT user_id FROM brickflow_sessions WHERE id = $1 AND expires_at > NOW()', [sessionId]);
-    if (rows.length === 0) {
+    const session = await sessionService.get(sessionId);
+    if (!session) {
       return res.status(401).json({ error: 'Invalid session' });
     }
     
-    const userRes = await query('SELECT username, role, name, avatar, color FROM master_users WHERE username = $1', [rows[0].user_id]);
-    if (userRes.rows.length === 0) {
+    const user = await userService.findByUsername(session.userId);
+    if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
     
-    req.user = userRes.rows[0];
+    const { password_hash, ...safeUser } = user;
+    req.user = safeUser;
     next();
   } catch (err) {
     console.error('Auth middleware error:', err);

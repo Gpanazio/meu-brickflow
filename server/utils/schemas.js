@@ -15,6 +15,16 @@ export const RegisterSchema = z.object({
   color: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color').optional().or(z.literal('')),
 });
 
+export const RegisterSchemaV2 = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters').max(50),
+  password: z.union([z.string(), z.number()]).transform(val => String(val)).refine(val => /^\d{4,}$/.test(val), 'Password must be at least 4 digits'),
+  name: z.string().min(1, 'Name is required').max(100),
+  role: z.enum(['admin', 'user', 'viewer', 'owner']).default('user'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  avatar: z.string().url('Invalid avatar URL').optional().or(z.literal('')),
+  color: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color').optional().or(z.literal('')),
+});
+
 export const UserUpdateSchema = RegisterSchema.partial();
 
 export const SaveProjectSchema = z.object({

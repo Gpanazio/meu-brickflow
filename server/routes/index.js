@@ -1,5 +1,7 @@
+import process from 'process';
 import { query } from '../db.js';
 import { cache } from '../cache.js';
+import { requireAuth } from '../middleware/auth.js';
 
 export async function checkHealth() {
   const checks = {
@@ -51,7 +53,7 @@ async function checkDisk() {
   }
 }
 
-export function setupRoutes(app) {
+export async function setupRoutes(app) {
   app.use('/api/health', async (req, res) => {
     const checks = await checkHealth();
     const statusCode = checks.status === 'ok' ? 200 : 503;
@@ -65,6 +67,21 @@ export function setupRoutes(app) {
   app.use('/api/auth', authRouter.default);
   app.use('/api/projects', projectRouter.default);
   app.use('/api/users', userRouter.default);
+
+  app.get('/api/admin/users', requireAuth, async (req, res) => {
+    try {
+      const isOwner = req.user.role === 'owner';
+      const isLegacyAdmin = ['gabriel', 'lufe'].includes(req.user.username.toLowerCase());
+      
+      if (!isOwner && !isLegacyAdmin) return res.status(403).json({ error: 'Forbidden' });
+
+      const { rows } = await query('SELECT id, username, name, email, role, avatar, color, created_at FROM master_users ORDER BY username ASC');
+      res.json({ users: rows });
+    } catch (err) {
+      console.error('Error fetching admin users:', err);
+      res.status(500).json({ error: 'Failed to fetch users' });
+    }
+  });
 
   app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 }

@@ -1,11 +1,11 @@
 import express from 'express';
-import { query } from '../db.js';
 import { sessionService } from '../services/sessionService.js';
 import { userService } from '../services/userService.js';
 import { LoginSchema, RegisterSchema } from '../utils/schemas.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import bcrypt from 'bcrypt';
 import { eventService, CHANNELS } from '../services/eventService.js';
+import { parseCookies } from '../utils/helpers.js';
 
 const router = express.Router();
 

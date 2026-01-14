@@ -39,6 +39,16 @@ export const cache = {
     }
   },
 
+  async getTtl(key) {
+    try {
+      const ttl = await redis.ttl(key);
+      return ttl;
+    } catch (err) {
+      console.error(`❌ Erro ao obter TTL [${key}]:`, err);
+      return -1;
+    }
+  },
+
   async invalidate(pattern) {
     try {
       const keys = await redis.keys(pattern);
@@ -68,5 +78,7 @@ export const cache = {
     } catch (err) {
       console.error('❌ Erro ao desconectar Redis:', err);
     }
-  }
+  },
+
+  redis
 };

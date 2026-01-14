@@ -1,83 +1,128 @@
 import express from 'express';
-import { query } from '../db.js';
+import { query, getClient } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { writeLimiter, apiLimiter } from '../middleware/rateLimit.js';
 import { SaveProjectSchema, VerifyProjectPasswordSchema } from '../utils/schemas.js';
 import { eventService, CHANNELS } from '../services/eventService.js';
 import { normalizeStateData } from '../utils/helpers.js';
+import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
-router.get('/', requireAuth, async (req, res) => {
-  try {
-    const { rows } = await query('SELECT data FROM brickflow_state WHERE id = 1');
-    if (rows.length === 0) return res.json({ projects: [] });
+let stateCache = null;
+let stateCacheTime = 0;
+const CACHE_TTL = 60000;
 
-    const state = normalizeStateData(JSON.parse(rows[0].data));
-    res.json({ projects: state.projects });
+router.get('/', async (req, res) => {
+  try {
+    const now = Date.now();
+    if (stateCache && (now - stateCacheTime < CACHE_TTL)) {
+      return res.json(stateCache);
+    }
+
+    const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
+    if (rows.length > 0) {
+      const data = normalizeStateData(rows[0].data);
+      if (data.projects) {
+        data.projects = data.projects.map(p => ({ ...p, password: p.password ? '****' : '' }));
+      }
+      const result = { ...data, version: rows[0].version };
+      
+      stateCache = result;
+      stateCacheTime = now;
+      
+      res.json(result);
+    } else {
+      res.json(null);
+    }
   } catch (err) {
-    console.error('Error fetching projects:', err);
-    res.status(500).json({ error: 'Failed to fetch projects' });
+    console.error('Fetch projects error:', err);
+    res.status(500).json({ error: 'Failed to fetch state' });
   }
 });
 
 router.post('/', requireAuth, writeLimiter, async (req, res) => {
+  const result = SaveProjectSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.errors[0].message });
+  }
+
+  const { data, version, client_request_id } = result.data;
+  
+  const client = await getClient();
   try {
-    const result = SaveProjectSchema.safeParse(req.body);
-    if (!result.success) {
-      return res.status(400).json({ error: result.error.errors });
+    await client.query('BEGIN');
+    const current = await client.query('SELECT data, version FROM brickflow_state WHERE id = 1 FOR UPDATE');
+    const currentVersion = current.rows.length ? current.rows[0].version : 0;
+    const currentState = current.rows.length ? current.rows[0].data : null;
+
+    if (version !== currentVersion) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Conflict', version: currentVersion });
     }
 
-    const { data, version, client_request_id, userId } = req.body;
-    const currentVersion = await query('SELECT version FROM brickflow_state WHERE id = 1');
-    const currentData = currentVersion.rows[0]?.data ? JSON.parse(currentVersion.rows[0].data) : { projects: [] };
-
-    if (version && version !== currentVersion.rows[0].version) {
-      return res.status(409).json({ error: 'Version conflict' });
+    if (data.projects) {
+      data.projects = await Promise.all(data.projects.map(async (p) => {
+        const existingProj = currentState?.projects?.find(ep => ep.id === p.id);
+        if (p.password && p.password !== '****' && p.password !== existingProj?.password) {
+          p.password = await bcrypt.hash(p.password, 10);
+        } else if (p.password === '****' && existingProj) {
+          p.password = existingProj.password;
+        }
+        return p;
+      }));
     }
 
-    await query('UPDATE brickflow_state SET data = $1, version = $2, updated_at = NOW() WHERE id = 1', [JSON.stringify({ ...currentData, projects: data }), version || currentVersion.rows[0].version]);
-    res.json({ version: version || currentVersion.rows[0].version });
+    const nextVersion = currentVersion + 1;
+    const nextState = { ...data, version: nextVersion };
 
-    await eventService.publish(CHANNELS.PROJECT_UPDATED, {
-      projectId: null,
-      updatedBy: userId,
-      timestamp: Date.now()
-    });
+    await client.query('INSERT INTO brickflow_events (client_request_id, data) VALUES ($1, $2)', [client_request_id, JSON.stringify(nextState)]);
+    await client.query(
+      'INSERT INTO brickflow_state (id, data, version, updated_at) VALUES (1, $1, $2, NOW()) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, version = EXCLUDED.version, updated_at = NOW()',
+      [JSON.stringify(nextState), nextVersion]
+    );
+
+    await client.query('COMMIT');
+    
+    stateCache = null;
+    
+    res.json({ ok: true, version: nextVersion });
   } catch (err) {
-    console.error('Error saving projects:', err);
-    res.status(500).json({ error: 'Failed to save projects' });
+    await client.query('ROLLBACK');
+    console.error('Save error:', err);
+    res.status(500).json({ error: 'Internal Error' });
+  } finally {
+    client.release();
   }
 });
 
-router.post('/verify-password', authLimiter, async (req, res) => {
+router.post('/verify-password', apiLimiter, async (req, res) => {
+  const result = VerifyProjectPasswordSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.errors[0].message });
+  }
+
+  const { projectId, password } = result.data;
+
   try {
-    const result = VerifyProjectPasswordSchema.safeParse(req.body);
-    if (!result.success) {
-      return res.status(400).json({ error: result.error.errors });
+    const { rows } = await query('SELECT data FROM brickflow_state WHERE id = 1');
+    if (rows.length === 0) return res.status(404).json({ error: 'State not found' });
+
+    const data = normalizeStateData(rows[0].data);
+    const project = data.projects?.find(p => p.id === projectId);
+
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!project.password) return res.json({ ok: true });
+
+    const valid = await bcrypt.compare(password, project.password);
+    if (valid) {
+      res.json({ ok: true });
+    } else {
+      res.status(401).json({ error: 'Invalid password' });
     }
-
-    const { projectId, password } = req.body;
-    const { rows } = await query(
-      'SELECT password_hash FROM brickflow_state WHERE data @> $1::jsonb ORDER BY updated_at DESC LIMIT 1',
-      [JSON.stringify({ projects: [{ id: projectId }] })]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-
-    const storedHash = JSON.parse(rows[0].data).projects[0].password_hash;
-    const bcrypt = await import('bcrypt').then(m => m.default);
-    const isValid = await bcrypt.compare(password, storedHash);
-
-    if (!isValid) {
-      return res.status(401).json({ error: 'Incorrect password' });
-    }
-
-    res.json({ valid: true });
   } catch (err) {
-    console.error('Error verifying password:', err);
-    res.status(500).json({ error: 'Failed to verify password' });
+    console.error('Verify password error:', err);
+    res.status(500).json({ error: 'Internal Error' });
   }
 });
 
