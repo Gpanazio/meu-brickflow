@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Lock, 
   Plus, 
@@ -8,53 +8,12 @@ import {
   Box 
 } from 'lucide-react';
 import PrismaticPanel from '@/components/ui/PrismaticPanel';
-
-// --- UTILITÁRIOS VISUAIS ---
-
-const useScramble = (text, speed = 40) => {
-  const [display, setDisplay] = useState(text);
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
-
-  useEffect(() => {
-    let iteration = 0;
-    const interval = setInterval(() => {
-      setDisplay(
-        text
-          .split('')
-          .map((letter, index) => {
-            if (index < iteration) return text[index];
-            return chars[Math.floor(Math.random() * chars.length)];
-          })
-          .join('')
-      );
-
-      if (iteration >= text.length) clearInterval(interval);
-      iteration += 1 / 3;
-    }, speed);
-    
-    return () => clearInterval(interval);
-  }, [text, speed]);
-
-  return display;
-};
-
-const MonoData = ({ children, className }) => {
-  const scrambled = useScramble(children || '');
-  return (
-    <span className={`font-mono tracking-widest text-xs ${className}`}>
-      {scrambled}
-    </span>
-  );
-};
+import MonoScramble from '@/components/ui/MonoScramble';
+import StatusLED from '@/components/ui/StatusLED';
+import MechButton from '@/components/ui/MechButton';
 
 // 3. Card de Projeto "Monolítico" (Exemplo)
 const ProjectMonolith = ({ title, description, color, isProtected }) => {
-  const colors = {
-    red: 'bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]',
-    blue: 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)]',
-    zinc: 'bg-zinc-600 shadow-[0_0_15px_rgba(82,82,91,0.5)]',
-  };
-
   return (
     <PrismaticPanel 
       hoverEffect 
@@ -62,11 +21,11 @@ const ProjectMonolith = ({ title, description, color, isProtected }) => {
       contentClassName="p-8 flex flex-col justify-between"
     >
       <div className="flex justify-between items-start z-10">
-        <div className={`w-1.5 h-1.5 rounded-full ${colors[color] || colors.zinc} animate-pulse`} />
+        <StatusLED color={color} size="md" />
         
         {isProtected && (
           <div className="flex items-center gap-2 text-zinc-600">
-            <MonoData className="text-[9px]">LOCKED</MonoData>
+            <MonoScramble className="text-[9px]">LOCKED</MonoScramble>
             <Lock className="w-3 h-3" />
           </div>
         )}
@@ -90,26 +49,6 @@ const ProjectMonolith = ({ title, description, color, isProtected }) => {
     </PrismaticPanel>
   );
 };
-
-// 4. Botão "Mecânico"
-const MechButton = ({ children, primary = false, icon: Icon }) => (
-  <button 
-    className={`
-      relative overflow-hidden group
-      h-10 px-6 flex items-center gap-3
-      uppercase text-[10px] font-black tracking-[0.2em]
-      transition-all duration-150 active:scale-95
-      ${primary 
-        ? 'bg-white text-black hover:bg-zinc-200' 
-        : 'bg-transparent text-zinc-400 border border-zinc-800 hover:text-white hover:border-zinc-600 hover:bg-white/5'}
-    `}
-  >
-    {Icon && <Icon className="w-3 h-3" />}
-    <span className="relative z-10">{children}</span>
-    
-    {primary && <div className="absolute inset-0 bg-white mix-blend-overlay opacity-0 group-hover:opacity-20 transition-opacity" />}
-  </button>
-);
 
 // --- TELA PRINCIPAL DA SIMULAÇÃO ---
 
@@ -147,20 +86,20 @@ export default function DesignSystemLab() {
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-black tracking-tight leading-none">BRICKFLOW OS</span>
-              <MonoData className="text-[8px] text-zinc-600 mt-1">V.2.0.ALPHA</MonoData>
+              <MonoScramble className="text-[8px] text-zinc-600 mt-1">V.2.0.ALPHA</MonoScramble>
             </div>
           </div>
           
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 text-zinc-600">
-               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-               <MonoData className="text-[9px]">SYSTEM ONLINE</MonoData>
+               <StatusLED color="green" size="sm" />
+               <MonoScramble className="text-[9px]">SYSTEM ONLINE</MonoScramble>
             </div>
           </div>
         </header>
 
         <div className="flex flex-col gap-6 max-w-2xl">
-          <MonoData className="text-red-500 text-xs font-bold">/// DASHBOARD_VIEW</MonoData>
+          <MonoScramble className="text-red-500 text-xs font-bold">/// DASHBOARD_VIEW</MonoScramble>
           <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.9]">
             Construa o<br />
             <span className="text-zinc-600">Impossível.</span>
@@ -210,14 +149,14 @@ export default function DesignSystemLab() {
              <div className="w-64 bg-zinc-950/30 border-r border-l border-zinc-900/50 p-4 flex flex-col gap-3">
                <div className="flex justify-between items-center pb-2 border-b border-zinc-900/50">
                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Backlog</span>
-                 <MonoData className="text-[9px] text-zinc-700">03</MonoData>
+                 <MonoScramble className="text-[9px] text-zinc-700">03</MonoScramble>
                </div>
                <div className="bg-black border border-zinc-800 p-3 hover:border-zinc-600 transition-colors cursor-pointer group">
                   <div className="flex justify-between mb-2">
                     <span className="text-[10px] font-bold text-zinc-300 uppercase">Refatorar UI</span>
-                    <div className="w-1 h-1 bg-red-600" />
+                    <StatusLED color="red" size="sm" />
                   </div>
-                  <MonoData className="text-[8px] text-zinc-600">TASK-992</MonoData>
+                  <MonoScramble className="text-[8px] text-zinc-600">TASK-992</MonoScramble>
                </div>
              </div>
 
@@ -226,14 +165,14 @@ export default function DesignSystemLab() {
              <div className="w-64 bg-zinc-950/30 border-r border-l border-zinc-900/50 p-4 flex flex-col gap-3">
                <div className="flex justify-between items-center pb-2 border-b border-zinc-900/50">
                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Em Progresso</span>
-                 <MonoData className="text-[9px] text-zinc-700">01</MonoData>
+                 <MonoScramble className="text-[9px] text-zinc-700">01</MonoScramble>
                </div>
                <div className="bg-zinc-900/40 border border-zinc-700 p-3 cursor-pointer relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-0.5 h-full bg-blue-600" />
                   <div className="flex justify-between mb-2 pl-2">
                     <span className="text-[10px] font-bold text-white uppercase">Integração API</span>
                   </div>
-                  <MonoData className="text-[8px] text-zinc-500 pl-2">TASK-104</MonoData>
+                  <MonoScramble className="text-[8px] text-zinc-500 pl-2">TASK-104</MonoScramble>
                </div>
              </div>
            </div>

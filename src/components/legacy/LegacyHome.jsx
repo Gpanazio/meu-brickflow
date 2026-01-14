@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Lock, Sparkles, Dna, CheckSquare, ArrowRight } from 'lucide-react';
 import SudokuGame from '@/components/SudokuGame';
@@ -8,6 +7,9 @@ import { hasPermission, PERMISSIONS } from '@/utils/accessControl';
 import { COLOR_VARIANTS } from '@/constants/theme';
 import PrismaticPanel from '@/components/ui/PrismaticPanel';
 import { Skeleton } from '@/components/ui/skeleton';
+import MonoScramble from '@/components/ui/MonoScramble';
+import StatusLED from '@/components/ui/StatusLED';
+import MechButton from '@/components/ui/MechButton';
 
 function LegacyHome({
   currentUser,
@@ -70,16 +72,16 @@ function LegacyHome({
              <h1 className="brick-title text-2xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
                Olá, <span className="text-zinc-700">{currentUser?.displayName || 'Visitante'}</span>
              </h1>
-             <p className="brick-mono mt-4 text-xs text-zinc-600 tracking-[0.2em] uppercase font-medium">
-               {currentDate}
+             <p className="brick-mono mt-4 text-[10px] text-zinc-600 tracking-[0.2em] uppercase font-medium">
+               <MonoScramble>{currentDate}</MonoScramble>
              </p>
           </div>
 
           {/* COLUNA 2: SORTE */}
           <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[150px]">
               <div className="flex items-center gap-3">
-                  <Sparkles className="w-3 h-3 text-red-600" />
-                  <span className="brick-mono text-xs text-zinc-500 uppercase tracking-[0.2em] font-medium">Sorte do Dia</span>
+                  <StatusLED color="red" size="sm" />
+                  <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-[0.2em] font-medium">Sorte do Dia</span>
               </div>
               <div className="flex-1 flex items-center mt-3">
                   <p className="font-sans text-xs md:text-sm text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
@@ -91,13 +93,13 @@ function LegacyHome({
           {/* COLUNA 3: PROBABILIDADE */}
           <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[180px]">
               <div className="flex items-center gap-3 mb-2 md:mb-0">
-                  <Dna className="w-3 h-3 text-emerald-600" />
-                  <span className="brick-mono text-xs text-zinc-500 uppercase tracking-[0.2em] font-medium">Probabilidade</span>
+                  <StatusLED color="green" size="sm" />
+                  <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-[0.2em] font-medium">Probabilidade</span>
               </div>
               <div className="flex-1 flex items-center">
                   <div className="flex gap-1 md:gap-2 w-full justify-between">
                       {safeMegaSena.map((n, i) => (
-                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-xs font-medium hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
+                          <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-[10px] font-medium hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                               {n.toString().padStart(2, '0')}
                           </div>
                       ))}
@@ -170,12 +172,13 @@ function LegacyHome({
           <div className="flex justify-between items-end mb-8 border-b border-white/10 pb-4">
             <h2 className="brick-mono text-xs text-zinc-400 uppercase tracking-[0.2em] font-medium">Projetos Ativos</h2>
 
-            <Button
+            <MechButton
+              primary
+              icon={Plus}
               onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-              className="bg-white text-black hover:bg-zinc-200 h-10 px-6 text-xs uppercase font-black tracking-[0.2em] rounded-none transition-transform active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
-              <Plus className="mr-2 h-3 w-3" /> Novo Projeto
-            </Button>
+              Novo Projeto
+            </MechButton>
           </div>
 
           {/* Lista de Projetos Prismáticos */}
@@ -240,7 +243,7 @@ function LegacyHome({
                 >
                   <div className="flex justify-between items-start z-10">
                     {/* LED de Status */}
-                    <div className={`w-1.5 h-1.5 rounded-full ${colors.bg} ${colors.shadow} animate-pulse`} />
+                    <StatusLED color={project.color} size="md" />
                     
                     <div className="flex gap-2">
                        {project.isProtected && <Lock className="w-3 h-3 text-zinc-600" />}

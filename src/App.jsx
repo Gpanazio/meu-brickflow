@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { WifiOff, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 
 // Components Legacy
@@ -357,86 +358,97 @@ export default function App() {
 
       <main className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-6 pb-20 md:pb-8 custom-scrollbar">
-          <Suspense fallback={<LoadingView />}>
-            {currentView === 'home' && (
-              <LegacyHome
-                currentUser={currentUser}
-                dailyPhrase={dailyPhrase}
-                megaSenaNumbers={megaSenaNumbers}
-                projects={appData.projects}
-                setModalState={setModalState}
-                handleAccessProject={(item, type) => {
-                    if (type === 'project') {
-                        setCurrentProject(item);
-                        setCurrentView('project');
-                    }
-                }}
-                handleDeleteProject={(item) => {
-                    const deletedAt = new Date().toISOString();
-                    updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: deletedAt } : p));
-                }}
-                isLoading={isLoading}
-                COLOR_VARIANTS={COLOR_VARIANTS}
-                handleDragStart={handleDragStart}
-                handleDragOver={handleDragOver}
-                handleDrop={handleDrop}
-              />
-            )}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentView + (currentProject?.id || '') + (currentSubProject?.id || '')}
+              initial={{ opacity: 0, y: 10, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -10, filter: 'blur(10px)' }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="min-h-full"
+            >
+              <Suspense fallback={<LoadingView />}>
+                {currentView === 'home' && (
+                  <LegacyHome
+                    currentUser={currentUser}
+                    dailyPhrase={dailyPhrase}
+                    megaSenaNumbers={megaSenaNumbers}
+                    projects={appData.projects}
+                    setModalState={setModalState}
+                    handleAccessProject={(item, type) => {
+                        if (type === 'project') {
+                            setCurrentProject(item);
+                            setCurrentView('project');
+                        }
+                    }}
+                    handleDeleteProject={(item) => {
+                        const deletedAt = new Date().toISOString();
+                        updateProjects(prev => prev.map(p => p.id === item.id ? { ...p, deleted_at: deletedAt } : p));
+                    }}
+                    isLoading={isLoading}
+                    COLOR_VARIANTS={COLOR_VARIANTS}
+                    handleDragStart={handleDragStart}
+                    handleDragOver={handleDragOver}
+                    handleDrop={handleDrop}
+                  />
+                )}
 
-            {currentView === 'trash' && (
-               <TrashView 
-                  trashItems={[]} 
-                  isLoading={false}
-                  onReturnHome={() => setCurrentView('home')}
-                  onRestoreItem={(item) => {
-                     console.log("Restore item:", item);
-                  }}
-               />
-            )}
-            
-            {currentView === 'project' && currentProject && (
-               <LegacyProjectView 
-                  currentProject={currentProject}
-                  setCurrentView={setCurrentView}
-                  setModalState={setModalState}
-                  COLOR_VARIANTS={COLOR_VARIANTS}
-                  handleAccessProject={(sub) => {
-                      setCurrentSubProject(sub);
-                      setCurrentView('subproject');
-                      setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
-                  }}
-                  history={[]}
-                  isHistoryLoading={false}
-                  historyError={null}
-               />
-            )}
-            
-             {currentView === 'subproject' && currentSubProject && (
-              <LegacyBoard 
-                 data={boardDataRaw} 
-                 entityName={currentSubProject.name}
-                 enabledTabs={currentSubProject.enabledTabs || []}
-                 currentBoardType={currentBoardType}
-                 setCurrentBoardType={setCurrentBoardType}
-                 currentSubProject={currentSubProject}
-                 currentProject={currentProject}
-                 setCurrentView={setCurrentView}
-                 setModalState={setModalState}
-                 handleTaskAction={handleTaskAction}
-                 handleDragStart={handleDragStart}
-                 handleDragOver={handleDragOver}
-                 handleDrop={handleDrop}
-                 handleDragEnter={handleDragEnter}
-                 dragOverTargetId={dragOverTargetId}
-                 files={files}
-                 handleFileUploadWithFeedback={handleFileUpload}
-                 isUploading={isUploading}
-                 isFileDragging={isDragging}
-                 setIsFileDragging={setIsDragging}
-                 handleDeleteFile={handleDeleteFile}
-              />
-             )}
-          </Suspense>
+                {currentView === 'trash' && (
+                   <TrashView 
+                      trashItems={[]} 
+                      isLoading={false}
+                      onReturnHome={() => setCurrentView('home')}
+                      onRestoreItem={(item) => {
+                         console.log("Restore item:", item);
+                      }}
+                   />
+                )}
+                
+                {currentView === 'project' && currentProject && (
+                   <LegacyProjectView 
+                      currentProject={currentProject}
+                      setCurrentView={setCurrentView}
+                      setModalState={setModalState}
+                      COLOR_VARIANTS={COLOR_VARIANTS}
+                      handleAccessProject={(sub) => {
+                          setCurrentSubProject(sub);
+                          setCurrentView('subproject');
+                          setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
+                      }}
+                      history={[]}
+                      isHistoryLoading={false}
+                      historyError={null}
+                   />
+                )}
+                
+                 {currentView === 'subproject' && currentSubProject && (
+                  <LegacyBoard 
+                     data={boardDataRaw} 
+                     entityName={currentSubProject.name}
+                     enabledTabs={currentSubProject.enabledTabs || []}
+                     currentBoardType={currentBoardType}
+                     setCurrentBoardType={setCurrentBoardType}
+                     currentSubProject={currentSubProject}
+                     currentProject={currentProject}
+                     setCurrentView={setCurrentView}
+                     setModalState={setModalState}
+                     handleTaskAction={handleTaskAction}
+                     handleDragStart={handleDragStart}
+                     handleDragOver={handleDragOver}
+                     handleDrop={handleDrop}
+                     handleDragEnter={handleDragEnter}
+                     dragOverTargetId={dragOverTargetId}
+                     files={files}
+                     handleFileUploadWithFeedback={handleFileUpload}
+                     isUploading={isUploading}
+                     isFileDragging={isDragging}
+                     setIsFileDragging={setIsDragging}
+                     handleDeleteFile={handleDeleteFile}
+                  />
+                 )}
+              </Suspense>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
 

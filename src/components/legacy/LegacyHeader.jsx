@@ -6,6 +6,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Separator } from '../ui/separator';
 import { RotateCcw, LogOut, Settings, Users } from 'lucide-react';
 import { Search } from '../Search';
+import MechButton from '../ui/MechButton';
+import StatusLED from '../ui/StatusLED';
 
 function LegacyHeader({
   currentView,
@@ -41,25 +43,23 @@ function LegacyHeader({
 
           {/* Navegação Primária */}
           <nav className="hidden md:flex items-center gap-4">
-            <Button
-              variant="ghost"
+            <MechButton
+              className={`h-8 px-4 ${currentView === 'home' ? 'text-white border-zinc-600 bg-white/5' : ''}`}
               onClick={() => setCurrentView('home')}
-              className={`brick-tech uppercase tracking-[0.2em] text-xs rounded-none h-10 px-4 font-medium ${currentView === 'home' ? 'text-white' : 'text-zinc-600 hover:text-white'}`}
             >
               Central
-            </Button>
+            </MechButton>
 
             {/* Breadcrumb de Projeto */}
             {currentProject && (
               <>
                 <span className="brick-tech text-zinc-800">/</span>
-                <Button
-                  variant="ghost"
+                <MechButton
+                  className={`h-8 px-4 ${currentView === 'project' ? 'text-white border-zinc-600 bg-white/5' : ''}`}
                   onClick={() => setCurrentView('project')}
-                  className="brick-tech uppercase tracking-[0.2em] text-xs text-zinc-600 hover:text-white rounded-none h-10 px-4 font-medium"
                 >
                   {currentProject.name}
-                </Button>
+                </MechButton>
               </>
             )}
           </nav>
@@ -81,7 +81,7 @@ function LegacyHeader({
              />
           </div>
 
-          {isSyncing && <div className="h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />}
+          {isSyncing && <StatusLED color="red" size="sm" />}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
