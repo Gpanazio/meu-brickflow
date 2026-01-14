@@ -123,7 +123,6 @@ export default function TeamManagementModal({ isOpen, onClose, currentUser }) {
         <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
           <Power className="w-5 h-5 text-green-500" /> Gerenciar Equipe
         </DialogTitle>
-        <button onClick={onClose}><X className="w-5 h-5 text-zinc-500 hover:text-white" /></button>
       </div>
 
       {!canManageTeam ? (

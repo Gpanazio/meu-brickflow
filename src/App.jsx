@@ -388,7 +388,17 @@ function AppShell() {
     );
   }
 
-  const currentEntity = currentView === 'subproject' ? currentSubProject : currentProject;
+  const currentEntity = useMemo(() => {
+    if (currentView === 'subproject') {
+      const found = appData?.projects
+        ?.find(p => p.id === currentProject?.id)
+        ?.subProjects
+        ?.find(sp => sp.id === currentSubProject?.id);
+      return found || currentSubProject;
+    }
+    return currentProject;
+  }, [currentView, currentProject, currentSubProject, appData?.projects]);
+
   const boardDataRaw = currentEntity?.boardData?.[currentBoardType] || { lists: [] };
 
   return (
