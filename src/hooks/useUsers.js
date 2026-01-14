@@ -40,10 +40,10 @@ export function useUsers() {
         try {
           const controller = new AbortController()
           const timeoutId = setTimeout(() => controller.abort(), 30000)
-          
+
           try {
             const response = await fetch('/api/health', { signal: controller.signal })
-            
+
             if (response.ok) {
               return 'ready'
             }
@@ -72,42 +72,64 @@ export function useUsers() {
     }
 
     ;(async () => {
-      const status = await waitForServer()
-      if (!alive) return
+      // First, try /api/auth/me directly - if it works, no need to wait for health check
+      try {
+        const user = await fetchMe()
+        if (!alive) return
 
-      if (status === 'ready') {
-        setIsDatabaseReady(true)
-        try {
-          const user = await fetchMe()
-          if (!alive) return
-
-          if (user) {
-            setCurrentUser(user)
-            setIsLoggedIn(true)
-            setShowLoginModal(false)
-            setAuthError(null)
-          } else {
-            setCurrentUser(null)
-            setIsLoggedIn(false)
-            setShowLoginModal(true)
-          }
-        } catch {
-          if (!alive) return
+        if (user) {
+          setCurrentUser(user)
+          setIsLoggedIn(true)
+          setShowLoginModal(false)
+          setAuthError(null)
+          setIsDatabaseReady(true)
+          setIsAuthLoading(false)
+        } else {
           setCurrentUser(null)
           setIsLoggedIn(false)
           setShowLoginModal(true)
+          setIsDatabaseReady(true)
           setIsAuthLoading(false)
         }
-      } else {
-        setIsDatabaseReady(false)
-        setIsAuthLoading(false)
-        setCurrentUser(null)
-        setIsLoggedIn(false)
-        
-        if (status === 'db_missing') {
-          setAuthError('Configuração do Banco de Dados faltando (DATABASE_URL).')
+      } catch {
+        // /api/auth/me failed, fallback to waitForServer
+        const status = await waitForServer()
+        if (!alive) return
+
+        if (status === 'ready') {
+          setIsDatabaseReady(true)
+          try {
+            const user = await fetchMe()
+            if (!alive) return
+
+            if (user) {
+              setCurrentUser(user)
+              setIsLoggedIn(true)
+              setShowLoginModal(false)
+              setAuthError(null)
+            } else {
+              setCurrentUser(null)
+              setIsLoggedIn(false)
+              setShowLoginModal(true)
+            }
+          } catch {
+            if (!alive) return
+            setCurrentUser(null)
+            setIsLoggedIn(false)
+            setShowLoginModal(true)
+            setIsAuthLoading(false)
+          }
         } else {
-          setAuthError('Não foi possível conectar ao servidor. Tente recarregar a página.')
+          setIsDatabaseReady(false)
+          setIsAuthLoading(false)
+          setCurrentUser(null)
+          setIsLoggedIn(false)
+
+          if (status === 'db_missing') {
+            setAuthError('Configuração do Banco de Dados faltando (DATABASE_URL).')
+          } else {
+            setAuthError('Não foi possível conectar ao servidor. Tente recarregar a página.')
+          }
         }
       }
     })()

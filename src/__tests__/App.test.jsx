@@ -1,5 +1,6 @@
 import React from 'react'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+/* eslint-disable no-undef */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import * as matchers from '@testing-library/jest-dom/matchers'
 import App from '../App.jsx'
@@ -14,7 +15,7 @@ const apiState = {
   projects: []
 }
 
-/* eslint-disable-next-line no-undef */
+ 
 describe('App', () => {
   beforeEach(() => {
     global.fetch = vi.fn((url) => {
@@ -44,7 +45,7 @@ describe('App', () => {
 
   it('shows SudokuGame for user Fran', async () => {
     // Mock user being logged in
-    /* eslint-disable-next-line no-undef */
+     
     global.fetch.mockImplementation((url) => {
       if (url === '/api/health') return Promise.resolve({ ok: true })
       if (url === '/api/projects') return Promise.resolve({ ok: true, json: async () => apiState })
@@ -58,12 +59,14 @@ describe('App', () => {
     })
 
     render(<App />)
-    expect(await screen.findByTestId('sudoku-game')).toBeInTheDocument()
+    // Wait for component to fully load (avoid waitForServer retries)
+    const sudokuGame = await screen.findByTestId('sudoku-game', { timeout: 10000 })
+    expect(sudokuGame).toBeInTheDocument()
   })
 
   it('does not show SudokuGame for other users', async () => {
     // Mock admin user being logged in
-    /* eslint-disable-next-line no-undef */
+     
     global.fetch.mockImplementation((url) => {
       if (url === '/api/health') return Promise.resolve({ ok: true })
       if (url === '/api/projects') return Promise.resolve({ ok: true, json: async () => apiState })

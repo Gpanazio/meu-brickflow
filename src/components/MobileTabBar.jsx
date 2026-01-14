@@ -1,5 +1,4 @@
 import React from 'react';
-/* eslint-disable-next-line no-unused-vars */
 import { Home, Search, Folder, User, Settings, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

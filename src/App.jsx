@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { WifiOff, Loader2 } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import './App.css';
 
@@ -78,6 +78,15 @@ export default function App() {
 
   const currentUserRef = useRef(null);
 
+  const updateProjects = useCallback((updater) => {
+    setAppData(prev => {
+      const newProjects = typeof updater === 'function' ? updater(prev.projects) : updater;
+      const newState = { ...prev, projects: newProjects };
+      appDataRef.current = newState;
+      return newState;
+    });
+  }, []);
+
   const saveDataToApi = useCallback(async (newData) => {
     setIsSyncing(true);
     try {
@@ -88,18 +97,18 @@ export default function App() {
         client_request_id: requestId,
         userId: currentUserRef.current?.username
       };
-      
+
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       if (response.status === 409) {
         console.warn('Conflito de sincronização! Recarregue a página.');
         return;
       }
-      
+
       if (response.ok) {
         const result = await response.json();
         setAppData(prev => {
@@ -116,16 +125,6 @@ export default function App() {
       setIsSyncing(false);
     }
   }, []);
-
-  const updateProjects = (updater) => {
-    setAppData(prev => {
-      const newProjects = typeof updater === 'function' ? updater(prev.projects) : updater;
-      const newState = { ...prev, projects: newProjects };
-      appDataRef.current = newState;
-      saveDataToApi(newState);
-      return newState;
-    });
-  };
 
   const updateUsers = (newUsersList) => {
     setAppData(prev => {

@@ -25,8 +25,8 @@ function LegacyHome({
   onTaskClick,
   isLoading
 }) {
-  const safeProjects = Array.isArray(projects) ? projects : [];
-  const safeMegaSena = Array.isArray(megaSenaNumbers) ? megaSenaNumbers : [0,0,0,0,0,0];
+  const safeProjects = useMemo(() => Array.isArray(projects) ? projects : [], [projects]);
+  const safeMegaSena = useMemo(() => Array.isArray(megaSenaNumbers) ? megaSenaNumbers : [0,0,0,0,0,0], [megaSenaNumbers]);
 
   const currentDate = useMemo(() => {
     return new Date().toLocaleDateString('pt-BR', { 
@@ -41,7 +41,7 @@ function LegacyHome({
   const userTasks = useMemo(() => {
     if (!currentUser?.username) return [];
     return getUserTasks(safeProjects, currentUser.username);
-  }, [safeProjects, currentUser]);
+  }, [safeProjects, currentUser?.username]);
 
   return (
     <div className="min-h-screen bg-black text-white pb-20 relative overflow-hidden">
