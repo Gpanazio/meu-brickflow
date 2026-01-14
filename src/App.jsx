@@ -202,52 +202,70 @@ function AppContent() {
 
       setProjects(prev => {
         if (!prev || !prev.projects) return prev;
-        const updatedProjects = prev.projects.map(p => {
-          if (p.id !== currentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== currentSubProject.id) return sp;
-              const spBoardData = sp.boardData || {};
-              return {
-                ...sp,
-                boardData: {
-                  ...spBoardData,
-                  [currentBoardType]: {
-                    ...board,
-                    lists: updatedList
+        const project = prev.projects.find(p => p.id === currentProject.id);
+        if (!project) return prev;
+
+        const subProject = project.subProjects.find(sp => sp.id === currentSubProject.id);
+        if (!subProject) return prev;
+
+        return {
+          ...prev,
+          projects: prev.projects.map(p => {
+            if (p.id !== currentProject.id) return p;
+            return {
+              ...p,
+              subProjects: p.subProjects.map(sp => {
+                if (sp.id !== currentSubProject.id) return sp;
+                const spBoardData = sp.boardData || {};
+                return {
+                  ...sp,
+                  boardData: {
+                    ...spBoardData,
+                    [currentBoardType]: {
+                      ...board,
+                      lists: [updatedList]
+                    }
                   }
-                }
+                };
+              })
+            };
+          })
+        };
+      });
+    } else if (action === 'delete') {
+      if (currentProject && currentSubProject) {
+        setProjects(prev => {
+          if (!prev || !prev.projects) return prev;
+          const project = prev.projects.find(p => p.id === currentProject.id);
+          if (!project) return prev;
+
+          return {
+            ...prev,
+            projects: prev.projects.map(p => {
+              if (p.id !== currentProject.id) return p;
+              return {
+                ...p,
+                subProjects: p.subProjects.map(sp => {
+                  if (sp.id !== currentSubProject.id) return sp;
+                  const spBoardData = sp.boardData || {};
+                  const board = spBoardData[currentBoardType];
+                  if (!board) return sp;
+
+                  return {
+                    ...sp,
+                    boardData: {
+                      ...spBoardData,
+                      [currentBoardType]: {
+                        ...board,
+                        lists: board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }))
+                      }
+                    }
+                  };
+                })
               };
             })
           };
         });
-        appDataRef.current = { ...appDataRef.current, projects: updatedProjects };
-        return { ...appDataRef.current, projects: updatedProjects };
-      });
-    } else if (action === 'delete') {
-      if (currentProject && currentSubProject) {
-        setProjects(prev => prev.map(p => {
-          if (p.id !== currentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== currentSubProject.id) return sp;
-              const board = sp.boardData?.[currentBoardType];
-              if (!board) return sp;
-              return {
-                ...sp,
-                boardData: {
-                  ...sp.boardData,
-                  [currentBoardType]: {
-                    ...board,
-                    lists: board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }))
-                  }
-                }
-              };
-            });
-          };
-        }));
       }
     } else if (action === 'move') {
     }
