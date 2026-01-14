@@ -75,13 +75,11 @@ export async function setupRoutes(app) {
       
       if (!isOwner && !isLegacyAdmin) return res.status(403).json({ error: 'Forbidden' });
 
-      const { rows } = await query('SELECT id, username, name, email, role, avatar, color, created_at FROM master_users ORDER BY username ASC');
+      const { rows } = await query('SELECT id, username, name, email, role, avatar, color, created_at FROM master_users');
       res.json({ users: rows });
     } catch (err) {
       console.error('Error fetching admin users:', err);
       res.status(500).json({ error: 'Failed to fetch users' });
     }
   });
-
-  app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 }

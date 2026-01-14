@@ -76,9 +76,12 @@ app.use('/api/', apiLimiter);
 // Setup centralized routes with multi-camada health check
 await setupRoutes(app);
 
+// Static files and SPA fallback - MUST be after routes
 const distPath = getDistPath();
 app.use(express.static(distPath));
-app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
 
 // Global Error Handler
 app.use((err, req, res) => {
