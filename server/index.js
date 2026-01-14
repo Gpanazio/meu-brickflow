@@ -42,35 +42,33 @@ app.use(helmet({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// CORS configuration
+// CORS configuration - Applied ONLY to /api
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
   .split(',')
   .map(o => o.trim())
   .filter(o => o.length > 0);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // 1. Allow requests with no origin (like mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    
-    // 2. Always allow in development
-    if (!isProd) return callback(null, true);
-    
-    // 3. Allow if in whitelist
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // 4. Fallback: Allow if it's the same origin (same domain)
-    // In many cases, if the app is served from the same domain, Origin will match Host
-    // but headers like Host include port, etc.
-    // For now, let's just log and reject, but provide a more helpful error.
-    
-    console.warn(`[CORS] Blocking origin: ${origin}. Whitelist: ${allowedOrigins.join(', ') || 'EMPTY'}`);
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-}));
+app.use('/api', (req, res, next) => {
+  const origin = req.headers.origin;
+  const host = req.headers.host;
+  const protocol = isProd ? 'https' : req.protocol;
+  const selfOrigin = `${protocol}://${host}`;
+
+  // Allow same-origin OR whitelist OR dev mode
+  const isSameOrigin = origin === selfOrigin;
+  const isWhitelisted = origin ? allowedOrigins.includes(origin) : true;
+  const shouldAllow = !isProd || isSameOrigin || isWhitelisted || !origin;
+
+  if (shouldAllow) {
+    cors({
+      origin: origin || true,
+      credentials: true
+    })(req, res, next);
+  } else {
+    console.warn(`[CORS] Rejected: ${origin}. Whitelist: ${allowedOrigins.join(', ')}`);
+    res.status(403).json({ error: 'CORS Policy: Origin not allowed' });
+  }
+});
 
 // Apply general API rate limit
 app.use('/api/', apiLimiter);
