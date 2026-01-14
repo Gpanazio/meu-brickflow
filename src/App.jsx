@@ -11,8 +11,7 @@ import { CreateSubProjectModal } from './components/CreateSubProjectModal';
 import { MobileTabBar } from './components/MobileTabBar';
 import { Toaster } from './components/ui/sonner';
 
-// Contexts
-import { useApp } from './contexts/AppContext';
+import { AppProvider, useApp } from './contexts/AppContext';
 
 // Novos Componentes Extraídos - Lazy Loaded
 const LegacyHome = lazy(() => import('./components/legacy/LegacyHome'));
@@ -42,8 +41,6 @@ const INITIAL_STATE = {
   version: 0
 };
 
-
-
 const generateMegaSenaNumbers = () => {
   const numbers = [];
   while (numbers.length < 6) {
@@ -53,7 +50,7 @@ const generateMegaSenaNumbers = () => {
   return numbers.sort((a, b) => a - b);
 };
 
-export default function App() {
+function AppShell() {
   const [appData, setAppData] = useState(null);
   const appDataRef = useRef(null);
   const currentUserRef = useRef(null);
@@ -565,5 +562,13 @@ export default function App() {
 
       <Toaster />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppShell />
+    </AppProvider>
   );
 }
