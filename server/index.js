@@ -10,6 +10,7 @@ import { randomUUID } from 'crypto';
 import { getClient, hasDatabaseUrl, query } from './db.js';
 import { requireAuth } from './middleware/auth.js';
 import { authLimiter, apiLimiter, writeLimiter } from './middleware/rateLimit.js';
+import { setupRoutes, checkHealth } from './routes/index.js';
 import { 
   LoginSchema, 
   RegisterSchema, 
@@ -92,15 +93,8 @@ app.use('/api', (req, res, next) => {
 // Apply general API rate limit
 app.use('/api/', apiLimiter);
 
-app.get('/api/health', async (req, res) => {
-  try {
-    await query('SELECT 1');
-    res.json({ status: 'ok', secure: req.secure, env: process.env.NODE_ENV });
-  } catch (err) {
-    console.error('Health check error:', err);
-    res.status(503).json({ status: 'error', code: 'DB_ERROR' });
-  }
-});
+// Setup centralized routes with multi-camada health check
+setupRoutes(app);
 
 app.get('/api/auth/me', async (req, res) => {
     const cookies = parseCookies(req.headers.cookie);

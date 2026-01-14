@@ -1,0 +1,43 @@
+import express from 'express';
+import { userService } from '../services/userService.js';
+import { requireAuth } from '../middleware/auth.js';
+
+const router = express.Router();
+
+router.get('/', async (req, res) => {
+  try {
+    const users = await userService.getAll();
+    res.json({ users });
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const user = await userService.create(req.body);
+    res.json({ user });
+  } catch (err) {
+    console.error('Error creating user:', err);
+    const message = err?.message || 'Failed to create user';
+    res.status(400).json({ error: message });
+  }
+});
+
+router.get('/:username', requireAuth, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await userService.findByUsername(username);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const { password_hash, ...safeUser } = user;
+    res.json({ user: safeUser });
+  } catch (err) {
+    console.error('Error fetching user:', err);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+export default router;
