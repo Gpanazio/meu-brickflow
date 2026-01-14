@@ -40,4 +40,14 @@ router.get('/:username', requireAuth, async (req, res) => {
   }
 });
 
+router.put('/me', requireAuth, async (req, res) => {
+  try {
+    const user = await userService.updateProfile(req.user.username, req.body);
+    res.json({ user });
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
 export default router;

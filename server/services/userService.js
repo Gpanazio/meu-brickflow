@@ -83,5 +83,21 @@ export const userService = {
       console.error('❌ Erro ao verificar login:', err);
       return { success: false, message: 'Erro ao verificar login' };
     }
+  },
+
+  async updateProfile(username, data) {
+    try {
+      const { name, email, avatar, color } = data;
+      const { rows } = await query(
+        'UPDATE master_users SET name = COALESCE($2, name), email = COALESCE($3, email), avatar = COALESCE($4, avatar), color = COALESCE($5, color), updated_at = NOW() WHERE username = $1 RETURNING id, username, name, email, avatar, color, role, created_at',
+        [username, name, email, avatar, color]
+      );
+
+      await cache.del(CACHE_KEY_USERS);
+      return rows[0];
+    } catch (err) {
+      console.error('❌ Erro ao atualizar perfil:', err);
+      throw err;
+    }
   }
 };
