@@ -60,9 +60,9 @@ export async function setupRoutes(app) {
     res.status(statusCode).json(checks);
   });
 
-  const { authRouter } = await import('./auth.js');
-  const { projectRouter } = await import('./projects.js');
-  const { userRouter } = await import('./users.js');
+  const authRouter = await import('./auth.js');
+  const projectRouter = await import('./projects.js');
+  const userRouter = await import('./users.js');
 
   app.use('/api/auth', authRouter.default);
   app.use('/api/projects', projectRouter.default);
