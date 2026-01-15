@@ -17,6 +17,8 @@ export default function FolderCard({
     onDelete,
     onChangeColor,
     onDrop,
+    onDragEnter,
+    onDragLeave,
     isDragOver = false
 }) {
     const [isEditing, setIsEditing] = useState(false);
@@ -52,6 +54,8 @@ export default function FolderCard({
             exit={{ opacity: 0, scale: 0.9 }}
             onDoubleClick={() => onDoubleClick(folder.id)}
             onDragOver={handleDragOver}
+            onDragEnter={onDragEnter}
+            onDragLeave={onDragLeave}
             onDrop={handleDrop}
             className={`
         group relative aspect-square cursor-pointer

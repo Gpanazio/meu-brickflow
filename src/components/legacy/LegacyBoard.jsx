@@ -527,6 +527,8 @@ function LegacyBoard({
                       onDelete={handleDeleteFolder}
                       onChangeColor={handleChangeFolderColor}
                       onDrop={handleMoveFile}
+                      onDragEnter={() => setDragOverFolderId(folder.id)}
+                      onDragLeave={() => setDragOverFolderId(null)}
                       isDragOver={dragOverFolderId === folder.id}
                     />
                   ))}
@@ -594,17 +596,17 @@ function LegacyBoard({
                 </AnimatePresence>
 
                 {/* Empty State / Upload Dropzone */}
-                {filteredFiles.length === 0 && (
+                {filteredFiles.length === 0 && (filteredFolders?.length || 0) === 0 && (
                   <div className="col-span-full h-80 border-2 border-dashed border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-4 group hover:border-zinc-600 transition-colors bg-white/[0.01]">
                     <div className="w-16 h-16 rounded-full bg-zinc-900 group-hover:bg-zinc-800 flex items-center justify-center transition-colors">
                       <Upload className="w-6 h-6 text-zinc-600 group-hover:text-zinc-300" />
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest group-hover:text-zinc-300">
-                        {files.length === 0 ? 'Nenhum arquivo encontrado' : 'Nenhum arquivo corresponde aos filtros'}
+                        {files.length === 0 && folders.length === 0 ? 'Nenhum item encontrado' : 'Nenhum item corresponde aos filtros'}
                       </p>
                       <p className="text-xs text-zinc-700 font-mono uppercase tracking-widest mt-2">
-                        {files.length === 0 ? 'Arraste arquivos ou use o botão adicionar' : 'Tente ajustar sua busca ou limpar os filtros'}
+                        {files.length === 0 && folders.length === 0 ? 'Arraste arquivos ou use os botões acima' : 'Tente ajustar sua busca ou limpar os filtros'}
                       </p>
                       {files.length > 0 && (
                         <MechButton
