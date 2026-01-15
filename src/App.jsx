@@ -711,11 +711,17 @@ function AppShell() {
 
       <Suspense fallback={null}>
         <CreateProjectModal
-          isOpen={modalState.isOpen && modalState.type === 'project' && modalState.mode === 'create'}
+          isOpen={modalState.isOpen && modalState.type === 'project' && (modalState.mode === 'create' || modalState.mode === 'edit')}
           onClose={() => setModalState({ isOpen: false })}
+          mode={modalState.mode}
+          initialData={modalState.data}
           onCreate={(data) => {
-            const newProj = { id: generateId('proj'), ...data, members: [], isArchived: false };
-            updateProjects(prev => [...prev, newProj]);
+            if (modalState.mode === 'edit') {
+              updateProjects(prev => prev.map(p => p.id === modalState.data.id ? { ...p, ...data } : p));
+            } else {
+              const newProj = { id: generateId('proj'), ...data, members: [], isArchived: false };
+              updateProjects(prev => [...prev, newProj]);
+            }
           }}
         />
 

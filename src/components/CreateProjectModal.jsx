@@ -7,9 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
-  const [isProtected, setIsProtected] = useState(false);
-  const [selectedColor, setSelectedColor] = useState('blue');
+export default function CreateProjectModal({ isOpen, onClose, onCreate, mode = 'create', initialData = null }) {
+  const [isProtected, setIsProtected] = useState(initialData?.isProtected || false);
+  const [selectedColor, setSelectedColor] = useState(initialData?.color || 'blue');
+
+  // Reset states when initialData changes (e.g. switching between create/edit or different projects)
+  useState(() => {
+    if (initialData) {
+      setIsProtected(initialData.isProtected || false);
+      setSelectedColor(initialData.color || 'blue');
+    }
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -41,7 +49,9 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
 
         {/* HEADER: Minimalista e Tipográfico */}
         <div className="flex justify-between items-center p-6 border-b border-white/10">
-          <DialogTitle className="text-lg font-black uppercase tracking-tighter text-white">Novo Projeto</DialogTitle>
+          <DialogTitle className="text-lg font-black uppercase tracking-tighter text-white">
+            {mode === 'edit' ? 'Editar Projeto' : 'Novo Projeto'}
+          </DialogTitle>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
@@ -53,6 +63,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
               name="name"
               required
               autoFocus
+              defaultValue={initialData?.name}
               className="bg-zinc-950 border border-zinc-800 text-white focus:ring-1 focus:ring-white/20 focus:border-zinc-600 h-12 rounded-none placeholder:text-zinc-800 transition-all font-medium text-sm"
               placeholder=""
             />
@@ -63,6 +74,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
             <Label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Descrição</Label>
             <textarea
               name="description"
+              defaultValue={initialData?.description}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-none p-4 text-sm text-zinc-300 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-zinc-600 min-h-[100px] resize-none placeholder:text-zinc-800 transition-all"
               placeholder=""
             />
@@ -116,6 +128,7 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate }) {
               <Input
                 name="password"
                 type="password"
+                defaultValue={initialData?.password}
                 placeholder="••••••"
                 className="bg-zinc-950 border border-zinc-800 h-12 text-white tracking-[0.5em] text-center rounded-none focus:border-white transition-colors text-sm"
               />

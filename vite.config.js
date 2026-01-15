@@ -31,6 +31,10 @@ export default defineConfig(({ mode }) => {
           target: `http://localhost:${BACKEND_PORT}`,
           changeOrigin: true,
           secure: false,
+        },
+        '/ws': {
+          target: `ws://localhost:${BACKEND_PORT}`,
+          ws: true,
         }
       }
     },

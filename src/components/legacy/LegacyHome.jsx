@@ -204,6 +204,10 @@ function LegacyHome({
                     onDragStart={(e) => handleDragStart && handleDragStart(e, project, 'project')}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop && handleDrop(e, project.id, 'project')}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project });
+                    }}
                     onClick={async () => {
                       if (project.isProtected) {
                         const password = prompt('Este projeto é protegido. Digite a senha:');

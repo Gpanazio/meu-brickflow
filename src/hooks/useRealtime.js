@@ -18,8 +18,11 @@ export function useRealtime(channel, onMessage) {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const ws = new WebSocket(`${protocol}//${host}/ws`);
+    // Use location.hostname to avoid including the port in development
+    const host = window.location.hostname;
+    const port = window.location.port ? `:${window.location.port}` : '';
+    const wsUrl = `${protocol}//${host}${port}/ws`;
+    const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
       console.log(`✅ WebSocket conectado: ${channel}`);
