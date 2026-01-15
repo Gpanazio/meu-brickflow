@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import MonoScramble from '@/components/ui/MonoScramble';
 import StatusLED from '@/components/ui/StatusLED';
 import MechButton from '@/components/ui/MechButton';
+import ProjectCard from '@/components/ProjectCard';
 
 function LegacyHome({
   currentUser,
