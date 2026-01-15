@@ -1,11 +1,12 @@
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { USER_COLORS, COLOR_VARIANTS, LABEL_SWATCH_CLASSES } from '@/constants/theme';
 
 export default function CreateProjectModal({ isOpen, onClose, onCreate, mode = 'create', initialData = null }) {
   const [isProtected, setIsProtected] = useState(initialData?.isProtected || false);
@@ -86,19 +87,30 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate, mode = '
             {/* COR */}
             <div className="space-y-2">
               <Label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Cor</Label>
-              <div className="relative">
-                <select
-                  value={selectedColor}
-                  onChange={(e) => setSelectedColor(e.target.value)}
-                  className="w-full h-12 bg-zinc-950 border border-zinc-800 rounded-none text-white px-3 text-xs appearance-none focus:outline-none focus:border-zinc-600 uppercase font-bold tracking-widest cursor-pointer transition-colors"
-                >
-                  <option value="blue">Blue</option>
-                  <option value="red">Red</option>
-                  <option value="green">Green</option>
-                  <option value="purple">Purple</option>
-                  <option value="orange">Orange</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-zinc-600 pointer-events-none" />
+              <div className="grid grid-cols-6 gap-1.5">
+                {USER_COLORS.map((color) => {
+                  const isSelected = selectedColor === color;
+                  const variant = COLOR_VARIANTS[color] || COLOR_VARIANTS.blue;
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setSelectedColor(color)}
+                      className={cn(
+                        "relative h-10 w-full rounded-sm transition-all duration-200",
+                        LABEL_SWATCH_CLASSES[color],
+                        isSelected
+                          ? "ring-2 ring-white ring-offset-2 ring-offset-black scale-105 shadow-lg"
+                          : "opacity-60 hover:opacity-100 hover:scale-105",
+                        variant.hover
+                      )}
+                    >
+                      {isSelected && (
+                        <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow-md" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
