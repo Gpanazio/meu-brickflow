@@ -19,14 +19,14 @@ export function QuickLookModal({ file, isOpen, onClose }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] bg-black/95 border border-zinc-800 p-0 overflow-hidden rounded-none shadow-2xl backdrop-blur-xl scanlines">
-        <div className="flex flex-col md:flex-row h-[500px] relative z-10">
+      <DialogContent className="sm:max-w-[90vw] md:max-w-[800px] bg-black/95 border border-zinc-800 p-0 overflow-hidden rounded-none shadow-2xl backdrop-blur-xl scanlines">
+        <div className="flex flex-col md:flex-row h-[80vh] md:h-[600px] relative z-10">
           {/* Visualização */}
-          <div className="flex-1 bg-zinc-950/50 flex items-center justify-center p-4 relative border-r border-zinc-900 group">
+          <div className="flex-1 bg-zinc-950/50 flex items-center justify-center p-4 relative border-b md:border-b-0 md:border-r border-zinc-900 group">
             {isImage ? (
               <img src={file.data} alt={file.name} className="max-w-full max-h-full object-contain shadow-2xl" />
             ) : isPdf ? (
-              <iframe src={file.data} className="w-full h-full border-0" title={file.name} />
+              <iframe src={`${file.data}#toolbar=0`} className="w-full h-full border-0 bg-white" title={file.name} />
             ) : (
               <div className="flex flex-col items-center gap-4">
                 <FileText className="w-20 h-20 text-zinc-800" />

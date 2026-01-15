@@ -456,10 +456,18 @@ function LegacyBoard({
                           <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
-                      <div className="mb-3 opacity-50 group-hover:opacity-100 transition-opacity">
-                        {file.type?.includes('image') ? <Eye className="w-6 h-6 text-white" /> : <FileText className="w-6 h-6 text-white" />}
+                      <div className="mb-3 opacity-50 group-hover:opacity-100 transition-opacity w-full h-full flex items-center justify-center overflow-hidden">
+                        {file.type?.includes('image') ? (
+                          <img src={file.data} alt={file.name} className="w-full h-full object-cover" />
+                        ) : file.type?.includes('pdf') ? (
+                          <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                             <FileText className="w-10 h-10 text-red-600" />
+                          </div>
+                        ) : (
+                          <FileText className="w-10 h-10 text-white" />
+                        )}
                       </div>
-                      <p className="text-xs text-zinc-500 font-mono truncate w-full text-center group-hover:text-white transition-colors font-medium">{file.name}</p>
+                      <p className="absolute bottom-0 left-0 right-0 bg-black/80 p-1 text-[9px] text-zinc-300 font-mono truncate text-center group-hover:text-white transition-colors font-medium backdrop-blur-sm z-10">{file.name}</p>
                       <p className="text-[10px] text-zinc-700 uppercase tracking-widest mt-1 font-medium">{formatFileSize(file.size)}</p>
                       
                       {/* Hint para Quick Look */}
