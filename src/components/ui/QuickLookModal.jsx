@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Dialog, DialogContent, DialogTitle } from './dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './dialog';
 import { X, Download, FileText, Calendar, HardDrive, Type, Music, Video } from 'lucide-react';
 import { formatFileSize } from '../../utils/formatFileSize';
 
@@ -23,6 +23,7 @@ export function QuickLookModal({ file, isOpen, onClose }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[90vw] md:max-w-[850px] bg-black/95 border border-zinc-800 p-0 overflow-hidden rounded-none shadow-2xl backdrop-blur-xl scanlines">
         <DialogTitle className="sr-only">{file.name}</DialogTitle>
+        <DialogDescription className="sr-only">Visualização detalhada do arquivo {file.name}</DialogDescription>
         <div className="flex flex-col md:flex-row h-[85vh] md:h-[650px] relative z-10">
           {/* Visualização */}
           <div className="flex-1 bg-zinc-950/50 flex items-center justify-center p-4 relative border-b md:border-b-0 md:border-r border-zinc-900 group">
@@ -51,22 +52,22 @@ export function QuickLookModal({ file, isOpen, onClose }) {
                 <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest">Sem pré-visualização disponível</p>
               </div>
             )}
-            
+
             <div className="absolute top-4 right-4 flex gap-2">
-               <a 
-                href={file.data} 
+              <a
+                href={file.data}
                 download={file.name}
                 className="p-2 bg-white text-black hover:bg-zinc-200 transition-colors"
                 title="Download"
-               >
-                 <Download className="w-4 h-4" />
-               </a>
-               <button 
+              >
+                <Download className="w-4 h-4" />
+              </a>
+              <button
                 onClick={onClose}
                 className="p-2 bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
-               >
-                 <X className="w-4 h-4" />
-               </button>
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -113,11 +114,11 @@ export function QuickLookModal({ file, isOpen, onClose }) {
 
             <div className="pt-4">
               <div className="p-3 bg-zinc-950 border border-zinc-900">
-                 <p className="text-[9px] text-zinc-700 font-mono leading-relaxed">
-                   STATUS: ENCRYPTED<br/>
-                   NODE: BRICKFLOW-OS<br/>
-                   ACCESS: GRANTED
-                 </p>
+                <p className="text-[9px] text-zinc-700 font-mono leading-relaxed">
+                  STATUS: ENCRYPTED<br />
+                  NODE: BRICKFLOW-OS<br />
+                  ACCESS: GRANTED
+                </p>
               </div>
             </div>
           </div>

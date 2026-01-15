@@ -8,6 +8,7 @@ import { formatFileSize } from '../../utils/formatFileSize';
 import { AnimatePresence, motion } from 'framer-motion';
 import MechButton from '../ui/MechButton';
 import StatusLED from '../ui/StatusLED';
+import PrismaticPanel from '../ui/PrismaticPanel';
 import { QuickLookModal } from '../ui/QuickLookModal';
 import {
   AlertDialog,
@@ -88,7 +89,13 @@ function LegacyBoard({
   }, [currentBoardType, data?.lists]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)]">
+    <div className="flex flex-col h-[calc(100vh-6rem)] relative overflow-hidden">
+      {/* Grid de Fundo (Abismo) */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" style={{ filter: 'contrast(150%) brightness(100%)' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/80" />
+        <div className="absolute inset-0 opacity-[0.10]" style={{ backgroundImage: "linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)", backgroundSize: '40px 40px', maskImage: 'radial-gradient(circle at center, black, transparent 80%)' }} />
+      </div>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-zinc-900 pb-4 gap-4">
         <div className="flex items-center gap-4">
           <MechButton
@@ -110,7 +117,7 @@ function LegacyBoard({
         </Tabs>
       </div>
 
-      <div className="flex-1 overflow-hidden relative bg-black">
+      <div className="flex-1 overflow-hidden relative z-10">
         <div className="absolute inset-0 overflow-auto pr-2">
           {/* KANBAN */}
           {currentBoardType === 'kanban' && (
@@ -140,7 +147,7 @@ function LegacyBoard({
                     setDraggingId(null);
                   }}
                 >
-                  <div 
+                  <div
                     className={`p-4 border-b border-zinc-900 flex justify-between items-center cursor-grab active:cursor-grabbing group/header ${draggingId === list.id ? 'opacity-40' : ''}`}
                     draggable
                     onDragStart={(e) => {
@@ -169,7 +176,7 @@ function LegacyBoard({
                     <div className="flex items-center gap-2">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <button 
+                          <button
                             className="h-8 w-8 flex items-center justify-center rounded-none border border-transparent hover:border-red-900/50 hover:bg-red-950/20 text-zinc-800 hover:text-red-600 transition-all group/del"
                             title="Excluir Coluna"
                           >
@@ -185,7 +192,7 @@ function LegacyBoard({
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel className="rounded-none border-zinc-800 bg-transparent text-zinc-500 hover:bg-zinc-900 hover:text-white uppercase text-[10px] font-bold tracking-widest h-10">Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
+                            <AlertDialogAction
                               onClick={() => handleTaskAction('deleteColumn', { listId: list.id })}
                               className="rounded-none bg-red-600 hover:bg-red-700 text-white uppercase text-[10px] font-bold tracking-widest h-10"
                             >
@@ -196,7 +203,7 @@ function LegacyBoard({
                       </AlertDialog>
                     </div>
                   </div>
-                  <div 
+                  <div
                     className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black"
                     onDragOver={handleDragOver}
                     onDrop={(e) => {
@@ -256,7 +263,7 @@ function LegacyBoard({
                   </div>
                 </motion.div>
               )) : <div className="p-8 text-zinc-500 text-xs">Nenhum dado encontrado para este quadro.</div>}
-              
+
               <div className="w-72 flex flex-col h-full bg-black/50 border-r border-zinc-900 items-center justify-center p-6">
                 <MechButton
                   className="w-full border-dashed border-zinc-800 text-zinc-600 hover:text-white hover:bg-zinc-950 h-12"
@@ -277,11 +284,11 @@ function LegacyBoard({
               className="max-w-4xl mx-auto space-y-8"
             >
               {data.lists ? data.lists.map(list => (
-                <div 
-                  key={list.id} 
+                <div
+                  key={list.id}
                   className={`space-y-0 transition-opacity ${draggingId === list.id ? 'opacity-40' : ''}`}
                 >
-                  <div 
+                  <div
                     className="cursor-grab active:cursor-grabbing group/header"
                     draggable
                     onDragStart={(e) => {
@@ -311,32 +318,32 @@ function LegacyBoard({
                           }}
                         />
                       </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <button 
-                          className="h-8 w-8 flex items-center justify-center rounded-none border border-transparent hover:border-red-900/50 hover:bg-red-950/20 text-zinc-800 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="glass-panel border-zinc-800 rounded-none bg-black/90">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-white uppercase tracking-tighter font-black">Confirmar Exclusão</AlertDialogTitle>
-                          <AlertDialogDescription className="text-zinc-500 font-mono text-xs uppercase tracking-widest">
-                            Esta ação não pode ser desfeita. Isso excluirá permanentemente a lista "{list.title}" e todas as tarefas vinculadas.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="rounded-none border-zinc-800 bg-transparent text-zinc-500 hover:bg-zinc-900 hover:text-white uppercase text-[10px] font-bold tracking-widest h-10">Cancelar</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => handleTaskAction('deleteColumn', { listId: list.id })}
-                            className="rounded-none bg-red-600 hover:bg-red-700 text-white uppercase text-[10px] font-bold tracking-widest h-10"
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            className="h-8 w-8 flex items-center justify-center rounded-none border border-transparent hover:border-red-900/50 hover:bg-red-950/20 text-zinc-800 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"
                           >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="glass-panel border-zinc-800 rounded-none bg-black/90">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-white uppercase tracking-tighter font-black">Confirmar Exclusão</AlertDialogTitle>
+                            <AlertDialogDescription className="text-zinc-500 font-mono text-xs uppercase tracking-widest">
+                              Esta ação não pode ser desfeita. Isso excluirá permanentemente a lista "{list.title}" e todas as tarefas vinculadas.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="rounded-none border-zinc-800 bg-transparent text-zinc-500 hover:bg-zinc-900 hover:text-white uppercase text-[10px] font-bold tracking-widest h-10">Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleTaskAction('deleteColumn', { listId: list.id })}
+                              className="rounded-none bg-red-600 hover:bg-red-700 text-white uppercase text-[10px] font-bold tracking-widest h-10"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                   <div className="bg-black border-t border-zinc-900">
@@ -398,30 +405,38 @@ function LegacyBoard({
             </motion.div>
           )}
 
-          {/* FILES */}
+          {/* FILES VIEW REFINED */}
           {currentBoardType === 'files' && (
             <div
-              className={`min-h-[400px] relative transition-all duration-300 p-0 ${isFileDragging ? 'bg-zinc-950 border-2 border-dashed border-red-900' : ''}`}
+              className={`min-h-[500px] relative transition-all duration-300 pb-20 ${isFileDragging ? 'bg-zinc-950/50' : ''}`}
               onDragOver={(e) => { e.preventDefault(); setIsFileDragging(true); }}
               onDragLeave={(e) => { e.preventDefault(); setIsFileDragging(false); }}
               onDrop={handleFileDrop}
             >
+              {/* Upload Overlay */}
               {(isFileDragging || isUploading) && (
-                <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/90 backdrop-blur-sm">
+                <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-md rounded-lg border border-white/10 m-4">
                   {isUploading ? (
-                    <div className="animate-pulse text-white text-xs uppercase tracking-widest">Carregando...</div>
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-12 h-12 rounded-full border-2 border-t-white border-zinc-800 animate-spin" />
+                      <div className="animate-pulse text-white text-xs uppercase tracking-[0.2em] font-bold">Processando Upload...</div>
+                    </div>
                   ) : (
-                    <div className="text-center animate-pulse">
-                      <Upload className="w-8 h-8 text-white mx-auto mb-4" />
-                      <p className="text-white font-mono text-xs uppercase tracking-[0.5em]">Solte para Upload</p>
+                    <div className="text-center animate-pulse p-10 border-2 border-dashed border-white/20 rounded-xl">
+                      <Upload className="w-12 h-12 text-white mx-auto mb-6" />
+                      <p className="text-white font-mono text-sm uppercase tracking-[0.5em] font-bold">Solte arquivos aqui</p>
                     </div>
                   )}
                 </div>
               )}
 
-              <div className="flex justify-between items-center bg-zinc-950 p-6 border-b border-zinc-900 mb-6">
+              {/* Header Files Styled */}
+              <PrismaticPanel className="mb-8 mx-1" contentClassName="flex justify-between items-center p-6">
                 <div>
-                  <h3 className="text-xl font-black text-white uppercase tracking-tighter">Arquivos</h3>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Central de Arquivos</h3>
+                  <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest mt-1">
+                    {filesForSubProject.length} ARQUIVOS • {formatFileSize(filesForSubProject.reduce((acc, f) => acc + f.size, 0))} TOTAL
+                  </p>
                 </div>
                 <div className="relative">
                   <Input
@@ -431,12 +446,12 @@ function LegacyBoard({
                     onChange={handleFileUploadWithFeedback}
                   />
                   <MechButton primary icon={Upload}>
-                    Upload
+                    Adicionar
                   </MechButton>
                 </div>
-              </div>
+              </PrismaticPanel>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-px bg-zinc-900 border border-zinc-900">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 px-1">
                 <AnimatePresence>
                   {filesForSubProject.map(file => (
                     <motion.div
@@ -447,51 +462,69 @@ function LegacyBoard({
                       onMouseEnter={() => setHoveredFileId(file.id)}
                       onMouseLeave={() => setHoveredFileId(null)}
                       onClick={() => setPreviewFile(file)}
-                      className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4 border border-transparent hover:border-zinc-800 cursor-pointer"
+                      className="group relative aspect-square cursor-pointer"
                     >
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                        <button
-                          className="h-6 w-6 flex items-center justify-center text-zinc-600 hover:text-red-600 transition-colors glitch-hover"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteFile(file.id);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                      <div className="mb-3 opacity-50 group-hover:opacity-100 transition-opacity w-full h-full flex items-center justify-center overflow-hidden">
-                        {file.type?.includes('image') ? (
-                          <img src={file.data} alt={file.name} className="w-full h-full object-cover" />
-                        ) : file.type?.includes('pdf') ? (
-                          <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                             <FileText className="w-10 h-10 text-red-600" />
+                      {/* Card Container */}
+                      <div className="absolute inset-0 glass-panel border-zinc-800 hover:border-zinc-500 bg-black/40 hover:bg-white/5 transition-all flex flex-col items-center justify-center overflow-hidden">
+
+                        {/* Botões de Ação Overlay */}
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex gap-2">
+                          <button
+                            className="h-7 w-7 flex items-center justify-center bg-black/50 hover:bg-red-900/80 rounded border border-white/10 text-white transition-colors backdrop-blur-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteFile(file.id);
+                            }}
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Preview do Conteúdo */}
+                        <div className="w-full h-full p-8 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-all group-hover:scale-105 duration-500">
+                          {file.type?.includes('image') ? (
+                            <img src={file.data} alt={file.name} className="w-full h-full object-cover rounded-sm box-shadow-lg" style={{ boxShadow: '0 0 20px rgba(0,0,0,0.5)' }} />
+                          ) : file.type?.includes('pdf') ? (
+                            <FileText className="w-16 h-16 text-zinc-400 group-hover:text-red-500 transition-colors drop-shadow-2xl" />
+                          ) : file.type?.includes('audio') ? (
+                            <Music className="w-16 h-16 text-zinc-400 group-hover:text-emerald-500 transition-colors drop-shadow-2xl" />
+                          ) : file.type?.includes('video') ? (
+                            <Video className="w-16 h-16 text-zinc-400 group-hover:text-blue-500 transition-colors drop-shadow-2xl" />
+                          ) : (
+                            <FileText className="w-16 h-16 text-zinc-400 group-hover:text-white transition-colors" />
+                          )}
+                        </div>
+
+                        {/* Rodapé Metadados */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/90 border-t border-white/5 p-3 backdrop-blur-md z-10">
+                          <p className="text-[10px] text-white font-bold uppercase tracking-wider truncate mb-1">{file.name}</p>
+                          <div className="flex justify-between items-center">
+                            <p className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest">{formatFileSize(file.size)}</p>
+                            <span className="text-[8px] font-mono text-zinc-600 bg-white/10 px-1 rounded uppercase opacity-0 group-hover:opacity-100 transition-opacity">Espaço</span>
                           </div>
-                        ) : file.type?.includes('audio') ? (
-                          <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                             <Music className="w-10 h-10 text-emerald-500" />
-                          </div>
-                        ) : file.type?.includes('video') ? (
-                          <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                             <Video className="w-10 h-10 text-blue-500" />
-                          </div>
-                        ) : (
-                          <FileText className="w-10 h-10 text-white" />
-                        )}
-                      </div>
-                      <p className="absolute bottom-0 left-0 right-0 bg-black/80 p-1 text-[9px] text-zinc-300 font-mono truncate text-center group-hover:text-white transition-colors font-medium backdrop-blur-sm z-10">{file.name}</p>
-                      <p className="text-[10px] text-zinc-700 uppercase tracking-widest mt-1 font-medium">{formatFileSize(file.size)}</p>
-                      
-                      {/* Hint para Quick Look */}
-                      <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-40 transition-opacity">
-                         <span className="text-[8px] font-mono text-zinc-500 uppercase">[SPACE]</span>
+                        </div>
+
                       </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>
+
+                {/* Empty State / Upload Dropzone */}
+                {filesForSubProject.length === 0 && (
+                  <div className="col-span-full h-64 border-2 border-dashed border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-4 group hover:border-zinc-600 transition-colors bg-white/[0.01]">
+                    <div className="w-16 h-16 rounded-full bg-zinc-900 group-hover:bg-zinc-800 flex items-center justify-center transition-colors">
+                      <Upload className="w-6 h-6 text-zinc-600 group-hover:text-zinc-300" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest group-hover:text-zinc-300">Nenhum arquivo encontrado</p>
+                      <p className="text-xs text-zinc-700 font-mono uppercase tracking-widest mt-2">Arraste arquivos ou use o botão adicionar</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <QuickLookModal 
+              <QuickLookModal
                 file={previewFile}
                 isOpen={!!previewFile}
                 onClose={() => setPreviewFile(null)}
