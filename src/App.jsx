@@ -160,10 +160,6 @@ function AppShell() {
     currentUserRef.current = _appCurrentUser;
   }, [_appCurrentUser, currentUser, setCurrentUser]);
 
-  useEffect(() => {
-    setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
-    setMegaSenaNumbers(generateMegaSenaNumbers());
-
   const loadData = useCallback(async () => {
     try {
       const response = await fetch('/api/projects');
