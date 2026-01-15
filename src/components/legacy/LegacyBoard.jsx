@@ -446,12 +446,16 @@ function LegacyBoard({
                       exit={{ opacity: 0, scale: 0.9 }}
                       onMouseEnter={() => setHoveredFileId(file.id)}
                       onMouseLeave={() => setHoveredFileId(null)}
-                      className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4 border border-transparent hover:border-zinc-800"
+                      onClick={() => setPreviewFile(file)}
+                      className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4 border border-transparent hover:border-zinc-800 cursor-pointer"
                     >
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                         <button
                           className="h-6 w-6 flex items-center justify-center text-zinc-600 hover:text-red-600 transition-colors glitch-hover"
-                          onClick={() => handleDeleteFile(file.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteFile(file.id);
+                          }}
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -482,11 +486,6 @@ function LegacyBoard({
                       <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-40 transition-opacity">
                          <span className="text-[8px] font-mono text-zinc-500 uppercase">[SPACE]</span>
                       </div>
-
-                      <div
-                        className="absolute inset-0 z-10 cursor-pointer"
-                        onClick={() => setPreviewFile(file)}
-                      />
                     </motion.div>
                   ))}
                 </AnimatePresence>
