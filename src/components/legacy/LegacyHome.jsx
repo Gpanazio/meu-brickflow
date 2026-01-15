@@ -243,7 +243,7 @@ function LegacyHome({
                         {project.isProtected && <Lock className="w-3 h-3 text-zinc-600" />}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                            <button className="text-zinc-600 hover:text-white transition-colors">
+                            <button className="text-zinc-600 hover:text-white transition-colors cursor-pointer">
                               <MoreVertical className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>

@@ -22,7 +22,7 @@ export default function FolderBreadcrumb({ path, onNavigate }) {
                 transition-colors
                 ${isLast
                                     ? 'text-white cursor-default'
-                                    : 'text-zinc-500 hover:text-white hover:bg-zinc-900'
+                                    : 'text-zinc-500 hover:text-white hover:bg-zinc-900 cursor-pointer'
                                 }
               `}
                         >

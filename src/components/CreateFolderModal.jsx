@@ -65,7 +65,7 @@ export default function CreateFolderModal({ isOpen, onClose, onCreate }) {
                                     key={c.id}
                                     onClick={() => setColor(c.id)}
                                     className={`
-                    w-10 h-10 ${c.bg} ${c.border} border-2 transition-all
+                    w-10 h-10 ${c.bg} ${c.border} border-2 transition-all cursor-pointer
                     ${color === c.id ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : ''}
                   `}
                                     title={c.name}
