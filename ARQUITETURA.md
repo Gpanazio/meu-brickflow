@@ -43,6 +43,7 @@
 - ProjectView: Visualização das listas de um projeto específico
 - PasswordModal: Modal para autenticação de projetos protegidos
 - ProjectForm: Formulário para criar novos projetos
+- QuickLookModal: Visualizador universal (Imagens, PDF, Metadados)
 
 ### 3. Navegação
 - Página inicial: Lista de projetos
@@ -85,6 +86,11 @@ Esta seção define o comportamento esperado do Brickflow em produção (Railway
   - `id` (session id), `user_id` (username), `expires_at`.
 - `brickflow_state`: estado do app (projetos/boards/etc). Não é a fonte de verdade de usuários.
 
+### Cache e Performance (Railway Redis)
+- **Redis**: Usado para cache de queries de banco, sessões e real-time events.
+- **Fallback**: Caso o Redis falhe, o sistema alterna automaticamente para um `memory-fallback`.
+- **Compressão**: Todas as rotas de API e arquivos estáticos são comprimidos via Gzip.
+
 ### Sessão (cookie)
 
 - Cookie: `bf_session`.
@@ -102,4 +108,3 @@ Esta seção define o comportamento esperado do Brickflow em produção (Railway
 
 - O backend garante que exista um usuário `Gabriel` e que ele tenha papel `owner` (admin).
 - Usuários com papel `owner` podem gerenciar novos usuários (CRUD) via endpoints admin.
-

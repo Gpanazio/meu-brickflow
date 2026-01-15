@@ -40,10 +40,21 @@ Refinamento completo da interface seguindo a estética "Prismática":
 ## 📦 Performance e Melhorias (Fase 2)
 
 - **Otimização de Bundle:** Code splitting e React Lazy para carregamento sob demanda.
-- **Cache de Backend:** Implementação de cache em memória para reduzir latência de leitura (TTL 60s).
+- **Cache de Backend & Redis:** 
+  - Suporte a **Railway Redis** para sessões e cache persistente (`REDIS_URL`).
+  - Fallback automático para cache em memória quando o Redis não está disponível.
+- **Compressão de Dados:** Ativação de Gzip/Brotli via middleware `compression` para reduzir o payload de rede em até 70%.
+- **Cache de Assets Estáticos:** Configuração de cache agressivo (1 ano) para arquivos estáticos (JS, CSS, Imagens) com invalidação automática via hash.
 
+## 📎 Gestão de Arquivos (Fase 5)
 
-## 📋 Requisitos
+- **Upload de Alta Performance:** Suporte a arquivos de até 50MB com armazenamento otimizado no estado do projeto.
+- **Visualização Inteligente:** 
+  - Geração automática de **miniaturas** para imagens no dashboard.
+  - **Visualizador de PDF** integrado diretamente no sistema através do modal QuickLook.
+  - Suporte a visualização rápida (QuickLook) via tecla `Espaço`.
+
+## � Requisitos
 
 - Node.js 18+
 - npm ou pnpm
@@ -54,7 +65,7 @@ Refinamento completo da interface seguindo a estética "Prismática":
 npm install
 ```
 
-## 🛠️ Executar localmente
+## �🛠️ Executar localmente
 
 ```bash
 # Frontend + Backend (Proxy configurado)
@@ -87,4 +98,3 @@ NODE_ENV="production" # Define comportamento de segurança (SSL/Cookies)
 ### Autenticação
 - **Cookie:** `bf_session` (HttpOnly, SameSite=Lax, Secure em produção).
 - **Tabelas:** `master_users` (usuários), `brickflow_sessions` (sessões), `brickflow_state` (estado global).
-
