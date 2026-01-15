@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import ResponsibleUsersButton from '../ResponsibleUsersButton';
 import { Input } from '../ui/input';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
@@ -8,6 +8,7 @@ import { formatFileSize } from '../../utils/formatFileSize';
 import { AnimatePresence, motion } from 'framer-motion';
 import MechButton from '../ui/MechButton';
 import StatusLED from '../ui/StatusLED';
+import { QuickLookModal } from '../ui/QuickLookModal';
 
 function LegacyBoard({
   data,
@@ -33,6 +34,21 @@ function LegacyBoard({
   files,
   handleDeleteFile
 }) {
+  const [hoveredFileId, setHoveredFileId] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === 'Space' && hoveredFileId && currentBoardType === 'files' && !previewFile) {
+        e.preventDefault();
+        const file = filesForSubProject.find(f => f.id === hoveredFileId);
+        if (file) setPreviewFile(file);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hoveredFileId, currentBoardType, previewFile]);
+
   const filesForSubProject = useMemo(
     () => files?.filter(file => file.subProjectId === (currentSubProject?.id ?? null)) || [],
     [files, currentSubProject?.id]
@@ -181,7 +197,7 @@ function LegacyBoard({
                           <div className="opacity-0 group-hover:opacity-100 flex items-center gap-4">
                             <span className="text-[10px] font-mono uppercase text-zinc-600 font-medium">{task.priority}</span>
                             <button
-                              className="h-8 w-8 flex items-center justify-center text-zinc-700 hover:text-red-600 transition-colors"
+                              className="h-8 w-8 flex items-center justify-center text-zinc-700 hover:text-red-600 transition-colors glitch-hover"
                               onClick={() => handleTaskAction('delete', { taskId: task.id })}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -249,11 +265,13 @@ function LegacyBoard({
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
-                      className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4"
+                      onMouseEnter={() => setHoveredFileId(file.id)}
+                      onMouseLeave={() => setHoveredFileId(null)}
+                      className="bg-black hover:bg-zinc-950 transition-all group relative aspect-square flex flex-col items-center justify-center p-4 border border-transparent hover:border-zinc-800"
                     >
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                         <button
-                          className="h-6 w-6 flex items-center justify-center text-zinc-600 hover:text-red-600 transition-colors"
+                          className="h-6 w-6 flex items-center justify-center text-zinc-600 hover:text-red-600 transition-colors glitch-hover"
                           onClick={() => handleDeleteFile(file.id)}
                         >
                           <Trash2 className="h-3 w-3" />
@@ -264,11 +282,35 @@ function LegacyBoard({
                       </div>
                       <p className="text-xs text-zinc-500 font-mono truncate w-full text-center group-hover:text-white transition-colors font-medium">{file.name}</p>
                       <p className="text-[10px] text-zinc-700 uppercase tracking-widest mt-1 font-medium">{formatFileSize(file.size)}</p>
-                      <a href={file.data} download={file.name} className="absolute inset-0 z-10" />
+                      
+                      {/* Hint para Quick Look */}
+                      <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-40 transition-opacity">
+                         <span className="text-[8px] font-mono text-zinc-500 uppercase">[SPACE]</span>
+                      </div>
+
+                      <a 
+                        href={file.data} 
+                        download={file.name} 
+                        className="absolute inset-0 z-10"
+                        onDoubleClick={(e) => {
+                          // Allow default download on double click
+                        }}
+                        onClick={(e) => {
+                          // Prevent single click from downloading if we want space to be primary
+                          // But wait, user might expect single click to download.
+                          // Let's keep single click for download but space for preview.
+                        }}
+                      />
                     </motion.div>
                   ))}
                 </AnimatePresence>
               </div>
+
+              <QuickLookModal 
+                file={previewFile}
+                isOpen={!!previewFile}
+                onClose={() => setPreviewFile(null)}
+              />
             </div>
           )}
         </div>

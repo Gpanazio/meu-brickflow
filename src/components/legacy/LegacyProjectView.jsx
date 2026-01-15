@@ -165,7 +165,7 @@ function LegacyProjectView({
                     <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white rounded-none"><MoreVertical className="h-3 w-3" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="glass-panel rounded-none">
                       <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub }); }} className="text-[10px] uppercase tracking-widest h-8 cursor-pointer text-zinc-400 hover:text-white hover:bg-white/10">Editar</DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-900 focus:text-red-600 focus:bg-white/10 text-[10px] uppercase tracking-widest h-8 cursor-pointer" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-900 focus:text-red-600 focus:bg-white/10 text-[10px] uppercase tracking-widest h-8 cursor-pointer glitch-hover" onClick={e => { e.stopPropagation(); handleDeleteProject(sub, true); }}>Excluir</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

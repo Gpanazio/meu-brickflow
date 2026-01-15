@@ -247,7 +247,7 @@ function LegacyHome({
                             <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-xs uppercase tracking-widest h-9 cursor-pointer text-zinc-400 hover:text-white focus:bg-white/10 font-medium">
                               Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-900 focus:text-red-500 focus:bg-white/10 text-xs uppercase tracking-widest cursor-pointer h-9 font-medium" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>
+                            <DropdownMenuItem className="text-red-900 focus:text-red-500 focus:bg-white/10 text-xs uppercase tracking-widest cursor-pointer h-9 font-medium glitch-hover" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>
                               Eliminar
                             </DropdownMenuItem>
                           </DropdownMenuContent>

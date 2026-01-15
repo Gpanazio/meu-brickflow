@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -11,7 +11,7 @@ import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
 import {
   Plus, Trash2, X, CheckSquare,
-  MessageSquare, History
+  MessageSquare, History, AtSign
 } from 'lucide-react';
 import { LABEL_COLORS, BADGE_COLOR_CLASSES, LABEL_SWATCH_CLASSES } from '@/constants/theme';
 
@@ -33,10 +33,53 @@ function LegacyModal({
   const [dbUsers, setDbUsers] = useState([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
 
+  const [commentText, setCommentText] = useState('');
+  const [mentionSuggestions, setMentionSuggestions] = useState([]);
+  const [showMentions, setShowMentions] = useState(false);
+  const commentInputRef = useRef(null);
+
   const responsibleOptions = useMemo(() => {
     const list = Array.isArray(dbUsers) && dbUsers.length > 0 ? dbUsers : (Array.isArray(users) ? users : []);
     return Array.isArray(list) ? list : [];
   }, [dbUsers, users]);
+
+  useEffect(() => {
+    if (showMentions && commentText.includes('@')) {
+      const parts = commentText.split(' ');
+      const lastPart = parts[parts.length - 1];
+      if (lastPart.startsWith('@')) {
+        const query = lastPart.slice(1).toLowerCase();
+        const filtered = responsibleOptions.filter(u => 
+          u.username.toLowerCase().includes(query) || 
+          (u.displayName && u.displayName.toLowerCase().includes(query))
+        );
+        setMentionSuggestions(filtered);
+      } else {
+        setShowMentions(false);
+      }
+    } else {
+      setShowMentions(false);
+    }
+  }, [commentText, responsibleOptions, showMentions]);
+
+  const insertMention = (user) => {
+    const parts = commentText.split(' ');
+    parts[parts.length - 1] = `@${user.username} `;
+    setCommentText(parts.join(' '));
+    setShowMentions(false);
+    if (commentInputRef.current) commentInputRef.current.focus();
+  };
+
+  const renderCommentText = (text) => {
+    if (!text) return null;
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return <span key={i} className="text-red-500 font-bold px-1 bg-red-500/10 rounded-sm">{part}</span>;
+      }
+      return part;
+    });
+  };
 
   useEffect(() => {
     if (modalState.type === 'task') {
@@ -294,16 +337,40 @@ function LegacyModal({
                   </div>
                   <div className="flex gap-3">
                     <div className="h-8 w-8 rounded-full bg-zinc-900 flex items-center justify-center shrink-0 uppercase font-bold text-zinc-600 text-[10px]">A</div>
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-2 relative">
                       <Textarea
+                        ref={commentInputRef}
                         placeholder="Escreva um comentário (use @ para mencionar)..."
+                        value={commentText}
                         disabled={isReadOnly}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCommentText(val);
+                          if (val.endsWith('@') || (val.includes('@') && !val.endsWith(' '))) {
+                            setShowMentions(true);
+                          } else {
+                            setShowMentions(false);
+                          }
+                        }}
                         className="bg-zinc-950 border-zinc-900 rounded-none min-h-[60px] text-sm text-zinc-300 focus:border-zinc-700 p-3"
                         onKeyDown={(e) => {
                           if (isReadOnly) return;
+                          
+                          if (showMentions && mentionSuggestions.length > 0) {
+                            if (e.key === 'Tab' || e.key === 'Enter') {
+                              e.preventDefault();
+                              insertMention(mentionSuggestions[0]);
+                              return;
+                            }
+                            if (e.key === 'Escape') {
+                              setShowMentions(false);
+                              return;
+                            }
+                          }
+
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
-                            const val = e.target.value.trim();
+                            const val = commentText.trim();
                             if (val) {
                               setTaskState(prev => ({
                                 ...prev,
@@ -312,11 +379,28 @@ function LegacyModal({
                                   { user: 'admin', text: val, date: new Date().toISOString() }
                                 ]
                               }));
-                              e.target.value = '';
+                              setCommentText('');
+                              setShowMentions(false);
                             }
                           }
                         }}
                       />
+
+                      {showMentions && mentionSuggestions.length > 0 && (
+                        <div className="absolute bottom-full left-0 w-48 glass-panel mb-1 z-50 max-h-32 overflow-y-auto custom-scrollbar">
+                          {mentionSuggestions.map(u => (
+                            <button
+                              key={u.username}
+                              onClick={() => insertMention(u)}
+                              className="w-full text-left px-3 py-2 text-[10px] uppercase font-bold tracking-widest text-zinc-400 hover:text-white hover:bg-white/10 flex items-center gap-2 border-b border-white/5 last:border-0"
+                            >
+                              <AtSign className="w-3 h-3 text-red-500" />
+                              {u.username}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       <p className="text-[10px] text-zinc-600 font-mono uppercase font-medium">Pressione Enter para enviar</p>
                     </div>
                   </div>
@@ -329,7 +413,9 @@ function LegacyModal({
                             <span className="text-xs font-bold text-white uppercase">{comment.user}</span>
                             <span className="text-[10px] text-zinc-700 font-mono font-medium">{new Date(comment.date).toLocaleString()}</span>
                           </div>
-                          <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">{comment.text}</p>
+                          <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                            {renderCommentText(comment.text)}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -494,7 +580,7 @@ function LegacyModal({
                   <Button
                     variant="ghost"
                     disabled={isReadOnly}
-                    className="w-full text-zinc-600 hover:text-red-600 rounded-none h-10 uppercase tracking-widest text-xs font-medium"
+                    className="w-full text-zinc-600 hover:text-red-600 rounded-none h-10 uppercase tracking-widest text-xs font-medium glitch-hover"
                     onClick={() => {
                       if (isReadOnly) return;
                       if (window.confirm('Excluir este card permanentemente?')) {
