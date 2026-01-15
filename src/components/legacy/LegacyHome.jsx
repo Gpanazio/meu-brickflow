@@ -59,16 +59,16 @@ function LegacyHome({
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="relative z-10">
+      <div className="relative z-10 select-none">
 
         {/* --- SEÇÃO SUPERIOR (HERO + WIDGETS) --- */}
         <PrismaticPanel
-          className="mx-6 md:mx-10 mt-6"
-          contentClassName="flex flex-row divide-x divide-white/10 min-h-[8rem] md:min-h-[10rem] overflow-x-auto no-scrollbar !p-0"
+          className="mx-4 md:mx-10 mt-6"
+          contentClassName="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-white/10 min-h-[8rem] md:min-h-[10rem] !p-0"
         >
           {/* COLUNA 1: HERO */}
-          <div className="w-[50%] md:w-1/2 px-4 md:px-10 py-6 flex flex-col justify-center min-w-[200px]">
-            <h1 className="brick-title text-2xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
+          <div className="w-full md:w-1/2 px-6 md:px-10 py-8 md:py-6 flex flex-col justify-center">
+            <h1 className="brick-title text-3xl md:text-6xl uppercase leading-[0.85] tracking-tighter">
               Olá, <span className="text-zinc-700">{currentUser?.name || currentUser?.username || 'Visitante'}</span>
             </h1>
             <p className="brick-mono mt-4 text-[10px] text-zinc-600 tracking-[0.2em] uppercase font-medium">
@@ -77,26 +77,26 @@ function LegacyHome({
           </div>
 
           {/* COLUNA 2: SORTE */}
-          <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[150px]">
+          <div className="w-full md:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between">
             <div className="flex items-center gap-3">
               <StatusLED color="red" size="sm" />
               <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-[0.2em] font-medium">Sorte do Dia</span>
             </div>
             <div className="flex-1 flex items-center mt-3">
-              <p className="font-sans text-xs md:text-sm text-zinc-300 italic leading-relaxed tracking-tight line-clamp-3">
+              <p className="font-sans text-sm md:text-sm text-zinc-300 italic leading-relaxed tracking-tight">
                 "{dailyPhrase || "O silêncio é uma resposta."}"
               </p>
             </div>
           </div>
 
           {/* COLUNA 3: PROBABILIDADE */}
-          <div className="w-[25%] md:w-1/4 px-4 md:px-10 py-6 flex flex-col justify-between min-w-[180px]">
-            <div className="flex items-center gap-3 mb-2 md:mb-0">
+          <div className="w-full md:w-1/4 px-6 md:px-10 py-6 flex flex-col justify-between">
+            <div className="flex items-center gap-3 mb-4 md:mb-0">
               <StatusLED color="green" size="sm" />
               <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-[0.2em] font-medium">Probabilidade</span>
             </div>
             <div className="flex-1 flex items-center">
-              <div className="flex gap-1 md:gap-2 w-full justify-between">
+              <div className="flex gap-2 w-full justify-between">
                 {safeMegaSena.map((n, i) => (
                   <div key={i} className="brick-mono flex-1 aspect-square flex items-center justify-center border border-white/10 bg-black/20 text-zinc-500 text-[10px] font-medium hover:border-emerald-900 hover:text-emerald-500 transition-colors cursor-default">
                     {n.toString().padStart(2, '0')}
@@ -108,7 +108,7 @@ function LegacyHome({
         </PrismaticPanel>
 
         {/* SECTION: MINHAS TAREFAS (Simplified Design) */}
-        <div className="mx-6 md:mx-10 mt-6 glass-panel border-white/5 bg-white/[0.02]">
+        <div className="mx-4 md:mx-10 mt-6 glass-panel border-white/5 bg-white/[0.02]">
           <div className="px-6 md:px-10 py-6">
             <div className="flex items-center gap-3 mb-6">
               <CheckSquare className="w-4 h-4 text-zinc-500" />
@@ -128,11 +128,11 @@ function LegacyHome({
                     <div
                       key={task.id}
                       onClick={() => onTaskClick && onTaskClick(task)}
-                      className="group flex flex-col justify-between bg-black/20 hover:bg-white/5 border border-white/5 hover:border-white/10 transition-all cursor-pointer p-4 h-24"
+                      className="group flex flex-col justify-between bg-black/20 hover:bg-white/5 border border-white/5 hover:border-white/10 transition-all active:scale-[0.98] active:bg-white/5 cursor-pointer p-4 h-28"
                     >
                       <div>
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="brick-title text-sm text-white uppercase tracking-wide truncate pr-4">
+                          <h3 className="brick-title text-sm text-white uppercase tracking-wide line-clamp-2 pr-4">
                             {task.title}
                           </h3>
                           <div className={`w-1 h-1 rounded-full ${colors.bg}`} />
@@ -160,7 +160,7 @@ function LegacyHome({
         </div>
 
         {/* SECTION: PROJETOS */}
-        <div className="px-8 mt-12">
+        <div className="px-4 md:px-10 mt-12">
           <div className="flex justify-between items-end mb-8 border-b border-white/10 pb-4">
             <h2 className="brick-mono text-xs text-zinc-400 uppercase tracking-[0.2em] font-medium">Projetos Ativos</h2>
 
@@ -228,7 +228,7 @@ function LegacyHome({
                         handleAccessProject(project);
                       }
                     }}
-                    className="h-64"
+                    className="h-64 active:scale-[0.98] transition-transform"
                     contentClassName="p-8 flex flex-col justify-between"
                   >
                     <div className="flex justify-between items-start z-10">
