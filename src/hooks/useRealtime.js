@@ -5,6 +5,15 @@ export function useRealtime(channel, onMessage) {
   const reconnectTimerRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
 
+  const connectRef = useRef();
+
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+    reconnectTimerRef.current = setTimeout(() => {
+      if (connectRef.current) connectRef.current();
+    }, 3000);
+  }, []);
+
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
@@ -46,6 +55,10 @@ export function useRealtime(channel, onMessage) {
     wsRef.current = ws;
   }, [channel, onMessage, scheduleReconnect]);
 
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
+
   const disconnect = useCallback(() => {
     if (wsRef.current) {
       wsRef.current.close();
@@ -56,15 +69,6 @@ export function useRealtime(channel, onMessage) {
       reconnectTimerRef.current = null;
     }
   }, []);
-
-  const scheduleReconnect = useCallback(() => {
-    clearTimeout(reconnectTimerRef.current);
-    reconnectTimerRef.current = setTimeout(() => {
-      if (!wsRef.current) {
-        connect();
-      }
-    }, 3000);
-  }, [connect]);
 
   useEffect(() => {
     connect();
