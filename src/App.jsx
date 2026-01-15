@@ -213,13 +213,26 @@ function AppShell() {
     isDragging,
     setIsDragging,
     handleDeleteFile,
+    handleMoveFile,
     isUploading,
     searchQuery,
     setSearchQuery,
     typeFilter,
     setTypeFilter,
     sortBy,
-    setSortBy
+    setSortBy,
+    // Folders
+    folders,
+    filteredFolders,
+    currentFolderId,
+    currentFolder,
+    currentFolderPath,
+    navigateToFolder,
+    navigateUp,
+    handleCreateFolder,
+    handleRenameFolder,
+    handleDeleteFolder,
+    handleChangeFolderColor
   } = useFiles(latestCurrentProject, latestCurrentSubProject, updateProjects);
 
   const handleTaskAction = useCallback((action, data) => {
@@ -721,6 +734,19 @@ function AppShell() {
                     isFileDragging={isDragging}
                     setIsFileDragging={setIsDragging}
                     handleDeleteFile={handleDeleteFile}
+                    handleMoveFile={handleMoveFile}
+                    // Folders
+                    folders={folders}
+                    filteredFolders={filteredFolders}
+                    currentFolderId={currentFolderId}
+                    currentFolder={currentFolder}
+                    currentFolderPath={currentFolderPath}
+                    navigateToFolder={navigateToFolder}
+                    navigateUp={navigateUp}
+                    handleCreateFolder={handleCreateFolder}
+                    handleRenameFolder={handleRenameFolder}
+                    handleDeleteFolder={handleDeleteFolder}
+                    handleChangeFolderColor={handleChangeFolderColor}
                   />
                 )}
               </Suspense>

@@ -3,13 +3,16 @@ import ResponsibleUsersButton from '../ResponsibleUsersButton';
 import { Input } from '../ui/input';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Checkbox } from '../ui/checkbox';
-import { Upload, ArrowLeft, Plus, Trash2, Eye, FileText, GripVertical, Music, Video } from 'lucide-react';
+import { Upload, ArrowLeft, Plus, Trash2, Eye, FileText, GripVertical, Music, Video, FolderPlus, X } from 'lucide-react';
 import { formatFileSize } from '../../utils/formatFileSize';
 import { AnimatePresence, motion } from 'framer-motion';
 import MechButton from '../ui/MechButton';
 import StatusLED from '../ui/StatusLED';
 import PrismaticPanel from '../ui/PrismaticPanel';
 import FileFilterBar from '../FileFilterBar';
+import FolderCard from '../FolderCard';
+import FolderBreadcrumb from '../FolderBreadcrumb';
+import CreateFolderModal from '../CreateFolderModal';
 import { QuickLookModal } from '../ui/QuickLookModal';
 import {
   AlertDialog,
@@ -52,12 +55,27 @@ function LegacyBoard({
   setTypeFilter,
   sortBy,
   setSortBy,
-  handleDeleteFile
+  handleDeleteFile,
+  handleMoveFile,
+  // Folders
+  folders,
+  filteredFolders,
+  currentFolderId,
+  currentFolder,
+  currentFolderPath,
+  navigateToFolder,
+  navigateUp,
+  handleCreateFolder,
+  handleRenameFolder,
+  handleDeleteFolder,
+  handleChangeFolderColor
 }) {
   const [hoveredFileId, setHoveredFileId] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverListId, setDragOverListId] = useState(null);
+  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  const [dragOverFolderId, setDragOverFolderId] = useState(null);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -443,26 +461,42 @@ function LegacyBoard({
               )}
 
               {/* Header Files Styled */}
-              {/* Header Files Styled */}
-              <PrismaticPanel className="mb-8 mx-1" contentClassName="flex flex-col md:flex-row justify-between items-start md:items-center p-6 gap-4">
+              <PrismaticPanel className="mb-4 mx-1" contentClassName="flex flex-col md:flex-row justify-between items-start md:items-center p-6 gap-4">
                 <div>
                   <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Central de Arquivos</h3>
                   <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest mt-1">
-                    {files.length} ARQUIVOS • {formatFileSize(files.reduce((acc, f) => acc + f.size, 0))} TOTAL
+                    {files.length} ARQUIVOS • {folders?.length || 0} PASTAS • {formatFileSize(files.reduce((acc, f) => acc + f.size, 0))} TOTAL
                   </p>
                 </div>
-                <div className="relative w-full md:w-auto">
-                  <Input
-                    type="file"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    multiple
-                    onChange={handleFileUploadWithFeedback}
-                  />
-                  <MechButton primary icon={Upload} className="w-full md:w-auto justify-center">
-                    Adicionar
+                <div className="flex gap-2 w-full md:w-auto">
+                  <MechButton
+                    icon={FolderPlus}
+                    onClick={() => setIsCreateFolderOpen(true)}
+                    className="flex-1 md:flex-none justify-center"
+                  >
+                    Pasta
                   </MechButton>
+                  <div className="relative flex-1 md:flex-none">
+                    <Input
+                      type="file"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      multiple
+                      onChange={handleFileUploadWithFeedback}
+                    />
+                    <MechButton primary icon={Upload} className="w-full justify-center">
+                      Arquivo
+                    </MechButton>
+                  </div>
                 </div>
               </PrismaticPanel>
+
+              {/* Breadcrumb */}
+              {currentFolderPath && currentFolderPath.length > 1 && (
+                <FolderBreadcrumb
+                  path={currentFolderPath}
+                  onNavigate={navigateToFolder}
+                />
+              )}
 
               {/* Filter Bar */}
               <FileFilterBar
@@ -472,7 +506,7 @@ function LegacyBoard({
                 onTypeFilterChange={setTypeFilter}
                 sortBy={sortBy}
                 onSortByChange={setSortBy}
-                fileCount={filteredFiles.length}
+                fileCount={filteredFiles.length + (filteredFolders?.length || 0)}
                 onClearFilters={() => {
                   setSearchQuery('');
                   setTypeFilter('all');
@@ -480,14 +514,34 @@ function LegacyBoard({
                 }}
               />
 
+
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 px-1">
                 <AnimatePresence>
+                  {/* Folders First */}
+                  {filteredFolders?.map(folder => (
+                    <FolderCard
+                      key={folder.id}
+                      folder={folder}
+                      onDoubleClick={navigateToFolder}
+                      onRename={handleRenameFolder}
+                      onDelete={handleDeleteFolder}
+                      onChangeColor={handleChangeFolderColor}
+                      onDrop={handleMoveFile}
+                      isDragOver={dragOverFolderId === folder.id}
+                    />
+                  ))}
+
+                  {/* Files */}
                   {filteredFiles.map(file => (
                     <motion.div
                       key={file.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('fileId', file.id);
+                      }}
                       onMouseEnter={() => setHoveredFileId(file.id)}
                       onMouseLeave={() => setHoveredFileId(null)}
                       onClick={() => setPreviewFile(file)}
@@ -574,6 +628,12 @@ function LegacyBoard({
                 file={previewFile}
                 isOpen={!!previewFile}
                 onClose={() => setPreviewFile(null)}
+              />
+
+              <CreateFolderModal
+                isOpen={isCreateFolderOpen}
+                onClose={() => setIsCreateFolderOpen(false)}
+                onCreate={handleCreateFolder}
               />
             </div>
           )}
