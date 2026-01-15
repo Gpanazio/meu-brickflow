@@ -272,22 +272,180 @@ function AppShell() {
         }));
       }
     } else if (action === 'move') {
-      // Drag move logic implementation if needed
+      if (latestCurrentProject && latestCurrentSubProject) {
+        updateProjects(prev => prev.map(p => {
+          if (p.id !== latestCurrentProject.id) return p;
+          return {
+            ...p,
+            subProjects: p.subProjects.map(sp => {
+              if (sp.id !== latestCurrentSubProject.id) return sp;
+              const board = sp.boardData?.[currentBoardType];
+              if (!board) return sp;
+
+              // Find the task and remove it from source list
+              let taskToMove = null;
+              const newLists = board.lists.map(l => {
+                if (l.id === data.fromListId) {
+                  taskToMove = l.tasks.find(t => t.id === data.taskId);
+                  return { ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) };
+                }
+                return l;
+              });
+
+              if (!taskToMove) return sp;
+
+              // Add task to destination list
+              const finalLists = newLists.map(l => {
+                if (l.id === data.toListId) {
+                  return { ...l, tasks: [...l.tasks, taskToMove] };
+                }
+                return l;
+              });
+
+              return {
+                ...sp,
+                boardData: {
+                  ...sp.boardData,
+                  [currentBoardType]: { ...board, lists: finalLists }
+                }
+              };
+            })
+          };
+        }));
+      }
+    } else if (action === 'addColumn') {
+      if (latestCurrentProject && latestCurrentSubProject) {
+        updateProjects(prev => prev.map(p => {
+          if (p.id !== latestCurrentProject.id) return p;
+          return {
+            ...p,
+            subProjects: p.subProjects.map(sp => {
+              if (sp.id !== latestCurrentSubProject.id) return sp;
+              const board = sp.boardData?.[currentBoardType] || { lists: [] };
+              const newColumn = {
+                id: generateId('list'),
+                title: data.title || 'Nova Coluna',
+                tasks: []
+              };
+              return {
+                ...sp,
+                boardData: {
+                  ...sp.boardData,
+                  [currentBoardType]: {
+                    ...board,
+                    lists: [...(board.lists || []), newColumn]
+                  }
+                }
+              };
+            })
+          };
+        }));
+      }
+    } else if (action === 'updateColumn') {
+      if (latestCurrentProject && latestCurrentSubProject) {
+        updateProjects(prev => prev.map(p => {
+          if (p.id !== latestCurrentProject.id) return p;
+          return {
+            ...p,
+            subProjects: p.subProjects.map(sp => {
+              if (sp.id !== latestCurrentSubProject.id) return sp;
+              const board = sp.boardData?.[currentBoardType];
+              if (!board) return sp;
+              return {
+                ...sp,
+                boardData: {
+                  ...sp.boardData,
+                  [currentBoardType]: {
+                    ...board,
+                    lists: board.lists.map(l => l.id === data.listId ? { ...l, ...data.updates } : l)
+                  }
+                }
+              };
+            })
+          };
+        }));
+      }
+    } else if (action === 'deleteColumn') {
+      if (latestCurrentProject && latestCurrentSubProject) {
+        updateProjects(prev => prev.map(p => {
+          if (p.id !== latestCurrentProject.id) return p;
+          return {
+            ...p,
+            subProjects: p.subProjects.map(sp => {
+              if (sp.id !== latestCurrentSubProject.id) return sp;
+              const board = sp.boardData?.[currentBoardType];
+              if (!board) return sp;
+              return {
+                ...sp,
+                boardData: {
+                  ...sp.boardData,
+                  [currentBoardType]: {
+                    ...board,
+                    lists: board.lists.filter(l => l.id !== data.listId)
+                  }
+                }
+              };
+            })
+          };
+        }));
+      }
+    } else if (action === 'reorderColumns') {
+      if (latestCurrentProject && latestCurrentSubProject) {
+        updateProjects(prev => prev.map(p => {
+          if (p.id !== latestCurrentProject.id) return p;
+          return {
+            ...p,
+            subProjects: p.subProjects.map(sp => {
+              if (sp.id !== latestCurrentSubProject.id) return sp;
+              const board = sp.boardData?.[currentBoardType];
+              if (!board) return sp;
+              
+              const newLists = [...board.lists];
+              const [movedList] = newLists.splice(data.fromIndex, 1);
+              newLists.splice(data.toIndex, 0, movedList);
+
+              return {
+                ...sp,
+                boardData: {
+                  ...sp.boardData,
+                  [currentBoardType]: { ...board, lists: newLists }
+                }
+              };
+            })
+          };
+        }));
+      }
     }
   }, [latestCurrentProject, latestCurrentSubProject, currentBoardType, modalState, updateProjects, setModalState]);
 
   const handleDragStart = (e, item, type, listId) => {
-    if (type !== 'task' || !item?.id || !listId) return;
-    dragTaskRef.current = { taskId: item.id, fromListId: listId };
+    if (!item?.id) return;
+    if (type === 'task') {
+      dragTaskRef.current = { type: 'task', taskId: item.id, fromListId: listId };
+      e.dataTransfer.setData('type', 'task');
+    } else if (type === 'list') {
+      const index = latestCurrentSubProject?.boardData?.[currentBoardType]?.lists?.findIndex(l => l.id === item.id);
+      dragTaskRef.current = { type: 'list', listId: item.id, fromIndex: index };
+      e.dataTransfer.setData('type', 'list');
+    }
   };
 
   const handleDragOver = (e) => e.preventDefault();
 
-  const handleDrop = (e, toListId, dropType) => {
+  const handleDrop = (e, targetId, dropType) => {
     e?.preventDefault?.();
-    if (dropType !== 'list') return;
     const drag = dragTaskRef.current;
-    if (!drag?.taskId || !drag?.fromListId || !toListId) return;
+    if (!drag) return;
+
+    if (drag.type === 'task' && dropType === 'list') {
+      if (drag.fromListId === targetId) return;
+      handleTaskAction('move', { taskId: drag.taskId, fromListId: drag.fromListId, toListId: targetId });
+    } else if (drag.type === 'list' && dropType === 'list') {
+      const lists = latestCurrentSubProject?.boardData?.[currentBoardType]?.lists || [];
+      const toIndex = lists.findIndex(l => l.id === targetId);
+      if (drag.fromIndex === toIndex) return;
+      handleTaskAction('reorderColumns', { fromIndex: drag.fromIndex, toIndex });
+    }
     dragTaskRef.current = null;
   };
 

@@ -116,10 +116,39 @@ function LegacyBoard({
                     visible: { opacity: 1, x: 0 }
                   }}
                   key={list.id} className="w-72 flex flex-col h-full bg-black border-r border-zinc-900"
-                  onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, list.id, 'list')}>
-                  <div className="p-4 border-b border-zinc-900 flex justify-between items-center">
-                    <span className="font-bold text-xs uppercase tracking-[0.2em] text-zinc-500">{list.title}</span>
-                    <span className="text-zinc-700 text-xs font-mono font-medium">{(list.tasks?.length ?? 0).toString().padStart(2, '0')}</span>
+                  onDragOver={handleDragOver} 
+                  onDrop={(e) => handleDrop(e, list.id, 'list')}
+                >
+                  <div 
+                    className="p-4 border-b border-zinc-900 flex justify-between items-center cursor-move"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, list, 'list')}
+                  >
+                    <input
+                      className="bg-transparent border-none font-bold text-xs uppercase tracking-[0.2em] text-zinc-500 focus:text-white focus:outline-none w-full"
+                      defaultValue={list.title}
+                      onBlur={(e) => {
+                        if (e.target.value !== list.title) {
+                          handleTaskAction('updateColumn', { listId: list.id, updates: { title: e.target.value } });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.target.blur();
+                      }}
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-700 text-xs font-mono font-medium">{(list.tasks?.length ?? 0).toString().padStart(2, '0')}</span>
+                      <button 
+                        onClick={() => {
+                          if (confirm('Deseja excluir esta coluna?')) {
+                            handleTaskAction('deleteColumn', { listId: list.id });
+                          }
+                        }}
+                        className="text-zinc-800 hover:text-red-600 transition-colors"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black">
                     <AnimatePresence>
@@ -157,6 +186,16 @@ function LegacyBoard({
                   </div>
                 </motion.div>
               )) : <div className="p-8 text-zinc-500 text-xs">Nenhum dado encontrado para este quadro.</div>}
+              
+              <div className="w-72 flex flex-col h-full bg-black/50 border-r border-zinc-900 items-center justify-center p-6">
+                <MechButton
+                  className="w-full border-dashed border-zinc-800 text-zinc-600 hover:text-white hover:bg-zinc-950 h-12"
+                  icon={Plus}
+                  onClick={() => handleTaskAction('addColumn', { title: 'Nova Coluna' })}
+                >
+                  Nova Coluna
+                </MechButton>
+              </div>
             </motion.div>
           )}
 
