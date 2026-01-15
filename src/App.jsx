@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
-import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { motion } from 'framer-motion';  
 import { toast } from 'sonner';
 import './App.css';
 

@@ -60,11 +60,11 @@ function LegacyBoard({
   // Folders
   folders,
   filteredFolders,
-  currentFolderId,
-  currentFolder,
+  // currentFolderId not needed here - navigation uses currentFolderPath
+  // currentFolder, // Not used directly - info comes from currentFolderPath
   currentFolderPath,
   navigateToFolder,
-  navigateUp,
+  // navigateUp, // Not used - breadcrumb handles navigation
   handleCreateFolder,
   handleRenameFolder,
   handleDeleteFolder,
@@ -87,7 +87,7 @@ function LegacyBoard({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hoveredFileId, currentBoardType, previewFile]);
+  }, [hoveredFileId, currentBoardType, previewFile, filteredFiles]);
 
 
   const todoListIds = useMemo(() => {
