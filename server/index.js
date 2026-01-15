@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import path from 'path';
 import helmet from 'helmet';
 import process from 'process';
@@ -15,6 +16,9 @@ import http from 'http';
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
+
+// Performance Middleware
+app.use(compression());
 
 // Security Middleware
 app.set('trust proxy', 1);
@@ -84,7 +88,17 @@ setupWebSocket(server);
 
 // Static files and SPA fallback - MUST be after routes
 const distPath = getDistPath();
-app.use(express.static(distPath));
+app.use(express.static(distPath, {
+  maxAge: '1y',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      // HTML files should not be cached for a year
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
 app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
