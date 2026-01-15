@@ -34,8 +34,8 @@ export default function ProjectCard({ project, onSelect, className, ...props }) 
 
         {project.isProtected && (
           <div className="flex items-center gap-2 bg-black/40 px-2 py-1 border border-zinc-800 rounded-sm">
-            <Lock className="w-3 h-3 text-zinc-500" />
-            <span className="brick-mono text-[9px] text-zinc-500 uppercase tracking-widest">LOCKED</span>
+            <Lock className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="brick-mono text-[11px] text-zinc-400 uppercase tracking-widest font-bold">LOCKED</span>
           </div>
         )}
       </div>
@@ -45,24 +45,24 @@ export default function ProjectCard({ project, onSelect, className, ...props }) 
         <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-[0.85] group-hover:translate-x-1 transition-transform duration-300 drop-shadow-xl font-brick-title">
           {project.name}
         </h3>
-        <p className="brick-mono text-xs text-zinc-500 uppercase tracking-widest line-clamp-2 leading-relaxed font-medium min-h-[2.5em]">
+        <p className="brick-mono text-sm text-zinc-400 font-medium line-clamp-3 leading-relaxed min-h-[3em]">
           {project.description || "SEM DESCRIÇÃO"}
         </p>
       </div>
 
       {/* Footer */}
-      <div className="flex justify-between items-end border-t border-white/5 pt-4 z-10 pointer-events-none">
-        <div className="flex items-center gap-2 text-zinc-600">
-          <FolderOpen className="w-3 h-3" />
-          <span className="brick-mono text-xs uppercase tracking-widest font-medium">
+      <div className="flex justify-between items-end border-t border-white/10 pt-4 z-10 pointer-events-none">
+        <div className="flex items-center gap-2 text-zinc-500">
+          <FolderOpen className="w-4 h-4" />
+          <span className="brick-mono text-xs uppercase tracking-widest font-bold">
             {subProjectCount} {subProjectCount === 1 ? 'ÁREA' : 'ÁREAS'}
           </span>
         </div>
 
         {/* Efeito de Slide no Hover */}
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-          <span className="text-xs font-bold uppercase text-white tracking-widest brick-title">Acessar</span>
-          <ArrowRight className="w-3 h-3 text-white" />
+          <span className="text-xs font-bold uppercase text-white tracking-widest font-brick-title">Acessar</span>
+          <ArrowRight className="w-4 h-4 text-white" />
         </div>
       </div>
     </PrismaticPanel>
