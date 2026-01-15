@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { generateId } from '../utils/ids';
+import { toast } from 'sonner';
 
 const MAX_SIZE_BYTES = 50 * 1024 * 1024;
 
@@ -18,7 +19,9 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
 
     const validFiles = uploadedFiles.filter(file => {
       if (file.size > MAX_SIZE_BYTES) {
-        alert(`O arquivo "${file.name}" é muito grande! O limite é 50MB.`);
+        toast.error(`Arquivo "${file.name}" muito grande!`, {
+          description: `O limite é de 50MB.`
+        });
         return false;
       }
       return true;
