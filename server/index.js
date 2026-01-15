@@ -9,8 +9,11 @@ import { hasDatabaseUrl } from './db.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 import { setupRoutes } from './routes/index.js';
 import { isProd, getDistPath } from './utils/helpers.js';
+import { setupWebSocket } from './services/websocketService.js';
+import http from 'http';
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Security Middleware
@@ -76,6 +79,9 @@ app.use('/api/', apiLimiter);
 // Setup centralized routes with multi-camada health check
 await setupRoutes(app);
 
+// Setup WebSocket
+setupWebSocket(server);
+
 // Static files and SPA fallback - MUST be after routes
 const distPath = getDistPath();
 app.use(express.static(distPath));
@@ -84,7 +90,7 @@ app.get('*', (req, res) => {
 });
 
 // Global Error Handler
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
   if (err.message === 'Not allowed by CORS') {
     res.status(403).json({ error: 'CORS Policy: Origin not allowed' });
   } else {
@@ -97,4 +103,4 @@ if (hasDatabaseUrl) {
   // A conexão é testada e gerenciada dentro de db.js com suporte a fallback
 }
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

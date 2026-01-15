@@ -24,7 +24,7 @@ const TeamManagementModal = lazy(() => import('@/components/modals/TeamManagemen
 const TrashView = lazy(() => import('@/components/views/TrashView'));
 
 // Hooks & Utils
-import { useUsers, useFiles } from './hooks';
+import { useUsers, useFiles, useRealtime } from './hooks';
 import { generateId } from '@/utils/ids';
 import { absurdPhrases } from '@/utils/phrases';
 import { COLOR_VARIANTS, USER_COLORS } from '@/constants/theme';
@@ -164,44 +164,67 @@ function AppShell() {
     setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
     setMegaSenaNumbers(generateMegaSenaNumbers());
 
-    const loadData = async () => {
-      try {
-        const response = await fetch('/api/projects');
-        if (!response.ok) throw new Error("Falha na API");
+  const loadData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/projects');
+      if (!response.ok) throw new Error("Falha na API");
 
-        let data = await response.json();
-        if (!data) data = INITIAL_STATE;
+      let data = await response.json();
+      if (!data) data = INITIAL_STATE;
 
-        if (!data.users) data.users = [];
-        if (!data.projects) data.projects = [];
-        if (typeof data.version !== 'number') data.version = 0;
+      if (!data.users) data.users = [];
+      if (!data.projects) data.projects = [];
+      if (typeof data.version !== 'number') data.version = 0;
 
-        setAppData(data);
-      } catch (err) {
-        console.error("Erro load:", err);
-        setConnectionError(true);
-        setAppData(INITIAL_STATE);
-      }
-    };
-
-    loadData();
+      setAppData(data);
+      appDataRef.current = data;
+    } catch (err) {
+      console.error("Erro load:", err);
+      setConnectionError(true);
+      setAppData(INITIAL_STATE);
+    }
   }, []);
 
+  useEffect(() => {
+    setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
+    setMegaSenaNumbers(generateMegaSenaNumbers());
+
+    loadData();
+  }, [loadData]);
+
+  // Realtime updates
+  useRealtime('brickflow:project:updated', useCallback((payload) => {
+    // Only fetch if version is newer or from another user
+    if (payload.version > (appDataRef.current?.version || 0)) {
+      console.log('🔄 Sincronizando nova versão:', payload.version);
+      loadData();
+    }
+  }, [loadData]));
+
+  const latestCurrentProject = useMemo(() => {
+    return appData?.projects?.find(p => p.id === currentProject?.id) || currentProject;
+  }, [appData?.projects, currentProject]);
+
+  const latestCurrentSubProject = useMemo(() => {
+    if (!latestCurrentProject || !currentSubProject) return currentSubProject;
+    return latestCurrentProject.subProjects?.find(sp => sp.id === currentSubProject.id) || currentSubProject;
+  }, [latestCurrentProject, currentSubProject]);
+
   const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } =
-    useFiles(currentProject, currentSubProject, updateProjects);
+    useFiles(latestCurrentProject, latestCurrentSubProject, updateProjects);
 
   const handleTaskAction = useCallback((action, data) => {
     if (action === 'save') {
       const taskData = data;
       const listId = modalState.listId || data.listId;
 
-      if (currentProject && currentSubProject && listId) {
+      if (latestCurrentProject && latestCurrentSubProject && listId) {
         updateProjects(prev => prev.map(p => {
-          if (p.id !== currentProject.id) return p;
+          if (p.id !== latestCurrentProject.id) return p;
           return {
             ...p,
             subProjects: p.subProjects.map(sp => {
-              if (sp.id !== currentSubProject.id) return sp;
+              if (sp.id !== latestCurrentSubProject.id) return sp;
               const board = sp.boardData?.[currentBoardType];
               if (!board) return sp;
 
@@ -229,13 +252,13 @@ function AppShell() {
       }
       setModalState({ isOpen: false, type: null });
     } else if (action === 'delete') {
-      if (currentProject && currentSubProject) {
+      if (latestCurrentProject && latestCurrentSubProject) {
         updateProjects(prev => prev.map(p => {
-          if (p.id !== currentProject.id) return p;
+          if (p.id !== latestCurrentProject.id) return p;
           return {
             ...p,
             subProjects: p.subProjects.map(sp => {
-              if (sp.id !== currentSubProject.id) return sp;
+              if (sp.id !== latestCurrentSubProject.id) return sp;
               const board = sp.boardData?.[currentBoardType];
               if (!board) return sp;
               return {
@@ -255,7 +278,7 @@ function AppShell() {
     } else if (action === 'move') {
       // Drag move logic implementation if needed
     }
-  }, [currentProject, currentSubProject, currentBoardType, modalState, updateProjects, setModalState]);
+  }, [latestCurrentProject, latestCurrentSubProject, currentBoardType, modalState, updateProjects, setModalState]);
 
   const handleDragStart = (e, item, type, listId) => {
     if (type !== 'task' || !item?.id || !listId) return;
@@ -390,14 +413,10 @@ function AppShell() {
 
   const currentEntity = useMemo(() => {
     if (currentView === 'subproject') {
-      const found = appData?.projects
-        ?.find(p => p.id === currentProject?.id)
-        ?.subProjects
-        ?.find(sp => sp.id === currentSubProject?.id);
-      return found || currentSubProject;
+      return latestCurrentSubProject;
     }
-    return currentProject;
-  }, [currentView, currentProject, currentSubProject, appData?.projects]);
+    return latestCurrentProject;
+  }, [currentView, latestCurrentProject, latestCurrentSubProject]);
 
   const boardDataRaw = currentEntity?.boardData?.[currentBoardType] || { lists: [] };
 
@@ -464,9 +483,9 @@ function AppShell() {
                   />
                 )}
 
-                {currentView === 'project' && currentProject && (
+                {currentView === 'project' && latestCurrentProject && (
                   <LegacyProjectView
-                    currentProject={currentProject}
+                    currentProject={latestCurrentProject}
                     setCurrentView={setCurrentView}
                     setModalState={setModalState}
                     COLOR_VARIANTS={COLOR_VARIANTS}
@@ -475,22 +494,22 @@ function AppShell() {
                       setCurrentView('subproject');
                       setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
                     }}
-                    handleDeleteProject={(item) => handleSoftDelete(item, 'subproject', currentProject.id)}
+                    handleDeleteProject={(item) => handleSoftDelete(item, 'subproject', latestCurrentProject.id)}
                     history={[]}
                     isHistoryLoading={false}
                     historyError={null}
                   />
                 )}
 
-                {currentView === 'subproject' && currentSubProject && (
+                {currentView === 'subproject' && latestCurrentSubProject && (
                   <LegacyBoard
                     data={boardDataRaw}
-                    entityName={currentSubProject.name}
-                    enabledTabs={currentSubProject.enabledTabs || []}
+                    entityName={latestCurrentSubProject.name}
+                    enabledTabs={latestCurrentSubProject.enabledTabs || []}
                     currentBoardType={currentBoardType}
                     setCurrentBoardType={setCurrentBoardType}
-                    currentSubProject={currentSubProject}
-                    currentProject={currentProject}
+                    currentSubProject={latestCurrentSubProject}
+                    currentProject={latestCurrentProject}
                     setCurrentView={setCurrentView}
                     setModalState={setModalState}
                     handleTaskAction={handleTaskAction}

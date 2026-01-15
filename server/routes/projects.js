@@ -6,6 +6,7 @@ import { SaveProjectSchema, VerifyProjectPasswordSchema } from '../utils/schemas
 
 import { normalizeStateData } from '../utils/helpers.js';
 import bcrypt from 'bcrypt';
+import { eventService, CHANNELS } from '../services/eventService.js';
 
 const router = express.Router();
 
@@ -85,6 +86,12 @@ router.post('/', requireAuth, writeLimiter, async (req, res) => {
     await client.query('COMMIT');
 
     stateCache = null;
+
+    // Publish update for real-time sync
+    await eventService.publish(CHANNELS.PROJECT_UPDATED, {
+      version: nextVersion,
+      userId: req.user?.username || 'system'
+    });
 
     res.json({ ok: true, version: nextVersion });
   } catch (err) {
