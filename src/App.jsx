@@ -380,6 +380,15 @@ function AppShell() {
     }
   }, [setCurrentProject, setCurrentView]);
 
+  const currentEntity = useMemo(() => {
+    if (currentView === 'subproject') {
+      return latestCurrentSubProject;
+    }
+    return latestCurrentProject;
+  }, [currentView, latestCurrentProject, latestCurrentSubProject]);
+
+  const boardDataRaw = currentEntity?.boardData?.[currentBoardType] || { lists: [] };
+
   // Rendering
   if ((!appData || isAuthLoading) && !connectionError) {
     return <LoadingView />;
@@ -406,15 +415,6 @@ function AppShell() {
       </div >
     );
   }
-
-  const currentEntity = useMemo(() => {
-    if (currentView === 'subproject') {
-      return latestCurrentSubProject;
-    }
-    return latestCurrentProject;
-  }, [currentView, latestCurrentProject, latestCurrentSubProject]);
-
-  const boardDataRaw = currentEntity?.boardData?.[currentBoardType] || { lists: [] };
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-red-900/50 selection:text-white overflow-hidden">
