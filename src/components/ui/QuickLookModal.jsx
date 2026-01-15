@@ -28,13 +28,15 @@ export function QuickLookModal({ file, isOpen, onClose }) {
             {isImage ? (
               <img src={file.data} alt={file.name} className="max-w-full max-h-full object-contain shadow-2xl animate-in zoom-in-95 duration-300" />
             ) : isPdf ? (
-              <iframe src={`${file.data}#toolbar=0`} className="w-full h-full border-0 bg-white shadow-inner" title={file.name} />
+              <object data={file.data} type="application/pdf" className="w-full h-full border-0 bg-white shadow-inner">
+                <p>A pré-visualização de PDF não é suportada no seu navegador. <a href={file.data} download={file.name} className="underline">Baixe o PDF</a> para visualizá-lo.</p>
+              </object>
             ) : isAudio ? (
               <div className="flex flex-col items-center gap-8 w-full px-8">
                 <div className="w-32 h-32 bg-zinc-900 flex items-center justify-center rounded-full border border-white/5 shadow-[0_0_50px_rgba(255,255,255,0.05)] animate-pulse">
                   <Music className="w-12 h-12 text-white" />
                 </div>
-                <audio controls src={file.data} className="w-full h-10 invert brightness-100 opacity-80 hover:opacity-100 transition-opacity" />
+                <audio controls src={file.data} type={file.type} className="w-full h-10 invert brightness-100 opacity-80 hover:opacity-100 transition-opacity" />
               </div>
             ) : isVideo ? (
               <div className="w-full h-full flex items-center justify-center bg-black">
