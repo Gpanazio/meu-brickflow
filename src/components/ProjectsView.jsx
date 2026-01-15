@@ -4,15 +4,15 @@ import ProjectCard from './ProjectCard'
 export default function ProjectsView({ projects, onSelect }) {
   if (!projects || projects.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 border border-dashed border-zinc-800 rounded-lg">
-        <p className="text-zinc-500 brick-mono text-xs uppercase tracking-widest">Nenhum projeto disponível.</p>
+      <div className="flex flex-col items-center justify-center h-64 border border-dashed border-zinc-800 rounded-lg bg-white/5">
+        <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest">Nenhum projeto disponível.</p>
       </div>
     )
   }
 
+  // Refatorado para usar Grid System do Tailwind
   return (
-    // Adicionado Grid System responsivo conforme Design System
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
       {projects.map(project => (
         <ProjectCard key={project.id} project={project} onSelect={onSelect} />
       ))}

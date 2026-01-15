@@ -174,134 +174,80 @@ function LegacyHome({
             </MechButton>
           </div>
 
-          {/* Lista de Projetos Prismáticos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading ? (
-              // Skeletons de Carregamento
-              Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-64 glass-panel p-8 flex flex-col justify-between overflow-hidden">
-                  <div className="flex justify-between items-start">
-                    <Skeleton className="w-4 h-4 rounded-full" />
-                    <Skeleton className="w-4 h-8" />
-                  </div>
-                  <div className="space-y-4">
-                    <Skeleton className="h-10 w-3/4" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-5/6" />
-                  </div>
-                  <div className="flex justify-between items-end border-t border-white/5 pt-4">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-3 w-16" />
-                  </div>
-                </div>
-              ))
-            ) : (
-              activeProjects.map(project => {
-                return (
-                  <PrismaticPanel
-                    key={project.id}
-                    hoverEffect
-                    draggable={true}
-                    onDragStart={(e) => handleDragStart && handleDragStart(e, project, 'project')}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop && handleDrop(e, project.id, 'project')}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project });
-                    }}
-                    onClick={async () => {
-                      if (project.isProtected) {
-                        const password = prompt('Este projeto é protegido. Digite a senha:');
-                        if (!password) return;
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+             {isLoading ? (
+               // Skeletons de Carregamento
+               Array.from({ length: 6 }).map((_, i) => (
+                 <div key={i} className="h-64 glass-panel p-8 flex flex-col justify-between overflow-hidden">
+                   <div className="flex justify-between items-start">
+                     <Skeleton className="w-4 h-4 rounded-full" />
+                     <Skeleton className="w-4 h-8" />
+                   </div>
+                   <div className="space-y-4">
+                     <Skeleton className="h-10 w-3/4" />
+                     <Skeleton className="h-4 w-full" />
+                     <Skeleton className="h-4 w-5/6" />
+                   </div>
+                   <div className="flex justify-between items-end border-t border-white/5 pt-4">
+                     <Skeleton className="h-3 w-20" />
+                     <Skeleton className="h-3 w-16" />
+                   </div>
+                 </div>
+               ))
+             ) : (
+               activeProjects.map(project => (
+                 <ProjectCard
+                   key={project.id}
+                   project={project}
+                   draggable={true}
+                   onDragStart={(e) => handleDragStart && handleDragStart(e, project, 'project')}
+                   onDragOver={handleDragOver}
+                   onDrop={(e) => handleDrop && handleDrop(e, project.id, 'project')}
+                   onContextMenu={(e) => {
+                     e.preventDefault();
+                     setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project });
+                   }}
+                   onSelect={async (p) => {
+                     if (p.isProtected) {
+                       const password = prompt('Este projeto é protegido. Digite a senha:');
+                       if (!password) return;
+                       try {
+                         const res = await fetch('/api/projects/verify-password', {
+                           method: 'POST',
+                           headers: { 'Content-Type': 'application/json' },
+                           body: JSON.stringify({ projectId: p.id, password })
+                         });
+                         if (res.ok) {
+                           handleAccessProject(p);
+                         } else {
+                           alert('Senha incorreta.');
+                         }
+                       } catch {
+                         alert('Erro ao verificar senha.');
+                       }
+                     } else {
+                       handleAccessProject(p);
+                     }
+                   }}
+                 />
+               ))
+             )}
 
-                        try {
-                          const res = await fetch('/api/projects/verify-password', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ projectId: project.id, password })
-                          });
-
-                          if (res.ok) {
-                            handleAccessProject(project);
-                          } else {
-                            alert('Senha incorreta.');
-                          }
-                        } catch {
-                          alert('Erro ao verificar senha.');
-                        }
-                      } else {
-                        handleAccessProject(project);
-                      }
-                    }}
-                    className="h-64 active:scale-[0.98] transition-transform"
-                    contentClassName="p-8 flex flex-col justify-between"
-                  >
-                    <div className="flex justify-between items-start z-10">
-                      {/* LED de Status */}
-                      <StatusLED color={project.color} size="md" />
-
-                      <div className="flex gap-2">
-                        {project.isProtected && <Lock className="w-3 h-3 text-zinc-600" />}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                            <button className="text-zinc-600 hover:text-white transition-colors cursor-pointer">
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="glass-panel rounded-none min-w-[140px] bg-black border-zinc-800">
-                            {canEditProject(currentUser, project) && (
-                              <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-xs uppercase tracking-widest h-9 cursor-pointer text-zinc-400 hover:text-white focus:bg-white/10 font-medium">
-                                Editar
-                              </DropdownMenuItem>
-                            )}
-                            {canDeleteProject(currentUser, project) && (
-                              <DropdownMenuItem className="text-red-900 focus:text-red-500 focus:bg-white/10 text-xs uppercase tracking-widest cursor-pointer h-9 font-medium glitch-hover" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>
-                                Eliminar
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4 z-10 relative">
-                      <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-[0.85] group-hover:translate-x-1 transition-transform duration-300 drop-shadow-xl">
-                        {project.name}
-                      </h3>
-                      <p className="brick-mono text-xs text-zinc-500 uppercase tracking-widest line-clamp-2 leading-relaxed font-medium">
-                        {project.description || "SEM DESCRIÇÃO"}
-                      </p>
-                    </div>
-
-                    <div className="flex justify-between items-end border-t border-white/5 pt-4 z-10">
-                      <span className="brick-mono text-xs text-zinc-600 uppercase tracking-widest font-medium">
-                        {project.subProjects?.length || 0} ÁREAS
-                      </span>
-
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                        <span className="text-xs font-bold uppercase text-white tracking-widest">Acessar</span>
-                        <ArrowRight className="w-3 h-3 text-white" />
-                      </div>
-                    </div>
-                  </PrismaticPanel>
-                );
-              }))}
-
-            {/* CARD DE ADICIONAR PROJETO */}
-            {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
-              <PrismaticPanel
-                hoverEffect
-                onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-                className="h-64 border-dashed border-zinc-800 hover:border-zinc-600"
-                contentClassName="flex flex-col items-center justify-center gap-4"
-              >
-                <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
-                  <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
-                </div>
-                <span className="brick-mono text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">NOVO PROJETO</span>
-              </PrismaticPanel>
-            )}
-          </div>
+             {/* Card de Adicionar Projeto (Mantido igual) */}
+             {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
+               <PrismaticPanel
+                 hoverEffect
+                 onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+                 className="h-64 border-dashed border-zinc-800 hover:border-zinc-600"
+                 contentClassName="flex flex-col items-center justify-center gap-4"
+               >
+                 <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
+                   <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
+                 </div>
+                 <span className="brick-mono text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">NOVO PROJETO</span>
+               </PrismaticPanel>
+             )}
+           </div>
         </div>
       </div>
     </div>

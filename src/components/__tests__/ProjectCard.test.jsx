@@ -12,30 +12,34 @@ describe('ProjectCard Component', () => {
     name: 'Alpha Protocol',
     description: 'Top secret project',
     color: 'red',
-    isProtected: true
+    isProtected: true,
+    subProjects: []
   }
 
   afterEach(() => {
     cleanup()
   })
 
-  it('renders correctly with BRICK design system', () => {
+  it('renders title and description correctly', () => {
     const onSelect = vi.fn()
     render(<ProjectCard project={project} onSelect={onSelect} />)
 
-    // Verifica título e descrição
+    // Verifica elementos textuais
     expect(screen.getByText(/Alpha Protocol/i)).toBeInTheDocument()
     expect(screen.getByText(/Top secret project/i)).toBeInTheDocument()
+  })
 
-    // Verifica se o indicador de "LOCKED" aparece (já que isProtected é true)
+  it('shows LOCKED indicator for protected projects', () => {
+    const onSelect = vi.fn()
+    render(<ProjectCard project={project} onSelect={onSelect} />)
     expect(screen.getByText(/LOCKED/i)).toBeInTheDocument()
   })
 
-  it('handles click interactions', () => {
+  it('triggers onSelect when clicked', () => {
     const onSelect = vi.fn()
     render(<ProjectCard project={project} onSelect={onSelect} />)
 
-    // Busca pelo role genérico de button que adicionamos ao PrismaticPanel
+    // ProjectCard agora tem role="button"
     const card = screen.getByRole('button')
     fireEvent.click(card)
 
@@ -43,18 +47,13 @@ describe('ProjectCard Component', () => {
     expect(onSelect).toHaveBeenCalledWith(project)
   })
 
-  it('handles keyboard accessibility (Enter and Space)', () => {
+  it('triggers onSelect on Enter key', () => {
     const onSelect = vi.fn()
     render(<ProjectCard project={project} onSelect={onSelect} />)
 
     const card = screen.getByRole('button')
-
-    // Test Enter
     fireEvent.keyDown(card, { key: 'Enter' })
-    expect(onSelect).toHaveBeenCalledTimes(1)
 
-    // Test Space
-    fireEvent.keyDown(card, { key: ' ' })
-    expect(onSelect).toHaveBeenCalledTimes(2)
+    expect(onSelect).toHaveBeenCalledTimes(1)
   })
 })

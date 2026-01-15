@@ -28,10 +28,10 @@ export default function ProjectCard({ project, onSelect, className, ...props }) 
       contentClassName="p-8 flex flex-col justify-between"
       {...props}
     >
-      {/* --- HEADER: Status & Lock --- */}
-      <div className="flex justify-between items-start z-10">
+      {/* Header */}
+      <div className="flex justify-between items-start z-10 pointer-events-none">
         <StatusLED color={project.color || 'zinc'} size="md" />
-        
+
         {project.isProtected && (
           <div className="flex items-center gap-2 bg-black/40 px-2 py-1 border border-zinc-800 rounded-sm">
             <Lock className="w-3 h-3 text-zinc-500" />
@@ -40,19 +40,18 @@ export default function ProjectCard({ project, onSelect, className, ...props }) 
         )}
       </div>
 
-      {/* --- BODY: Title & Description --- */}
-      <div className="space-y-4 z-10 relative">
-        <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-[0.85] group-hover:translate-x-1 transition-transform duration-300 drop-shadow-xl brick-title">
+      {/* Body */}
+      <div className="space-y-4 z-10 relative pointer-events-none">
+        <h3 className="text-3xl font-black text-white uppercase tracking-tighter leading-[0.85] group-hover:translate-x-1 transition-transform duration-300 drop-shadow-xl font-brick-title">
           {project.name}
         </h3>
-        
         <p className="brick-mono text-xs text-zinc-500 uppercase tracking-widest line-clamp-2 leading-relaxed font-medium min-h-[2.5em]">
           {project.description || "SEM DESCRIÇÃO"}
         </p>
       </div>
 
-      {/* --- FOOTER: Metadata & Action --- */}
-      <div className="flex justify-between items-end border-t border-white/5 pt-4 z-10">
+      {/* Footer */}
+      <div className="flex justify-between items-end border-t border-white/5 pt-4 z-10 pointer-events-none">
         <div className="flex items-center gap-2 text-zinc-600">
           <FolderOpen className="w-3 h-3" />
           <span className="brick-mono text-xs uppercase tracking-widest font-medium">
