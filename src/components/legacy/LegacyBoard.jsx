@@ -220,8 +220,38 @@ function LegacyBoard({
               className="max-w-4xl mx-auto space-y-8"
             >
               {data.lists ? data.lists.map(list => (
-                <div key={list.id} className="space-y-0">
-                  <h3 className="text-xs font-bold text-zinc-600 uppercase tracking-[0.3em] mb-2 pl-4 border-l-2 border-red-600">{list.title}</h3>
+                <div 
+                  key={list.id} 
+                  className="space-y-0 cursor-move"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, list, 'list')}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, list.id, 'list')}
+                >
+                  <div className="flex items-center justify-between mb-2 pl-4 border-l-2 border-red-600 group">
+                    <input
+                      className="bg-transparent border-none text-xs font-bold text-zinc-600 uppercase tracking-[0.3em] focus:text-white focus:outline-none w-full"
+                      defaultValue={list.title}
+                      onBlur={(e) => {
+                        if (e.target.value !== list.title) {
+                          handleTaskAction('updateColumn', { listId: list.id, updates: { title: e.target.value } });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.target.blur();
+                      }}
+                    />
+                    <button 
+                      onClick={() => {
+                        if (confirm('Deseja excluir esta lista?')) {
+                          handleTaskAction('deleteColumn', { listId: list.id });
+                        }
+                      }}
+                      className="text-zinc-800 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
                   <div className="bg-black border-t border-zinc-900">
                     <AnimatePresence>
                       {list.tasks?.map(task => (
@@ -257,19 +287,29 @@ function LegacyBoard({
                           </div>
                         </motion.div>
                       ))}
-                    </AnimatePresence>
-                    <MechButton
-                      className="w-full text-zinc-600 hover:text-white justify-start h-10 px-4 border-0 hover:bg-zinc-950"
-                      icon={Plus}
-                      onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}
-                    >
-                      Inserir Dados
-                    </MechButton>
+                      </AnimatePresence>
+                      <MechButton
+                        className="w-full text-zinc-600 hover:text-white justify-start h-10 px-4 border-0 hover:bg-zinc-950"
+                        icon={Plus}
+                        onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}
+                      >
+                        Inserir Dados
+                      </MechButton>
+                    </div>
                   </div>
+                )) : <div className="p-8 text-zinc-500 text-xs">Lista não inicializada.</div>}
+
+                <div className="flex justify-center p-8">
+                  <MechButton
+                    className="border-dashed border-zinc-800 text-zinc-600 hover:text-white hover:bg-zinc-950 h-12 px-8"
+                    icon={Plus}
+                    onClick={() => handleTaskAction('addColumn', { title: 'Nova Lista' })}
+                  >
+                    Nova Lista
+                  </MechButton>
                 </div>
-              )) : <div className="p-8 text-zinc-500 text-xs">Lista não inicializada.</div>}
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
           {/* FILES */}
           {currentBoardType === 'files' && (
