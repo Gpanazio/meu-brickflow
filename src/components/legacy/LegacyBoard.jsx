@@ -483,18 +483,9 @@ function LegacyBoard({
                          <span className="text-[8px] font-mono text-zinc-500 uppercase">[SPACE]</span>
                       </div>
 
-                      <a 
-                        href={file.data} 
-                        download={file.name} 
-                        className="absolute inset-0 z-10"
-                        onDoubleClick={(e) => {
-                          // Allow default download on double click
-                        }}
-                        onClick={(e) => {
-                          // Prevent single click from downloading if we want space to be primary
-                          // But wait, user might expect single click to download.
-                          // Let's keep single click for download but space for preview.
-                        }}
+                      <div
+                        className="absolute inset-0 z-10 cursor-pointer"
+                        onClick={() => setPreviewFile(file)}
                       />
                     </motion.div>
                   ))}
