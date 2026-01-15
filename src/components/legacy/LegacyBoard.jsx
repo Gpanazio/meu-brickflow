@@ -123,6 +123,8 @@ function LegacyBoard({
                     className="p-4 border-b border-zinc-900 flex justify-between items-center cursor-move"
                     draggable
                     onDragStart={(e) => handleDragStart(e, list, 'list')}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, list.id, 'list')}
                   >
                     <input
                       className="bg-transparent border-none font-bold text-xs uppercase tracking-[0.2em] text-zinc-500 focus:text-white focus:outline-none w-full"
@@ -222,12 +224,15 @@ function LegacyBoard({
               {data.lists ? data.lists.map(list => (
                 <div 
                   key={list.id} 
-                  className="space-y-0 cursor-move"
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, list, 'list')}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, list.id, 'list')}
+                  className="space-y-0"
                 >
+                  <div 
+                    className="cursor-move"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, list, 'list')}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, list.id, 'list')}
+                  >
                   <div className="flex items-center justify-between mb-2 pl-4 border-l-2 border-red-600 group">
                     <input
                       className="bg-transparent border-none text-xs font-bold text-zinc-600 uppercase tracking-[0.3em] focus:text-white focus:outline-none w-full"
@@ -251,6 +256,7 @@ function LegacyBoard({
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
+                  </div>
                   </div>
                   <div className="bg-black border-t border-zinc-900">
                     <AnimatePresence>
