@@ -1,4 +1,38 @@
-# BRICK Design System - Typography
+# BRICK Design System - BRICK Brutalism
+
+## 🏗️ Design System: BRICK Brutalism
+
+O sistema de design BRICK Brutalism é inspirado na arquitetura brutalista, aplicado ao universo digital de gerenciamento de projetos. Ele impõe presença visual superior e alienígena, sem explicações desnecessárias.
+
+## 💡 LIGHTING ENGINE: High Contrast Chiaroscuro
+- **Sem luz ambiente**: Objetos são totalmente iluminados ou em completo vazio.
+- **Contraste extremo**: Sombras duras, sem transições suaves.
+- **Efeito**: Cria profundidade dramática e tensão visual.
+
+## 🔴 ACCENT: Red is not a color; it is a signal light
+- **Vermelho como sinal**: Usado exclusivamente para alertas, gravação e estados críticos.
+- **Não é cor decorativa**: Evitar vermelho em elementos não-funcionais.
+- **Implementação**: `#FF0000` (Pure Red) para alertas e destaques críticos.
+
+## 🎨 Cromatismo
+- **Pure Black**: `#000000`
+- **Pure Red**: `#FF0000`
+- **Pure White**: `#FFFFFF`
+
+## 👽 OBJECT BEHAVIOR: Visual Behavior: Unexplained Presence
+- **Presença alienígena**: Design superior e inexplicável.
+- **Imposição estrutural**: Não explicar a estrutura; simplesmente impor.
+- **Experiência**: Usuário sente a superioridade sem compreensão.
+
+## 📐 COMPOSITION: Absolute geometry
+- **Geometria absoluta**: Formas rigorosas, ângulos retos.
+- **Espaço negativo funcional**: Usado como elemento ativo na composição.
+- **Hierarquia**: Baseada em proporções matemáticas.
+
+## 📏 GRID: Modular 1:2 Vertical Ratio
+- **Razão vertical**: Proporções modulares de 1:2.
+- **Aplicação**: Layouts baseados em divisões verticais proporcionais.
+- **Exemplo**: Seção principal 2/3, painel lateral 1/3.
 
 ## 🖋️ Tipografia (BRICK Typography)
 
