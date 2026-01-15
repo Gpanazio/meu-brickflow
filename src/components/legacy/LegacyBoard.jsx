@@ -565,17 +565,17 @@ function LegacyBoard({
                         </div>
 
                         {/* Preview do Conteúdo */}
-                        <div className="w-full h-full p-8 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-all group-hover:scale-105 duration-500">
+                        <div className="w-full h-full flex items-center justify-center opacity-60 group-hover:opacity-100 transition-all duration-300">
                           {file.type?.includes('image') ? (
-                            <img src={file.data} alt={file.name} className="w-full h-full object-cover rounded-sm box-shadow-lg" style={{ boxShadow: '0 0 20px rgba(0,0,0,0.5)' }} />
+                            <img src={file.data} alt={file.name} className="w-full h-full object-cover" />
                           ) : file.type?.includes('pdf') ? (
-                            <FileText className="w-16 h-16 text-zinc-400 group-hover:text-red-500 transition-colors drop-shadow-2xl" />
+                            <FileText className="w-12 h-12 text-zinc-400 group-hover:text-red-500 transition-colors" />
                           ) : file.type?.includes('audio') ? (
-                            <Music className="w-16 h-16 text-zinc-400 group-hover:text-emerald-500 transition-colors drop-shadow-2xl" />
+                            <Music className="w-12 h-12 text-zinc-400 group-hover:text-emerald-500 transition-colors" />
                           ) : file.type?.includes('video') ? (
-                            <Video className="w-16 h-16 text-zinc-400 group-hover:text-blue-500 transition-colors drop-shadow-2xl" />
+                            <Video className="w-12 h-12 text-zinc-400 group-hover:text-blue-500 transition-colors" />
                           ) : (
-                            <FileText className="w-16 h-16 text-zinc-400 group-hover:text-white transition-colors" />
+                            <FileText className="w-12 h-12 text-zinc-400 group-hover:text-white transition-colors" />
                           )}
                         </div>
 
