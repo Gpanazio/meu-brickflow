@@ -47,53 +47,55 @@ export default function FileFilterBar({
                 </div>
 
                 {/* Filters and Sort */}
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
 
-                    <div className="flex items-center gap-2">
-                        <Filter className="w-3 h-3 text-zinc-500" />
-                        <Select value={typeFilter} onValueChange={onTypeFilterChange}>
-                            <SelectTrigger className="w-32 bg-black/40 border-zinc-800 rounded-none h-10 font-mono text-[10px] uppercase tracking-widest">
-                                <SelectValue placeholder="Tipo" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-black border-zinc-800 rounded-none ring-0">
-                                <SelectItem value="all">Todos</SelectItem>
-                                <SelectItem value="image">Imagens</SelectItem>
-                                <SelectItem value="pdf">PDFs</SelectItem>
-                                <SelectItem value="audio">Áudio</SelectItem>
-                                <SelectItem value="video">Vídeo</SelectItem>
-                                <SelectItem value="document">Docs</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                        <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                            <Filter className="w-3 h-3 text-zinc-500 hidden sm:block" />
+                            <Select value={typeFilter} onValueChange={onTypeFilterChange}>
+                                <SelectTrigger className="w-full sm:w-32 bg-black/40 border-zinc-800 rounded-none h-10 font-mono text-[10px] uppercase tracking-widest">
+                                    <SelectValue placeholder="Tipo" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-black border-zinc-800 rounded-none ring-0">
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    <SelectItem value="image">Imagens</SelectItem>
+                                    <SelectItem value="pdf">PDFs</SelectItem>
+                                    <SelectItem value="audio">Áudio</SelectItem>
+                                    <SelectItem value="video">Vídeo</SelectItem>
+                                    <SelectItem value="document">Docs</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                    <div className="flex items-center gap-2">
-                        <SortDesc className="w-3 h-3 text-zinc-500" />
-                        <Select value={sortBy} onValueChange={onSortByChange}>
-                            <SelectTrigger className="w-40 bg-black/40 border-zinc-800 rounded-none h-10 font-mono text-[10px] uppercase tracking-widest">
-                                <SelectValue placeholder="Ordenar" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-black border-zinc-800 rounded-none ring-0">
-                                <SelectItem value="newest">Mais Recentes</SelectItem>
-                                <SelectItem value="oldest">Mais Antigos</SelectItem>
-                                <SelectItem value="name-asc">Nome (A-Z)</SelectItem>
-                                <SelectItem value="name-desc">Nome (Z-A)</SelectItem>
-                                <SelectItem value="size-desc">Maior Tamanho</SelectItem>
-                                <SelectItem value="size-asc">Menor Tamanho</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                            <SortDesc className="w-3 h-3 text-zinc-500 hidden sm:block" />
+                            <Select value={sortBy} onValueChange={onSortByChange}>
+                                <SelectTrigger className="w-full sm:w-40 bg-black/40 border-zinc-800 rounded-none h-10 font-mono text-[10px] uppercase tracking-widest">
+                                    <SelectValue placeholder="Ordenar" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-black border-zinc-800 rounded-none ring-0">
+                                    <SelectItem value="newest">Mais Recentes</SelectItem>
+                                    <SelectItem value="oldest">Mais Antigos</SelectItem>
+                                    <SelectItem value="name-asc">Nome (A-Z)</SelectItem>
+                                    <SelectItem value="name-desc">Nome (Z-A)</SelectItem>
+                                    <SelectItem value="size-desc">Maior Tamanho</SelectItem>
+                                    <SelectItem value="size-asc">Menor Tamanho</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     {hasFilters && (
                         <MechButton
                             onClick={onClearFilters}
-                            className="h-10 px-4 scale-90"
+                            className="h-10 px-4 w-full sm:w-auto mt-2 sm:mt-0"
                             icon={X}
                         >
                             Limpar
                         </MechButton>
                     )}
 
-                    <div className="ml-auto md:ml-4 pl-4 border-l border-zinc-900 hidden sm:block">
+                    <div className="ml-auto md:ml-4 pl-4 border-l border-zinc-900 hidden md:block">
                         <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
                             {fileCount} Resultados
                         </span>

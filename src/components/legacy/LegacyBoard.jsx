@@ -109,10 +109,10 @@ function LegacyBoard({
           >
             Voltar
           </MechButton>
-          <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">{entityName}</h2>
+          <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight truncate max-w-[200px] md:max-w-none">{entityName}</h2>
         </div>
-        <Tabs value={currentBoardType} onValueChange={setCurrentBoardType}>
-          <TabsList className="bg-transparent border-b border-transparent rounded-none h-8 p-0 gap-4">
+        <Tabs value={currentBoardType} onValueChange={setCurrentBoardType} className="w-full md:w-auto">
+          <TabsList className="bg-transparent border-b border-transparent rounded-none h-8 p-0 gap-4 w-full md:w-auto overflow-x-auto justify-start md:justify-center scrollbar-hide">
             {enabledTabs.includes('kanban') && <TabsTrigger value="kanban" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Kanban</TabsTrigger>}
             {enabledTabs.includes('todo') && <TabsTrigger value="todo" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Lista</TabsTrigger>}
             {enabledTabs.includes('files') && <TabsTrigger value="files" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Arquivos</TabsTrigger>}
@@ -443,21 +443,22 @@ function LegacyBoard({
               )}
 
               {/* Header Files Styled */}
-              <PrismaticPanel className="mb-8 mx-1" contentClassName="flex justify-between items-center p-6">
+              {/* Header Files Styled */}
+              <PrismaticPanel className="mb-8 mx-1" contentClassName="flex flex-col md:flex-row justify-between items-start md:items-center p-6 gap-4">
                 <div>
                   <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Central de Arquivos</h3>
                   <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest mt-1">
                     {files.length} ARQUIVOS • {formatFileSize(files.reduce((acc, f) => acc + f.size, 0))} TOTAL
                   </p>
                 </div>
-                <div className="relative">
+                <div className="relative w-full md:w-auto">
                   <Input
                     type="file"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     multiple
                     onChange={handleFileUploadWithFeedback}
                   />
-                  <MechButton primary icon={Upload}>
+                  <MechButton primary icon={Upload} className="w-full md:w-auto justify-center">
                     Adicionar
                   </MechButton>
                 </div>
