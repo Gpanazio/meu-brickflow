@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
-import { motion } from 'framer-motion';  
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import './App.css';
 
@@ -24,7 +24,7 @@ const TeamManagementModal = lazy(() => import('@/components/modals/TeamManagemen
 const TrashView = lazy(() => import('@/components/views/TrashView'));
 
 // Hooks & Utils
-import { useUsers, useFiles, useRealtime } from './hooks';
+import { useUsers, useFiles, useRealtime, useTaskActions } from './hooks';
 import { generateId } from '@/utils/ids';
 import { absurdPhrases } from '@/utils/phrases';
 import { COLOR_VARIANTS, USER_COLORS } from '@/constants/theme';
@@ -235,224 +235,19 @@ function AppShell() {
     handleChangeFolderColor
   } = useFiles(latestCurrentProject, latestCurrentSubProject, updateProjects);
 
-  const handleTaskAction = useCallback((action, data) => {
-    if (action === 'save') {
-      const taskData = data;
-      const listId = modalState.listId || data.listId;
-
-      if (latestCurrentProject && latestCurrentSubProject && listId) {
-        updateProjects(prev => prev.map(p => {
-          if (p.id !== latestCurrentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== latestCurrentSubProject.id) return sp;
-              const board = sp.boardData?.[currentBoardType];
-              if (!board) return sp;
-
-              return {
-                ...sp,
-                boardData: {
-                  ...sp.boardData,
-                  [currentBoardType]: {
-                    ...board,
-                    lists: board.lists.map(list => {
-                      if (list.id !== listId) return list;
-                      const taskIndex = list.tasks.findIndex(t => t.id === taskData.id);
-                      if (taskIndex === -1) {
-                        return { ...list, tasks: [...list.tasks, { ...taskData, id: taskData.id || generateId('task') }] };
-                      } else {
-                        return { ...list, tasks: list.tasks.map(t => t.id === taskData.id ? { ...t, ...taskData } : t) };
-                      }
-                    })
-                  }
-                }
-              };
-            })
-          };
-        }));
-      }
-      setModalState({ isOpen: false, type: null });
-    } else if (action === 'delete') {
-      if (latestCurrentProject && latestCurrentSubProject) {
-        updateProjects(prev => prev.map(p => {
-          if (p.id !== latestCurrentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== latestCurrentSubProject.id) return sp;
-              const board = sp.boardData?.[currentBoardType];
-              if (!board) return sp;
-              return {
-                ...sp,
-                boardData: {
-                  ...sp.boardData,
-                  [currentBoardType]: {
-                    ...board,
-                    lists: board.lists.map(l => ({ ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) }))
-                  }
-                }
-              };
-            })
-          };
-        }));
-      }
-    } else if (action === 'move') {
-      if (latestCurrentProject && latestCurrentSubProject) {
-        updateProjects(prev => prev.map(p => {
-          if (p.id !== latestCurrentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== latestCurrentSubProject.id) return sp;
-              const board = sp.boardData?.[currentBoardType];
-              if (!board) return sp;
-
-              // Find the task and remove it from source list
-              let taskToMove = null;
-              const newLists = board.lists.map(l => {
-                if (l.id === data.fromListId) {
-                  taskToMove = l.tasks.find(t => t.id === data.taskId);
-                  return { ...l, tasks: l.tasks.filter(t => t.id !== data.taskId) };
-                }
-                return l;
-              });
-
-              if (!taskToMove) return sp;
-
-              // Add task to destination list
-              const finalLists = newLists.map(l => {
-                if (l.id === data.toListId) {
-                  return { ...l, tasks: [...l.tasks, taskToMove] };
-                }
-                return l;
-              });
-
-              return {
-                ...sp,
-                boardData: {
-                  ...sp.boardData,
-                  [currentBoardType]: { ...board, lists: finalLists }
-                }
-              };
-            })
-          };
-        }));
-      }
-    } else if (action === 'addColumn') {
-      if (latestCurrentProject && latestCurrentSubProject) {
-        updateProjects(prev => prev.map(p => {
-          if (p.id !== latestCurrentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== latestCurrentSubProject.id) return sp;
-              const board = sp.boardData?.[currentBoardType] || { lists: [] };
-              const newColumn = {
-                id: generateId('list'),
-                title: data.title || 'Nova Coluna',
-                tasks: []
-              };
-              return {
-                ...sp,
-                boardData: {
-                  ...sp.boardData,
-                  [currentBoardType]: {
-                    ...board,
-                    lists: [...(board.lists || []), newColumn]
-                  }
-                }
-              };
-            })
-          };
-        }));
-      }
-    } else if (action === 'updateColumn') {
-      if (latestCurrentProject && latestCurrentSubProject) {
-        updateProjects(prev => prev.map(p => {
-          if (p.id !== latestCurrentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== latestCurrentSubProject.id) return sp;
-              const board = sp.boardData?.[currentBoardType];
-              if (!board) return sp;
-              return {
-                ...sp,
-                boardData: {
-                  ...sp.boardData,
-                  [currentBoardType]: {
-                    ...board,
-                    lists: board.lists.map(l => l.id === data.listId ? { ...l, ...data.updates } : l)
-                  }
-                }
-              };
-            })
-          };
-        }));
-      }
-    } else if (action === 'deleteColumn') {
-      if (latestCurrentProject && latestCurrentSubProject) {
-        updateProjects(prev => prev.map(p => {
-          if (p.id !== latestCurrentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== latestCurrentSubProject.id) return sp;
-              const board = sp.boardData?.[currentBoardType];
-              if (!board) return sp;
-              return {
-                ...sp,
-                boardData: {
-                  ...sp.boardData,
-                  [currentBoardType]: {
-                    ...board,
-                    lists: board.lists.filter(l => l.id !== data.listId)
-                  }
-                }
-              };
-            })
-          };
-        }));
-      }
-    } else if (action === 'reorderColumns') {
-      if (latestCurrentProject && latestCurrentSubProject) {
-        updateProjects(prev => prev.map(p => {
-          if (p.id !== latestCurrentProject.id) return p;
-          return {
-            ...p,
-            subProjects: p.subProjects.map(sp => {
-              if (sp.id !== latestCurrentSubProject.id) return sp;
-              const board = sp.boardData?.[currentBoardType];
-              if (!board) return sp;
-
-              const newLists = [...board.lists];
-              const [movedList] = newLists.splice(data.fromIndex, 1);
-              newLists.splice(data.toIndex, 0, movedList);
-
-              return {
-                ...sp,
-                boardData: {
-                  ...sp.boardData,
-                  [currentBoardType]: { ...board, lists: newLists }
-                }
-              };
-            })
-          };
-        }));
-      }
-    } else if (action === 'reorderSubProjects') {
-      if (latestCurrentProject) {
-        updateProjects(prev => prev.map(p => {
-          if (p.id !== latestCurrentProject.id) return p;
-          const newSubProjects = [...(p.subProjects || [])];
-          const [movedSub] = newSubProjects.splice(data.fromIndex, 1);
-          newSubProjects.splice(data.toIndex, 0, movedSub);
-          return { ...p, subProjects: newSubProjects };
-        }));
-      }
-    }
-  }, [latestCurrentProject, latestCurrentSubProject, currentBoardType, modalState, updateProjects, setModalState]);
+  /* 
+     REFACTOR NOTE: 
+     Task management logic has been extracted to useTaskActions hook.
+     This reduces App.jsx complexity significantly.
+  */
+  const { handleTaskAction } = useTaskActions(
+    latestCurrentProject,
+    latestCurrentSubProject,
+    currentBoardType,
+    updateProjects,
+    modalState,
+    setModalState
+  );
 
   const handleDragStart = (e, item, type, listId) => {
     if (!item?.id) return;

@@ -7,6 +7,7 @@ import { RotateCcw, LogOut, Settings, Users } from 'lucide-react';
 import { Search } from '../Search';
 import MechButton from '../ui/MechButton';
 import StatusLED from '../ui/StatusLED';
+import { isAdmin } from '@/constants/permissions';
 
 function LegacyHeader({
   currentView,
@@ -24,7 +25,7 @@ function LegacyHeader({
   isSearchOpen,
   setIsSearchOpen
 }) {
-  const canManageTeam = ['gabriel', 'lufe'].includes(String(currentUser?.username || '').toLowerCase());
+  const canManageTeam = isAdmin(currentUser?.username);
 
   return (
     <header className="sticky top-0 z-50 w-full glass-header">
