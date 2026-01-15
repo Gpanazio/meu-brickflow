@@ -9,6 +9,17 @@ import { AnimatePresence, motion } from 'framer-motion';
 import MechButton from '../ui/MechButton';
 import StatusLED from '../ui/StatusLED';
 import { QuickLookModal } from '../ui/QuickLookModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 function LegacyBoard({
   data,
@@ -156,17 +167,33 @@ function LegacyBoard({
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-zinc-700 text-sm font-mono font-medium">{(list.tasks?.length ?? 0).toString().padStart(2, '0')}</span>
-                      <button 
-                        onClick={() => {
-                          if (confirm('Deseja excluir esta coluna?')) {
-                            handleTaskAction('deleteColumn', { listId: list.id });
-                          }
-                        }}
-                        className="text-zinc-800 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button 
+                            className="h-8 w-8 flex items-center justify-center rounded-none border border-transparent hover:border-red-900/50 hover:bg-red-950/20 text-zinc-800 hover:text-red-600 transition-all group/del"
+                            title="Excluir Coluna"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="glass-panel border-zinc-800 rounded-none bg-black/90">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-white uppercase tracking-tighter font-black">Confirmar Exclusão</AlertDialogTitle>
+                            <AlertDialogDescription className="text-zinc-500 font-mono text-xs uppercase tracking-widest">
+                              Esta ação não pode ser desfeita. Isso excluirá permanentemente a coluna "{list.title}" e todas as tarefas vinculadas.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="rounded-none border-zinc-800 bg-transparent text-zinc-500 hover:bg-zinc-900 hover:text-white uppercase text-[10px] font-bold tracking-widest h-10">Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleTaskAction('deleteColumn', { listId: list.id })}
+                              className="rounded-none bg-red-600 hover:bg-red-700 text-white uppercase text-[10px] font-bold tracking-widest h-10"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                   <div 
@@ -284,16 +311,32 @@ function LegacyBoard({
                           }}
                         />
                       </div>
-                      <button 
-                        onClick={() => {
-                          if (confirm('Deseja excluir esta lista?')) {
-                            handleTaskAction('deleteColumn', { listId: list.id });
-                          }
-                        }}
-                        className="text-zinc-800 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button 
+                          className="h-8 w-8 flex items-center justify-center rounded-none border border-transparent hover:border-red-900/50 hover:bg-red-950/20 text-zinc-800 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="glass-panel border-zinc-800 rounded-none bg-black/90">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-white uppercase tracking-tighter font-black">Confirmar Exclusão</AlertDialogTitle>
+                          <AlertDialogDescription className="text-zinc-500 font-mono text-xs uppercase tracking-widest">
+                            Esta ação não pode ser desfeita. Isso excluirá permanentemente a lista "{list.title}" e todas as tarefas vinculadas.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-none border-zinc-800 bg-transparent text-zinc-500 hover:bg-zinc-900 hover:text-white uppercase text-[10px] font-bold tracking-widest h-10">Cancelar</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleTaskAction('deleteColumn', { listId: list.id })}
+                            className="rounded-none bg-red-600 hover:bg-red-700 text-white uppercase text-[10px] font-bold tracking-widest h-10"
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     </div>
                   </div>
                   <div className="bg-black border-t border-zinc-900">

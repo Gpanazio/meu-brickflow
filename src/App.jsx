@@ -415,6 +415,16 @@ function AppShell() {
           };
         }));
       }
+    } else if (action === 'reorderSubProjects') {
+      if (latestCurrentProject) {
+        updateProjects(prev => prev.map(p => {
+          if (p.id !== latestCurrentProject.id) return p;
+          const newSubProjects = [...(p.subProjects || [])];
+          const [movedSub] = newSubProjects.splice(data.fromIndex, 1);
+          newSubProjects.splice(data.toIndex, 0, movedSub);
+          return { ...p, subProjects: newSubProjects };
+        }));
+      }
     }
   }, [latestCurrentProject, latestCurrentSubProject, currentBoardType, modalState, updateProjects, setModalState]);
 
@@ -443,8 +453,13 @@ function AppShell() {
     } else if (drag.type === 'list' && dropType === 'list') {
       const lists = latestCurrentSubProject?.boardData?.[currentBoardType]?.lists || [];
       const toIndex = lists.findIndex(l => l.id === targetId);
-      if (drag.fromIndex === toIndex) return;
+      if (drag.fromIndex === toIndex || toIndex === -1) return;
       handleTaskAction('reorderColumns', { fromIndex: drag.fromIndex, toIndex });
+    } else if (drag.type === 'subproject' && dropType === 'subproject') {
+      const subProjects = latestCurrentProject?.subProjects || [];
+      const toIndex = subProjects.findIndex(sp => sp.id === targetId);
+      if (drag.fromIndex === toIndex || toIndex === -1) return;
+      handleTaskAction('reorderSubProjects', { fromIndex: drag.fromIndex, toIndex });
     }
     dragTaskRef.current = null;
   };
@@ -649,6 +664,14 @@ function AppShell() {
                       setCurrentBoardType(sub.enabledTabs?.[0] || 'kanban');
                     }}
                     handleDeleteProject={(item) => handleSoftDelete(item, 'subproject', latestCurrentProject.id)}
+                    handleDragStart={(e, item, type) => {
+                      if (type !== 'subproject') return;
+                      const index = latestCurrentProject.subProjects?.findIndex(sp => sp.id === item.id);
+                      dragTaskRef.current = { type: 'subproject', subProjectId: item.id, fromIndex: index };
+                      e.dataTransfer.setData('type', 'subproject');
+                    }}
+                    handleDragOver={handleDragOver}
+                    handleDrop={handleDrop}
                     history={[]}
                     isHistoryLoading={false}
                     historyError={null}
