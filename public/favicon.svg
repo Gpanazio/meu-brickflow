@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Background -->
+  <rect width="32" height="32" fill="#000000"/>
+  
+  <!-- Brick pattern - 3 blocks in a brick layout -->
+  <g fill="#DC2626">
+    <!-- Top row - 1.5 bricks -->
+    <rect x="4" y="4" width="8" height="6" fill="#DC2626"/>
+    <rect x="20" y="4" width="8" height="6" fill="#DC2626"/>
+    
+    <!-- Middle row - 2 bricks (offset) -->
+    <rect x="2" y="11" width="8" height="6" fill="#DC2626"/>
+    <rect x="12" y="11" width="8" height="6" fill="#DC2626"/>
+    <rect x="22" y="11" width="8" height="6" fill="#DC2626"/>
+    
+    <!-- Bottom row - 1.5 bricks -->
+    <rect x="4" y="18" width="8" height="6" fill="#DC2626"/>
+    <rect x="20" y="18" width="8" height="6" fill="#DC2626"/>
+  </g>
+  
+  <!-- Flow arrow through the bricks -->
+  <path d="M2 26 L6 22 L10 26 L14 22 L18 26 L22 22 L26 26 L30 22" 
+        stroke="#DC2626" 
+        stroke-width="2" 
+        fill="none"
+        stroke-linecap="square"
+        stroke-linejoin="miter"/>
+</svg>
