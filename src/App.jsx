@@ -399,7 +399,7 @@ function AppShell() {
               if (sp.id !== latestCurrentSubProject.id) return sp;
               const board = sp.boardData?.[currentBoardType];
               if (!board) return sp;
-              
+
               const newLists = [...board.lists];
               const [movedList] = newLists.splice(data.fromIndex, 1);
               newLists.splice(data.toIndex, 0, movedList);
@@ -741,6 +741,7 @@ function AppShell() {
             isReadOnly={false}
             users={appData?.users || []}
             USER_COLORS={USER_COLORS}
+            currentUser={currentUser}
           />
         )}
 

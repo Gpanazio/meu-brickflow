@@ -22,3 +22,15 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Backup files
+*.backup
+*.backup-temp
+*_backup.*
+
+# Lint reports
+lint_report*.json
+lint_report*.txt
+lint_final*.txt
+lint*.json
+lint*.txt

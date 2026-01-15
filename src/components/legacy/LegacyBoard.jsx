@@ -411,7 +411,15 @@ function LegacyBoard({
               className={`min-h-[500px] relative transition-all duration-300 pb-20 ${isFileDragging ? 'bg-zinc-950/50' : ''}`}
               onDragOver={(e) => { e.preventDefault(); setIsFileDragging(true); }}
               onDragLeave={(e) => { e.preventDefault(); setIsFileDragging(false); }}
-              onDrop={handleFileDrop}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsFileDragging(false);
+                if (handleFileDrop) {
+                  handleFileDrop(e);
+                } else {
+                  handleFileUploadWithFeedback(e);
+                }
+              }}
             >
               {/* Upload Overlay */}
               {(isFileDragging || isUploading) && (

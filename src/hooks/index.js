@@ -1,4 +1,4 @@
-export { useFiles } from './useFiles';
+export { useFiles } from './useFiles.js';
 export { useUsers } from './useUsers';
 export { useIsMobile } from './useIsMobile';
 export { useRealtime } from './useRealtime';

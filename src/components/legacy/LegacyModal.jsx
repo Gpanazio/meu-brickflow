@@ -23,7 +23,8 @@ function LegacyModal({
   handleTaskAction,
   USER_COLORS,
   isReadOnly,
-  users
+  users,
+  currentUser
 }) {
   const [taskState, setTaskState] = useState(modalState.data || {});
   const canEdit = !isReadOnly;
@@ -49,8 +50,8 @@ function LegacyModal({
       const lastPart = parts[parts.length - 1];
       if (lastPart.startsWith('@')) {
         const query = lastPart.slice(1).toLowerCase();
-        const filtered = responsibleOptions.filter(u => 
-          u.username.toLowerCase().includes(query) || 
+        const filtered = responsibleOptions.filter(u =>
+          u.username.toLowerCase().includes(query) ||
           (u.displayName && u.displayName.toLowerCase().includes(query))
         );
         setMentionSuggestions(filtered);
@@ -355,7 +356,7 @@ function LegacyModal({
                         className="bg-zinc-950 border-zinc-900 rounded-none min-h-[60px] text-sm text-zinc-300 focus:border-zinc-700 p-3"
                         onKeyDown={(e) => {
                           if (isReadOnly) return;
-                          
+
                           if (showMentions && mentionSuggestions.length > 0) {
                             if (e.key === 'Tab' || e.key === 'Enter') {
                               e.preventDefault();
@@ -376,7 +377,7 @@ function LegacyModal({
                                 ...prev,
                                 comments: [
                                   ...(prev.comments || []),
-                                  { user: 'admin', text: val, date: new Date().toISOString() }
+                                  { user: currentUser?.username || 'unknown', text: val, date: new Date().toISOString() }
                                 ]
                               }));
                               setCommentText('');
@@ -556,7 +557,7 @@ function LegacyModal({
                         ...taskState,
                         activity: [
                           ...(taskState.activity || []),
-                          { user: 'admin', action: 'atualizou o card', date: new Date().toISOString() }
+                          { user: currentUser?.username || 'unknown', action: 'atualizou o card', date: new Date().toISOString() }
                         ]
                       };
                       handleTaskAction('save', finalTask);
