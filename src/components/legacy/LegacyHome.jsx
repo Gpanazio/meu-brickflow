@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Lock, CheckSquare, ArrowRight } from 'lucide-react';
 import { getUserTasks } from '@/utils/userTasks';
-import { hasPermission, PERMISSIONS } from '@/utils/accessControl';
+import { hasPermission, PERMISSIONS, canEditProject, canDeleteProject } from '@/utils/accessControl';
 import { COLOR_VARIANTS } from '@/constants/theme';
 import PrismaticPanel from '@/components/ui/PrismaticPanel';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -248,12 +248,16 @@ function LegacyHome({
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="glass-panel rounded-none min-w-[140px] bg-black border-zinc-800">
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-xs uppercase tracking-widest h-9 cursor-pointer text-zinc-400 hover:text-white focus:bg-white/10 font-medium">
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-900 focus:text-red-500 focus:bg-white/10 text-xs uppercase tracking-widest cursor-pointer h-9 font-medium glitch-hover" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>
-                              Eliminar
-                            </DropdownMenuItem>
+                            {canEditProject(currentUser, project) && (
+                              <DropdownMenuItem onClick={e => { e.stopPropagation(); setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project }); }} className="text-xs uppercase tracking-widest h-9 cursor-pointer text-zinc-400 hover:text-white focus:bg-white/10 font-medium">
+                                Editar
+                              </DropdownMenuItem>
+                            )}
+                            {canDeleteProject(currentUser, project) && (
+                              <DropdownMenuItem className="text-red-900 focus:text-red-500 focus:bg-white/10 text-xs uppercase tracking-widest cursor-pointer h-9 font-medium glitch-hover" onClick={e => { e.stopPropagation(); handleDeleteProject(project); }}>
+                                Eliminar
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
