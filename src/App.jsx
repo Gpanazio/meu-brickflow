@@ -206,8 +206,21 @@ function AppShell() {
     return latestCurrentProject.subProjects?.find(sp => sp.id === currentSubProject.id) || currentSubProject;
   }, [latestCurrentProject, currentSubProject]);
 
-  const { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading } =
-    useFiles(latestCurrentProject, latestCurrentSubProject, updateProjects);
+  const {
+    files,
+    filteredFiles,
+    handleFileUpload,
+    isDragging,
+    setIsDragging,
+    handleDeleteFile,
+    isUploading,
+    searchQuery,
+    setSearchQuery,
+    typeFilter,
+    setTypeFilter,
+    sortBy,
+    setSortBy
+  } = useFiles(latestCurrentProject, latestCurrentSubProject, updateProjects);
 
   const handleTaskAction = useCallback((action, data) => {
     if (action === 'save') {
@@ -696,6 +709,13 @@ function AppShell() {
                     handleDragEnter={handleDragEnter}
                     dragOverTargetId={dragOverTargetId}
                     files={files}
+                    filteredFiles={filteredFiles}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    typeFilter={typeFilter}
+                    setTypeFilter={setTypeFilter}
+                    sortBy={sortBy}
+                    setSortBy={setSortBy}
                     handleFileUploadWithFeedback={handleFileUpload}
                     isUploading={isUploading}
                     isFileDragging={isDragging}

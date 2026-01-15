@@ -8,13 +8,77 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'image' | 'pdf' | 'audio' | 'video' | 'document'
+  const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'oldest' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
+
   const files = useMemo(() => {
     const rawFiles = currentSubProject?.boardData?.files?.files;
     return Array.isArray(rawFiles) ? rawFiles : [];
   }, [currentSubProject]);
 
+  const filteredFiles = useMemo(() => {
+    let result = [...files];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      result = result.filter(f =>
+        f.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply type filter
+    if (typeFilter !== 'all') {
+      result = result.filter(f => {
+        const type = f.type?.toLowerCase() || '';
+        switch (typeFilter) {
+          case 'image': return type.includes('image');
+          case 'pdf': return type.includes('pdf');
+          case 'audio': return type.includes('audio');
+          case 'video': return type.includes('video');
+          case 'document':
+            return type.includes('text') ||
+              type.includes('document') ||
+              type.includes('word') ||
+              type.includes('excel') ||
+              type.includes('powerpoint');
+          default: return true;
+        }
+      });
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.uploadDate) - new Date(a.uploadDate);
+        case 'oldest':
+          return new Date(a.uploadDate) - new Date(b.uploadDate);
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'size-desc':
+          return b.size - a.size;
+        case 'size-asc':
+          return a.size - b.size;
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [files, searchQuery, typeFilter, sortBy]);
+
   const handleFileUpload = useCallback(async (event) => {
-    const uploadedFiles = Array.from(event.target?.files || event.dataTransfer?.files || []);
+    // Check if it's a drop event or a file input change event
+    const uploadedFiles = Array.from(
+      (event.target && event.target.files) ||
+      (event.dataTransfer && event.dataTransfer.files) ||
+      []
+    );
+
     if (!uploadedFiles.length || !currentSubProject || !updateProjects) return;
 
     const validFiles = uploadedFiles.filter(file => {
@@ -55,7 +119,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
 
       updateProjects(projects => {
         if (!Array.isArray(projects)) return projects;
-        
+
         return projects.map(p => {
           if (p.id !== currentProject?.id) return p;
           return {
@@ -92,7 +156,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
 
     updateProjects(projects => {
       if (!Array.isArray(projects)) return projects;
-      
+
       return projects.map(p => {
         if (p.id !== currentProject?.id) return p;
         return {
@@ -118,5 +182,19 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
     toast.success('Arquivo excluído com sucesso');
   }, [currentProject, currentSubProject, updateProjects]);
 
-  return { files, handleFileUpload, isDragging, setIsDragging, handleDeleteFile, isUploading };
+  return {
+    files,
+    filteredFiles,
+    handleFileUpload,
+    isDragging,
+    setIsDragging,
+    handleDeleteFile,
+    isUploading,
+    searchQuery,
+    setSearchQuery,
+    typeFilter,
+    setTypeFilter,
+    sortBy,
+    setSortBy
+  };
 }

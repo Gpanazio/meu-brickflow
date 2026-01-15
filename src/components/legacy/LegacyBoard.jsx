@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import MechButton from '../ui/MechButton';
 import StatusLED from '../ui/StatusLED';
 import PrismaticPanel from '../ui/PrismaticPanel';
+import FileFilterBar from '../FileFilterBar';
 import { QuickLookModal } from '../ui/QuickLookModal';
 import {
   AlertDialog,
@@ -44,6 +45,13 @@ function LegacyBoard({
   isUploading,
   handleFileUploadWithFeedback,
   files,
+  filteredFiles,
+  searchQuery,
+  setSearchQuery,
+  typeFilter,
+  setTypeFilter,
+  sortBy,
+  setSortBy,
   handleDeleteFile
 }) {
   const [hoveredFileId, setHoveredFileId] = useState(null);
@@ -55,7 +63,7 @@ function LegacyBoard({
     const handleKeyDown = (e) => {
       if (e.code === 'Space' && hoveredFileId && currentBoardType === 'files' && !previewFile) {
         e.preventDefault();
-        const file = filesForSubProject.find(f => f.id === hoveredFileId);
+        const file = filteredFiles.find(f => f.id === hoveredFileId);
         if (file) setPreviewFile(file);
       }
     };
@@ -63,10 +71,6 @@ function LegacyBoard({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [hoveredFileId, currentBoardType, previewFile]);
 
-  const filesForSubProject = useMemo(
-    () => files?.filter(file => file.subProjectId === (currentSubProject?.id ?? null)) || [],
-    [files, currentSubProject?.id]
-  );
 
   const todoListIds = useMemo(() => {
     if (currentBoardType !== 'todo') return { doneListId: null, defaultListId: null };
@@ -443,7 +447,7 @@ function LegacyBoard({
                 <div>
                   <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Central de Arquivos</h3>
                   <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest mt-1">
-                    {filesForSubProject.length} ARQUIVOS • {formatFileSize(filesForSubProject.reduce((acc, f) => acc + f.size, 0))} TOTAL
+                    {files.length} ARQUIVOS • {formatFileSize(files.reduce((acc, f) => acc + f.size, 0))} TOTAL
                   </p>
                 </div>
                 <div className="relative">
@@ -459,9 +463,25 @@ function LegacyBoard({
                 </div>
               </PrismaticPanel>
 
+              {/* Filter Bar */}
+              <FileFilterBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                typeFilter={typeFilter}
+                onTypeFilterChange={setTypeFilter}
+                sortBy={sortBy}
+                onSortByChange={setSortBy}
+                fileCount={filteredFiles.length}
+                onClearFilters={() => {
+                  setSearchQuery('');
+                  setTypeFilter('all');
+                  setSortBy('newest');
+                }}
+              />
+
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 px-1">
                 <AnimatePresence>
-                  {filesForSubProject.map(file => (
+                  {filteredFiles.map(file => (
                     <motion.div
                       key={file.id}
                       initial={{ opacity: 0, scale: 0.9 }}
@@ -519,14 +539,31 @@ function LegacyBoard({
                 </AnimatePresence>
 
                 {/* Empty State / Upload Dropzone */}
-                {filesForSubProject.length === 0 && (
-                  <div className="col-span-full h-64 border-2 border-dashed border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-4 group hover:border-zinc-600 transition-colors bg-white/[0.01]">
+                {filteredFiles.length === 0 && (
+                  <div className="col-span-full h-80 border-2 border-dashed border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-4 group hover:border-zinc-600 transition-colors bg-white/[0.01]">
                     <div className="w-16 h-16 rounded-full bg-zinc-900 group-hover:bg-zinc-800 flex items-center justify-center transition-colors">
                       <Upload className="w-6 h-6 text-zinc-600 group-hover:text-zinc-300" />
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest group-hover:text-zinc-300">Nenhum arquivo encontrado</p>
-                      <p className="text-xs text-zinc-700 font-mono uppercase tracking-widest mt-2">Arraste arquivos ou use o botão adicionar</p>
+                      <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest group-hover:text-zinc-300">
+                        {files.length === 0 ? 'Nenhum arquivo encontrado' : 'Nenhum arquivo corresponde aos filtros'}
+                      </p>
+                      <p className="text-xs text-zinc-700 font-mono uppercase tracking-widest mt-2">
+                        {files.length === 0 ? 'Arraste arquivos ou use o botão adicionar' : 'Tente ajustar sua busca ou limpar os filtros'}
+                      </p>
+                      {files.length > 0 && (
+                        <MechButton
+                          onClick={() => {
+                            setSearchQuery('');
+                            setTypeFilter('all');
+                            setSortBy('newest');
+                          }}
+                          className="mt-6 mx-auto"
+                          icon={X}
+                        >
+                          Limpar Filtros
+                        </MechButton>
+                      )}
                     </div>
                   </div>
                 )}
