@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
-import { X, Download, FileText, Calendar, HardDrive, Type } from 'lucide-react';
+import { Dialog, DialogContent } from './dialog';
+import { X, Download, FileText, Calendar, HardDrive, Type, Music, Video } from 'lucide-react';
 import { formatFileSize } from '../../utils/formatFileSize';
 
 export function QuickLookModal({ file, isOpen, onClose }) {
@@ -16,17 +16,30 @@ export function QuickLookModal({ file, isOpen, onClose }) {
 
   const isImage = file.type?.includes('image');
   const isPdf = file.type?.includes('pdf');
+  const isAudio = file.type?.includes('audio');
+  const isVideo = file.type?.includes('video');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[90vw] md:max-w-[800px] bg-black/95 border border-zinc-800 p-0 overflow-hidden rounded-none shadow-2xl backdrop-blur-xl scanlines">
-        <div className="flex flex-col md:flex-row h-[80vh] md:h-[600px] relative z-10">
+      <DialogContent className="sm:max-w-[90vw] md:max-w-[850px] bg-black/95 border border-zinc-800 p-0 overflow-hidden rounded-none shadow-2xl backdrop-blur-xl scanlines">
+        <div className="flex flex-col md:flex-row h-[85vh] md:h-[650px] relative z-10">
           {/* Visualização */}
           <div className="flex-1 bg-zinc-950/50 flex items-center justify-center p-4 relative border-b md:border-b-0 md:border-r border-zinc-900 group">
             {isImage ? (
-              <img src={file.data} alt={file.name} className="max-w-full max-h-full object-contain shadow-2xl" />
+              <img src={file.data} alt={file.name} className="max-w-full max-h-full object-contain shadow-2xl animate-in zoom-in-95 duration-300" />
             ) : isPdf ? (
-              <iframe src={`${file.data}#toolbar=0`} className="w-full h-full border-0 bg-white" title={file.name} />
+              <iframe src={`${file.data}#toolbar=0`} className="w-full h-full border-0 bg-white shadow-inner" title={file.name} />
+            ) : isAudio ? (
+              <div className="flex flex-col items-center gap-8 w-full px-8">
+                <div className="w-32 h-32 bg-zinc-900 flex items-center justify-center rounded-full border border-white/5 shadow-[0_0_50px_rgba(255,255,255,0.05)] animate-pulse">
+                  <Music className="w-12 h-12 text-white" />
+                </div>
+                <audio controls src={file.data} className="w-full h-10 invert brightness-100 opacity-80 hover:opacity-100 transition-opacity" />
+              </div>
+            ) : isVideo ? (
+              <div className="w-full h-full flex items-center justify-center bg-black">
+                <video controls src={file.data} className="max-w-full max-h-full shadow-2xl" />
+              </div>
             ) : (
               <div className="flex flex-col items-center gap-4">
                 <FileText className="w-20 h-20 text-zinc-800" />

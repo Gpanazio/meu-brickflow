@@ -3,7 +3,7 @@ import ResponsibleUsersButton from '../ResponsibleUsersButton';
 import { Input } from '../ui/input';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { Checkbox } from '../ui/checkbox';
-import { Upload, ArrowLeft, Plus, Trash2, Eye, FileText, GripVertical } from 'lucide-react';
+import { Upload, ArrowLeft, Plus, Trash2, Eye, FileText, GripVertical, Music, Video } from 'lucide-react';
 import { formatFileSize } from '../../utils/formatFileSize';
 import { AnimatePresence, motion } from 'framer-motion';
 import MechButton from '../ui/MechButton';
@@ -462,6 +462,14 @@ function LegacyBoard({
                         ) : file.type?.includes('pdf') ? (
                           <div className="w-full h-full flex items-center justify-center bg-zinc-900">
                              <FileText className="w-10 h-10 text-red-600" />
+                          </div>
+                        ) : file.type?.includes('audio') ? (
+                          <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                             <Music className="w-10 h-10 text-emerald-500" />
+                          </div>
+                        ) : file.type?.includes('video') ? (
+                          <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                             <Video className="w-10 h-10 text-blue-500" />
                           </div>
                         ) : (
                           <FileText className="w-10 h-10 text-white" />
