@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Dialog, DialogContent } from './dialog';
+import { Dialog, DialogContent, DialogTitle } from './dialog';
 import { X, Download, FileText, Calendar, HardDrive, Type, Music, Video } from 'lucide-react';
 import { formatFileSize } from '../../utils/formatFileSize';
 
@@ -22,15 +22,18 @@ export function QuickLookModal({ file, isOpen, onClose }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[90vw] md:max-w-[850px] bg-black/95 border border-zinc-800 p-0 overflow-hidden rounded-none shadow-2xl backdrop-blur-xl scanlines">
+        <DialogTitle className="sr-only">{file.name}</DialogTitle>
         <div className="flex flex-col md:flex-row h-[85vh] md:h-[650px] relative z-10">
           {/* Visualização */}
           <div className="flex-1 bg-zinc-950/50 flex items-center justify-center p-4 relative border-b md:border-b-0 md:border-r border-zinc-900 group">
             {isImage ? (
               <img src={file.data} alt={file.name} className="max-w-full max-h-full object-contain shadow-2xl animate-in zoom-in-95 duration-300" />
             ) : isPdf ? (
-              <object data={file.data} type="application/pdf" className="w-full h-full border-0 bg-white shadow-inner">
-                <p>A pré-visualização de PDF não é suportada no seu navegador. <a href={file.data} download={file.name} className="underline">Baixe o PDF</a> para visualizá-lo.</p>
-              </object>
+              <div className="w-full h-full overflow-auto">
+                <object data={file.data} type="application/pdf" className="w-full h-full border-0 bg-white shadow-inner">
+                  <p>A pré-visualização de PDF não é suportada no seu navegador. <a href={file.data} download={file.name} className="underline">Baixe o PDF</a> para visualizá-lo.</p>
+                </object>
+              </div>
             ) : isAudio ? (
               <div className="flex flex-col items-center gap-8 w-full px-8">
                 <div className="w-32 h-32 bg-zinc-900 flex items-center justify-center rounded-full border border-white/5 shadow-[0_0_50px_rgba(255,255,255,0.05)] animate-pulse">
