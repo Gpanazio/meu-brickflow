@@ -150,7 +150,11 @@ function LegacyBoard({
                       </button>
                     </div>
                   </div>
-                  <div className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black">
+                  <div 
+                    className="flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar bg-black"
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, list.id, 'list')}
+                  >
                     <AnimatePresence>
                       {list.tasks?.map(task => (
                         <motion.div
@@ -162,6 +166,15 @@ function LegacyBoard({
                           draggable
                           onDragStart={(e) => handleDragStart(e, task, 'task', list.id)}
                           onDragEnter={(e) => handleDragEnter(e, task.id, list.id)}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDrop(e, list.id, 'list');
+                          }}
                           onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}
                           className={`bg-zinc-950 border border-zinc-900 hover:border-zinc-700 cursor-grab active:cursor-grabbing p-4 group transition-all ${dragOverTargetId === task.id ? 'border-t-2 border-t-red-600' : ''}`}
                         >
