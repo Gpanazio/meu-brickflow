@@ -39,13 +39,17 @@ import authRouter from '../routes/auth.js';
 let server;
 let baseUrl;
 
-beforeAll(async () => {
-  const app = express();
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use('/api/auth', authRouter);
-  server = app.listen(0);
-  baseUrl = `http://127.0.0.1:${server.address().port}`;
+beforeAll(() => {
+  return new Promise(resolve => {
+    const app = express();
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+    app.use('/api/auth', authRouter);
+    server = app.listen(0, () => {
+      baseUrl = `http://127.0.0.1:${server.address().port}`;
+      resolve();
+    });
+  });
 });
 
 afterAll(() => {
