@@ -2,7 +2,7 @@
 import { query } from '../db.js';
 import { cache } from '../cache.js';
 import { requireAuth } from '../middleware/auth.js';
-import { execFile } from 'child_process';
+import { execFile } from 'child_process/promises';
 
 export async function checkHealth() {
   const checks = {
@@ -44,32 +44,33 @@ async function checkCache() {
 }
 
 async function checkDisk() {
-  return new Promise((resolve) => {
-    execFile('df', ['-kP', '/'], { encoding: 'utf8' }, (err, stdout) => {
-      if (err) {
-        resolve({ status: 'error', message: err.message });
-        return;
-      }
+  try {
+    const { stdout } = await execFile('df', ['-kP', '/'], { encoding: 'utf8' });
 
-      const lines = stdout.trim().split('\n');
-      if (lines.length < 2) {
-        resolve({ status: 'error', message: 'Unexpected df output' });
-        return;
-      }
+    const lines = stdout.trim().split('\n');
+    if (lines.length < 2) {
+      return { status: 'error', message: `Unexpected df output: ${stdout}` };
+    }
 
-      const [, total, , available] = lines[1].trim().split(/\s+/);
-      const totalKb = Number(total);
-      const availableKb = Number(available);
+    const parts = lines[1].trim().split(/\s+/);
+    if (parts.length < 4) {
+      return { status: 'error', message: `Malformed df output line: ${lines[1]}` };
+    }
 
-      if (!Number.isFinite(totalKb) || !Number.isFinite(availableKb) || totalKb <= 0) {
-        resolve({ status: 'error', message: 'Invalid disk metrics' });
-        return;
-      }
+    const total = parts[1];
+    const available = parts[3];
+    const totalKb = Number(total);
+    const availableKb = Number(available);
 
-      const freeSpacePercent = Math.max(0, Math.min(100, Math.round((availableKb / totalKb) * 100)));
-      resolve({ status: 'ok', free_space_percent: freeSpacePercent });
-    });
-  });
+    if (!Number.isFinite(totalKb) || !Number.isFinite(availableKb) || totalKb <= 0) {
+      return { status: 'error', message: `Invalid disk metrics in line: ${lines[1]}` };
+    }
+
+    const freeSpacePercent = Math.max(0, Math.min(100, Math.round((availableKb / totalKb) * 100)));
+    return { status: 'ok', free_space_percent: freeSpacePercent };
+  } catch (err) {
+    return { status: 'error', message: err.message };
+  }
 }
 
 export async function setupRoutes(app) {
