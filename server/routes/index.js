@@ -2,7 +2,7 @@
 import { query } from '../db.js';
 import { cache } from '../cache.js';
 import { requireAuth } from '../middleware/auth.js';
-import { execFileSync } from 'child_process';
+import { execFile } from 'child_process';
 
 export async function checkHealth() {
   const checks = {
