@@ -2,6 +2,7 @@
 import { query } from '../db.js';
 import { cache } from '../cache.js';
 import { requireAuth } from '../middleware/auth.js';
+import { execFileSync } from 'child_process';
 
 export async function checkHealth() {
   const checks = {
@@ -43,7 +44,26 @@ async function checkCache() {
 }
 
 async function checkDisk() {
-  return { status: 'ok', free_space_percent: 100 };
+  try {
+    const output = execFileSync('df', ['-kP', '/'], { encoding: 'utf8' });
+    const lines = output.trim().split('\n');
+    if (lines.length < 2) {
+      return { status: 'error', message: 'Unexpected df output' };
+    }
+
+    const [, total, used] = lines[1].split(/\s+/);
+    const totalKb = Number(total);
+    const usedKb = Number(used);
+
+    if (!Number.isFinite(totalKb) || !Number.isFinite(usedKb) || totalKb <= 0) {
+      return { status: 'error', message: 'Invalid disk metrics' };
+    }
+
+    const freeSpacePercent = Math.max(0, Math.min(100, Math.round(((totalKb - usedKb) / totalKb) * 100)));
+    return { status: 'ok', free_space_percent: freeSpacePercent };
+  } catch (err) {
+    return { status: 'error', message: err.message };
+  }
 }
 
 export async function setupRoutes(app) {
