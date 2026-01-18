@@ -52,7 +52,7 @@ beforeAll(() => {
   });
 });
 
-afterAll(() => new Promise(resolve => server.close(resolve)));
+afterAll(() => new Promise((resolve, reject) => server.close(err => (err ? reject(err) : resolve()))));
 
 beforeEach(() => {
   vi.clearAllMocks();
