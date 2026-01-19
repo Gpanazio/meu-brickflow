@@ -56,7 +56,7 @@ let baseUrl;
 
 beforeAll(
   () =>
-    new Promise(resolve => {
+    new Promise((resolve, reject) => {
       const app = express();
       app.use(express.json());
       app.use(express.urlencoded({ extended: true }));
@@ -65,10 +65,13 @@ beforeAll(
         baseUrl = `http://127.0.0.1:${server.address().port}`;
         resolve();
       });
+      server.on('error', reject);
     }),
 );
 
-afterAll(() => new Promise(resolve => server.close(resolve)));
+afterAll(
+  () => new Promise((resolve, reject) => server.close(err => (err ? reject(err) : resolve()))),
+);
 
 beforeEach(() => {
   vi.clearAllMocks();
