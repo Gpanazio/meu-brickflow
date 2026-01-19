@@ -79,6 +79,9 @@ beforeEach(() => {
 
 describe('Projects integration', () => {
   it('returns cached project state when available', async () => {
+    sessionService.get.mockResolvedValue({ userId: 'ana' });
+    userService.findByUsername.mockResolvedValue({ username: 'ana', role: 'member' });
+
     query.mockResolvedValueOnce({
       rows: [
         {
@@ -91,7 +94,9 @@ describe('Projects integration', () => {
       ],
     });
 
-    const first = await fetch(`${baseUrl}/api/projects`);
+    const first = await fetch(`${baseUrl}/api/projects`, {
+      headers: { cookie: 'bf_session=session-123' },
+    });
     expect(first.status).toBe(200);
     expect(await first.json()).toEqual({
       users: [],
@@ -99,7 +104,9 @@ describe('Projects integration', () => {
       version: 2,
     });
 
-    const second = await fetch(`${baseUrl}/api/projects`);
+    const second = await fetch(`${baseUrl}/api/projects`, {
+      headers: { cookie: 'bf_session=session-123' },
+    });
     expect(second.status).toBe(200);
     expect(await second.json()).toEqual({
       users: [],
@@ -164,6 +171,9 @@ describe('Projects integration', () => {
   });
 
   it('verifies project passwords against stored hash', async () => {
+    sessionService.get.mockResolvedValue({ userId: 'ana' });
+    userService.findByUsername.mockResolvedValue({ username: 'ana', role: 'member' });
+
     bcryptCompare.mockResolvedValue(true);
     query.mockResolvedValueOnce({
       rows: [
@@ -177,7 +187,10 @@ describe('Projects integration', () => {
 
     const response = await fetch(`${baseUrl}/api/projects/verify-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        cookie: 'bf_session=session-123',
+      },
       body: JSON.stringify({ projectId: 'p1', password: '1234' }),
     });
 

@@ -26,7 +26,7 @@ router.post('/login', authLimiter, async (req, res) => {
     const sessionId = await sessionService.create(loginResult.user.username);
     setSessionCookie(res, sessionId);
 
-    res.json({ user: loginResult.user, sessionId });
+    res.json({ user: loginResult.user });
   } catch (err) {
     console.error('Error in login:', err);
     res.status(500).json({ error: 'Login failed' });
@@ -66,7 +66,7 @@ router.post('/register', authLimiter, async (req, res) => {
     const sessionId = await sessionService.create(newUser.username);
     setSessionCookie(res, sessionId);
 
-    res.json({ user: newUser, sessionId });
+    res.json({ user: newUser });
 
     await eventService.publish(CHANNELS.USER_JOINED, {
       username: newUser.username,

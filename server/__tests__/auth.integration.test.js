@@ -76,7 +76,6 @@ describe('Auth integration', () => {
     expect(response.headers.get('set-cookie')).toContain('bf_session=session-123');
     expect(await response.json()).toEqual({
       user: { username: 'ana', displayName: 'Ana' },
-      sessionId: 'session-123',
     });
     expect(userService.verifyLogin).toHaveBeenCalledWith('ana', '1234');
     expect(sessionService.create).toHaveBeenCalledWith('ana');
@@ -96,7 +95,6 @@ describe('Auth integration', () => {
     expect(response.headers.get('set-cookie')).toContain('bf_session=session-456');
     expect(await response.json()).toEqual({
       user: { username: 'joao', name: 'João' },
-      sessionId: 'session-456',
     });
     expect(userService.create).toHaveBeenCalled();
     expect(sessionService.create).toHaveBeenCalledWith('joao');

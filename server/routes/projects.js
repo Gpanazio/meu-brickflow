@@ -14,7 +14,7 @@ let stateCache = null;
 let stateCacheTime = 0;
 const CACHE_TTL = 60000;
 
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const now = Date.now();
     if (stateCache && (now - stateCacheTime < CACHE_TTL)) {
@@ -103,7 +103,7 @@ router.post('/', requireAuth, writeLimiter, async (req, res) => {
   }
 });
 
-router.post('/verify-password', apiLimiter, async (req, res) => {
+router.post('/verify-password', requireAuth, apiLimiter, async (req, res) => {
   const result = VerifyProjectPasswordSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({ error: result.error.errors[0].message });

@@ -1,20 +1,23 @@
 import { WebSocketServer } from 'ws';
 import { eventService, CHANNELS } from './eventService.js';
+import { parseCookies } from '../utils/helpers.js';
+import { sessionService } from './sessionService.js';
 
 export function setupWebSocket(server) {
   const wss = new WebSocketServer({ noServer: true });
 
   const clients = new Set();
 
-  wss.on('connection', (ws) => {
-    console.log('🔌 Novo cliente WebSocket conectado');
+  wss.on('connection', (ws, req) => {
+    // Session is already validated in upgrade
+    console.log(`🔌 Novo cliente WebSocket conectado. User: ${req.user?.username || 'unknown'}`);
     clients.add(ws);
 
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message);
         if (data.type === 'subscribe') {
-          console.log(`📡 Cliente inscrito no canal: ${data.channel}`);
+          console.log(`📡 Cliente inscrito no canal: ${data.channel} (User: ${req.user.username})`);
           ws.channel = data.channel;
         }
       } catch (err) {
@@ -23,7 +26,7 @@ export function setupWebSocket(server) {
     });
 
     ws.on('close', () => {
-      console.log('🔌 Cliente WebSocket desconectado');
+      // console.log('🔌 Cliente WebSocket desconectado'); // Reduce log noise
       clients.delete(ws);
     });
   });
@@ -42,18 +45,45 @@ export function setupWebSocket(server) {
     });
   }
 
-  server.on('upgrade', (request, socket, head) => {
+  server.on('upgrade', async (request, socket, head) => {
     const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
 
     if (pathname === '/ws') {
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request);
-      });
+      try {
+        const cookies = parseCookies(request.headers.cookie);
+        const sessionId = cookies.bf_session;
+
+        if (!sessionId) {
+          console.warn('⛔ WS recusado: Sem cookie de sessão');
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+
+        const session = await sessionService.get(sessionId);
+        if (!session) {
+          console.warn('⛔ WS recusado: Sessão inválida ou expirada');
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+
+        // Attach user info to request for connection handler
+        request.user = { username: session.userId };
+
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit('connection', ws, request);
+        });
+      } catch (err) {
+        console.error('⛔ WS Error durante auth:', err);
+        socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+        socket.destroy();
+      }
     } else {
       socket.destroy();
     }
   });
 
-  console.log('✅ WebSocket Server inicializado em /ws');
+  console.log('✅ WebSocket Server inicializado em /ws (Authentication Required)');
   return wss;
 }
