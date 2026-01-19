@@ -62,7 +62,10 @@ router.post('/register', authLimiter, async (req, res) => {
       return res.status(400).json({ error: result.error.errors });
     }
 
-    const newUser = await userService.create(req.body);
+    // SECURITY: Force role to 'user' on public registration to prevent privilege escalation
+    // Role assignment should only be done via admin routes
+    const { role: _ignoredRole, ...safeUserData } = req.body;
+    const newUser = await userService.create({ ...safeUserData, role: 'user' });
     const sessionId = await sessionService.create(newUser.username);
     setSessionCookie(res, sessionId);
 
