@@ -2,7 +2,10 @@
 import { query } from '../db.js';
 import { cache } from '../cache.js';
 import { requireAuth } from '../middleware/auth.js';
-import { execFile } from 'child_process/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 export async function checkHealth() {
   const checks = {
@@ -45,7 +48,7 @@ async function checkCache() {
 
 async function checkDisk() {
   try {
-    const { stdout } = await execFile('df', ['-kP', '/'], { encoding: 'utf8' });
+    const { stdout } = await execFileAsync('df', ['-kP', '/'], { encoding: 'utf8' });
 
     const lines = stdout.trim().split('\n');
     if (lines.length < 2) {
