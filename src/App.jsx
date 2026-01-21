@@ -23,6 +23,9 @@ const UserSettingsModal = lazy(() => import('@/components/modals/UserSettingsMod
 const TeamManagementModal = lazy(() => import('@/components/modals/TeamManagementModal'));
 const TrashView = lazy(() => import('@/components/views/TrashView'));
 const BlackBoxDrawer = lazy(() => import('@/components/BlackBoxDrawer'));
+const MasonFloating = lazy(() => import('@/components/MasonFloating')); // New import
+
+// ...
 
 // Hooks & Utils
 import { useUsers, useFiles, useRealtime, useTaskActions } from './hooks';
@@ -77,6 +80,7 @@ function AppShell() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showTeamManagementModal, setShowTeamManagementModal] = useState(false);
   const [isBlackBoxOpen, setIsBlackBoxOpen] = useState(false);
+  const [isMasonOpen, setIsMasonOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
 
@@ -85,42 +89,42 @@ function AppShell() {
   const [megaSenaNumbers, setMegaSenaNumbers] = useState([]);
 
   const mockAuditLogs = [
-    { 
-      id: 'evt-1049', 
-      user: 'Gabriel', 
-      timestamp: new Date().toISOString(), 
+    {
+      id: 'evt-1049',
+      user: 'Gabriel',
+      timestamp: new Date().toISOString(),
       actionType: 'MOVE_TASK',
       message: "Moveu 'Refatorar UI' de Doing para Done",
       diff: { before: "status: doing", after: "status: done" }
     },
-    { 
-      id: 'evt-1048', 
-      user: 'Lufe', 
-      timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), 
+    {
+      id: 'evt-1048',
+      user: 'Lufe',
+      timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
       actionType: 'UPDATE_DESC',
       message: "Atualizou a descrição de 'Integração API'",
       diff: { before: "Integração básica", after: "Integração básica com suporte a WebSocket" }
     },
-    { 
-      id: 'evt-1047', 
-      user: 'Ana', 
-      timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), 
+    {
+      id: 'evt-1047',
+      user: 'Ana',
+      timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
       actionType: 'CREATE_TASK',
       message: "Criou nova tarefa 'Implementar Black Box Drawer'",
       diff: null
     },
-    { 
-      id: 'evt-1046', 
-      user: 'Carlos', 
-      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), 
+    {
+      id: 'evt-1046',
+      user: 'Carlos',
+      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
       actionType: 'MOVE_TASK',
       message: "Moveu 'Fix bug login' de Todo para In Progress",
       diff: { before: "status: todo", after: "status: in_progress" }
     },
-    { 
-      id: 'evt-1045', 
-      user: 'Maria', 
-      timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), 
+    {
+      id: 'evt-1045',
+      user: 'Maria',
+      timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
       actionType: 'DELETE_FILE',
       message: "Removeu arquivo 'backup_v2.zip' do servidor",
       diff: { before: "file: backup_v2.zip (5.2MB)", after: "deleted" }
@@ -476,6 +480,7 @@ function AppShell() {
         onOpenSettings={() => setShowSettingsModal(true)}
         onOpenTeamManagement={() => setShowTeamManagementModal(true)}
         onOpenBlackBox={() => setIsBlackBoxOpen(true)}
+        onOpenMason={() => setIsMasonOpen(true)}
         projects={appData.projects}
         onNavigate={handleSearchNavigate}
         isSearchOpen={isSearchOpen}
@@ -659,11 +664,22 @@ function AppShell() {
           currentUser={currentUser}
         />
 
-        <BlackBoxDrawer 
-          isOpen={isBlackBoxOpen} 
+        <BlackBoxDrawer
+          isOpen={isBlackBoxOpen}
           onOpenChange={setIsBlackBoxOpen}
           logs={mockAuditLogs}
           onUndo={handleUndoAction}
+        />
+
+        <MasonFloating
+          clientContext={{
+            view: currentView,
+            projectId: currentProject?.id || null,
+            projectName: currentProject?.name || null,
+            subProjectId: currentSubProject?.id || null,
+            subProjectName: currentSubProject?.name || null,
+            user: currentUser?.name || 'User'
+          }}
         />
       </Suspense>
 

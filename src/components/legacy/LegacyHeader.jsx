@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '../ui/dropdown-menu';
 import { Separator } from '../ui/separator';
-import { RotateCcw, LogOut, Settings, Users, Activity } from 'lucide-react';
+import { RotateCcw, LogOut, Settings, Users, Activity, Bot } from 'lucide-react';
 import { Search } from '../Search';
 import MechButton from '../ui/MechButton';
 import StatusLED from '../ui/StatusLED';
@@ -20,6 +20,7 @@ function LegacyHeader({
   onOpenSettings,
   onOpenTeamManagement,
   onOpenBlackBox,
+  onOpenMason,
 
   projects,
   onSearchNavigate,
@@ -72,12 +73,20 @@ function LegacyHeader({
             <Search projects={projects} onNavigate={onSearchNavigate} />
           </div>
 
-          <MechButton 
+          <MechButton
             className="h-8 px-3 text-green-600 border-green-900/30 bg-green-950/10 hover:bg-green-900/20 hover:text-green-400 hover:border-green-500/50 hidden md:flex"
             icon={Activity}
             onClick={onOpenBlackBox}
           >
             LOGS
+          </MechButton>
+
+          <MechButton
+            className="h-8 px-3 text-indigo-400 border-indigo-900/30 bg-indigo-950/10 hover:bg-indigo-900/20 hover:text-indigo-300 hover:border-indigo-500/50 hidden md:flex"
+            icon={Bot}
+            onClick={onOpenMason}
+          >
+            MASON
           </MechButton>
 
           {/* Search Trigger oculto mas funcional via props para o MobileTabBar abrir o Command Palette */}

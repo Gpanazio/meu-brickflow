@@ -91,6 +91,9 @@ export async function setupRoutes(app) {
   app.use('/api/projects', projectRouter.default);
   app.use('/api/users', userRouter.default);
 
+  const masonRouter = await import('./mason.js');
+  app.use('/api/mason', masonRouter.default);
+
   app.get('/api/admin/users', requireAuth, async (req, res) => {
     try {
       const isOwner = req.user.role === 'owner';
