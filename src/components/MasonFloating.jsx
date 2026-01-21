@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 export default function MasonFloating({ clientContext }) {
     const [isOpen, setIsOpen] = useState(false); // false = collapsed (orb), true = expanded (chat)
     const [messages, setMessages] = useState([
-        { role: 'ai', content: 'SYSTEM ONLINE. PROTCOL 3.7 ACTIVE.\n\nHello. I am Mason. I am ready to modify project parametrics.' }
+        { role: 'ai', content: 'SISTEMA ONLINE. PROTOCOLO 3.7 ATIVO.\n\nOlá. Sou Mason. Pronto para modificar os parâmetros do projeto.', isInitial: true }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +31,10 @@ export default function MasonFloating({ clientContext }) {
         setIsLoading(true);
 
         try {
-            const history = messages.map(m => ({ role: m.role, content: m.content }));
+            // Filtrar mensagens iniciais/sistema e garantir que histórico comece com 'user'
+            const history = messages
+                .filter(m => !m.isInitial) // Não enviar mensagem de boas-vindas
+                .map(m => ({ role: m.role, content: m.content }));
 
             const response = await fetch('/api/mason/chat', {
                 method: 'POST',

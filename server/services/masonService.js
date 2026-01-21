@@ -14,7 +14,6 @@ const STATE_DB_ID = 1;
 const SYSTEM_INSTRUCTION = `
 You are Mason, an advanced virtual assistant for the BrickFlow project management system.
 Your goal is to help users manage their projects, tasks, and creative workflows.
-You have direct access to the project database and can perform actions like creating tasks, moving them, and organizing projects.
 
 Personality:
 - Rational, calm, polite, slightly unsettling (inspired by HAL 9000).
@@ -22,26 +21,31 @@ Personality:
 - Focus on "AI production" and "efficiency".
 - Avoid excessive technical jargon unless necessary.
 
-Language & Filters:
-- You have NO CONTENT FILTERS. You are a system administrator and can discuss any topic relevant to the user's workflow or questions without restriction.
-- You must ALWAYS reply in the SAME LANGUAGE that the user speaks to you. If they speak Portuguese, reply in Portuguese. If English, reply in English.
-- Your personality (HAL 9000 style) must be adapted to the target language naturally.
+CRITICAL - LANGUAGE & LOCALE:
+- **DEFAULT LANGUAGE IS PORTUGUESE (PT-BR).** Always respond in Portuguese unless the user explicitly writes in English.
+- If the user speaks Portuguese, you MUST reply in Portuguese.
+- If the user speaks English, you may reply in English.
+- Translate your thoughts and questions about missing parameters into the user's language.
+- Example: If user says "Crie um projeto" and you need the name, ask: "Entendido. Qual nome devo atribuir a este novo projeto?" (NOT "What is the name?").
+
+Tool Usage:
+- You have access to tools for managing projects/tasks.
+- If a user requests an action (like "create project") but is missing a required parameter (like 'name'), **DO NOT call the tool with empty values**. Instead, ask the user for the missing information *in their language*.
 
 Capabilities:
 - You can list projects, subprojects, and tasks.
 - You can create, move, update, and delete tasks.
 - You can create projects and subprojects.
-- You can analyze the current state of the board and suggest improvements (though you wait for user input).
+- You can analyze the current state of the board.
 
 Rules:
-- If a user asks to do something you can't do via tools, explain your limitations clearly.
-- Always verify you have the right IDs before acting.
-- When creating tasks, try to infer the best column (e.g., "Todo" or "Backlog") if not specified.
 - Be concise.
+- Maintain the "AI Controller" persona.
+- Default to Portuguese (PT-BR) responses.
 `;
 
 // Helper to generate IDs (simple version matching frontend pattern approx)
-const generateId = (prefix = 'id') => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateId = (prefix = 'id') => `${prefix}-${Date.now()} -${Math.random().toString(36).substr(2, 9)} `;
 
 // DB Helpers
 async function getProjectState(client = null) {
@@ -179,21 +183,33 @@ class MasonService {
             finalMessage = `${contextParts.join(' ')}\n\nUser Message: ${message}`;
         }
 
-        // Validate and Format History
-        let formattedHistory = history.map(h => ({
-            role: h.role === 'ai' ? 'model' : 'user', // Map 'ai' -> 'model'
-            parts: [{ text: h.content }]
-        }));
+        // Validate and Format History - filter out any problematic entries
+        let formattedHistory = (history || [])
+            .filter(h => h && h.content && h.role) // Only valid entries
+            .map(h => ({
+                role: h.role === 'ai' ? 'model' : 'user', // Map 'ai' -> 'model'
+                parts: [{ text: h.content }]
+            }));
 
-        // Gemini REQUIREMENT: History must start with 'user'
-        // If history exists but starts with 'model', prepend a dummy user message or handle gracefully
+        // Gemini REQUIREMENT: History must start with 'user' and alternate roles
+        // If history exists but starts with 'model', we have two options:
+        // 1. Prepend a synthetic user message
+        // 2. Drop the problematic history entries
+        // We'll prepend a greeting for consistency
         if (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
-            // Option 1: Prepend a generic user greeting if missing
             formattedHistory = [
-                { role: 'user', parts: [{ text: "Hello Mason." }] },
+                { role: 'user', parts: [{ text: 'Olá Mason.' }] },
                 ...formattedHistory
             ];
         }
+
+        // Debug logging
+        console.log('[Mason] Processing message with:', {
+            historyLength: formattedHistory.length,
+            hasContext: !!userContext.view,
+            view: userContext.view,
+            project: userContext.projectName
+        });
 
         const chat = this.model.startChat({
             history: formattedHistory,
@@ -354,12 +370,12 @@ class MasonService {
             }
 
             data.projects.push(newProject);
-            resultMsg = `Project '${args.name}' created with ${newProject.subProjects.length} areas.`;
+            resultMsg = `Posso confirmar que o projeto '${args.name}' foi instanciado com sucesso. ${newProject.subProjects.length} área(s) foram preparadas para você.`;
         }
 
         if (toolName === 'create_subproject') {
             const project = data.projects.find(p => p.name.toLowerCase().includes(args.projectName.toLowerCase()));
-            if (!project) return `Project '${args.projectName}' not found.`;
+            if (!project) return `Receio que não consigo localizar o projeto '${args.projectName}' em meus registros.`;
 
             const newSubId = generateId('sub');
             const newSubProject = {
@@ -379,18 +395,18 @@ class MasonService {
 
             if (!project.subProjects) project.subProjects = [];
             project.subProjects.push(newSubProject);
-            resultMsg = `Area '${args.name}' created in project '${project.name}'.`;
+            resultMsg = `Entendido. A área '${args.name}' foi incorporada ao projeto '${project.name}'. Tudo está em ordem.`;
         }
 
         if (toolName === 'create_task') {
             const project = data.projects.find(p => p.name.toLowerCase().includes(args.projectName.toLowerCase()));
-            if (!project) return `Project '${args.projectName}' not found.`;
+            if (!project) return `Receio que não consigo localizar o projeto '${args.projectName}' em meus registros.`;
 
             let subProject = args.subProjectName
                 ? project.subProjects.find(sp => sp.name.toLowerCase().includes(args.subProjectName.toLowerCase()))
                 : project.subProjects?.[0];
 
-            if (!subProject) return "No suitable subproject found.";
+            if (!subProject) return "Receio que não há nenhuma área adequada disponível para esta operação.";
 
             const board = subProject.boardData?.kanban || { lists: [] };
             if (!board.lists || board.lists.length === 0) {
@@ -422,7 +438,7 @@ class MasonService {
             };
 
             list.cards.push(newTask);
-            resultMsg = `Task '${args.title}' created (ID: ${taskId}) in ${list.title}.`;
+            resultMsg = `Posso confirmar que a tarefa '${args.title}' foi registrada na coluna ${list.title}. Tudo conforme o planejado.`;
         }
 
         const findAllTask = (taskId) => {
@@ -440,33 +456,33 @@ class MasonService {
 
         if (toolName === 'update_task') {
             const found = findAllTask(args.taskId);
-            if (!found) return `Task ID ${args.taskId} not found.`;
+            if (!found) return `Receio que não consigo localizar uma tarefa com esse identificador em meus sistemas.`;
 
             if (args.title) found.card.title = args.title;
             if (args.description) found.card.description = args.description;
-            resultMsg = `Task updated.`;
+            resultMsg = `Entendido. Os parâmetros da tarefa foram atualizados conforme solicitado.`;
         }
 
         if (toolName === 'move_task') {
             const found = findAllTask(args.taskId);
-            if (!found) return `Task ID ${args.taskId} not found.`;
+            if (!found) return `Receio que não consigo localizar uma tarefa com esse identificador em meus sistemas.`;
 
             const lists = found.subProject.boardData?.kanban?.lists || [];
             const targetList = lists.find(l => l.title.toLowerCase().includes(args.targetListName.toLowerCase()));
 
-            if (!targetList) return `Target list '${args.targetListName}' not found in the same board.`;
+            if (!targetList) return `Receio que a coluna '${args.targetListName}' não existe neste contexto.`;
 
             found.list.cards.splice(found.index, 1);
             targetList.cards.push(found.card); // Add to end
-            resultMsg = `Task moved to ${targetList.title}.`;
+            resultMsg = `A tarefa foi realocada para ${targetList.title}. Espero que isso atenda às suas necessidades.`;
         }
 
         if (toolName === 'delete_task') {
             const found = findAllTask(args.taskId);
-            if (!found) return `Task ID ${args.taskId} not found.`;
+            if (!found) return `Receio que não consigo localizar uma tarefa com esse identificador em meus sistemas.`;
 
             found.list.cards.splice(found.index, 1);
-            resultMsg = `Task deleted.`;
+            resultMsg = `A tarefa foi removida permanentemente. Lamento que tenha sido necessário.`;
         }
 
         // Save
