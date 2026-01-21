@@ -68,13 +68,14 @@ REDIS_URL="redis://..."                 # Opcional: cache persistente
 │   ├── components/       # Componentes React
 │   │   ├── legacy/       # LegacyBoard, LegacyModal, etc.
 │   │   ├── ui/           # Componentes atômicos (MechButton, etc.)
-│   │   └── modals/       # Modais de criação/edição
+│   │   ├── modals/       # Modais de criação/edição
+│   │   └── MasonFloating.jsx  # Widget de chat AI
 │   ├── hooks/            # Custom hooks (useFiles, useRealtime, etc.)
 │   ├── contexts/         # AppContext (estado global)
 │   └── utils/            # Helpers e constantes
 ├── server/
-│   ├── routes/           # API endpoints
-│   ├── services/         # WebSocket, cache, etc.
+│   ├── routes/           # API endpoints (mason.js, projects.js, etc.)
+│   ├── services/         # masonService.js, eventService.js, etc.
 │   └── middleware/       # Auth, rate limiting
 └── ROADMAP.md            # To-dos e planejamento
 ```

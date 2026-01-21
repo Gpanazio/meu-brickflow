@@ -45,7 +45,7 @@ Rules:
 `;
 
 // Helper to generate IDs (simple version matching frontend pattern approx)
-const generateId = (prefix = 'id') => `${prefix}-${Date.now()} -${Math.random().toString(36).substr(2, 9)} `;
+const generateId = (prefix = 'id') => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 // DB Helpers
 async function getProjectState(client = null) {
@@ -271,7 +271,7 @@ class MasonService {
             return response.text();
         } catch (error) {
             console.error('Mason Service Error:', error);
-            return "I'm sorry, Dave. I'm afraid I can't do that right now. (System Error)";
+            return "Receio que ocorreu um erro interno. Por favor, tente novamente.";
         }
     }
 
@@ -279,13 +279,13 @@ class MasonService {
     async executeTool(client, name, args, userContext) {
         if (name === 'list_projects') {
             const state = await getProjectState(client);
-            if (!state) return "No state found.";
+            if (!state) return "Receio que não há dados de estado disponíveis.";
             return state.data.projects.map(p => ({ id: p.id, name: p.name, subProjects: p.subProjects?.length || 0 }));
         }
 
         if (name === 'get_project_details') {
             const state = await getProjectState(client);
-            if (!state) return "No state found.";
+            if (!state) return "Receio que não há dados de estado disponíveis.";
 
             let project = null;
             if (args.projectId) {
@@ -294,7 +294,7 @@ class MasonService {
                 project = state.data.projects.find(p => p.name.toLowerCase().includes(args.projectName.toLowerCase()));
             }
 
-            if (!project) return "Project not found.";
+            if (!project) return "Receio que não consigo localizar esse projeto em meus registros.";
 
             // Summarize structure and TASKS
             const structure = {
@@ -318,11 +318,11 @@ class MasonService {
         }
 
         // Common mutation wrapper
-        if (['create_task', 'update_task', 'move_task', 'delete_task', 'create_project'].includes(name)) {
+        if (['create_task', 'update_task', 'move_task', 'delete_task', 'create_project', 'create_subproject'].includes(name)) {
             return this.handleMutation(client, name, args, userContext);
         }
 
-        return "Unknown tool";
+        return "Receio que não reconheço essa operação.";
     }
 
     async handleMutation(client, toolName, args, userContext) {

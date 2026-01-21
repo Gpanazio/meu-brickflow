@@ -108,3 +108,51 @@ Esta seção define o comportamento esperado do Brickflow em produção (Railway
 
 - O backend garante que exista um usuário `Gabriel` e que ele tenha papel `owner` (admin).
 - Usuários com papel `owner` podem gerenciar novos usuários (CRUD) via endpoints admin.
+
+---
+
+## Mason AI Assistant
+
+O Mason é um assistente virtual integrado ao BrickFlow com personalidade inspirada no HAL 9000.
+
+### Arquitetura
+
+```
+Frontend (MasonFloating.jsx)
+    ↓ POST /api/mason/chat
+Backend (routes/mason.js)
+    ↓ processMessage()
+MasonService (services/masonService.js)
+    ↓ Gemini API + Function Calling
+Database (brickflow_state)
+    ↓ eventService.publish()
+React (useRealtime) ← Atualização automática
+```
+
+### Ferramentas Disponíveis
+
+| Ferramenta | Tipo | Descrição |
+|------------|------|-----------|
+| `list_projects` | Leitura | Lista todos os projetos |
+| `get_project_details` | Leitura | Detalhes de projeto com tarefas |
+| `create_project` | Mutação | Cria novo projeto |
+| `create_subproject` | Mutação | Cria área em projeto existente |
+| `create_task` | Mutação | Cria tarefa em coluna |
+| `update_task` | Mutação | Atualiza título/descrição |
+| `move_task` | Mutação | Move tarefa entre colunas |
+| `delete_task` | Mutação | Remove tarefa permanentemente |
+
+### Contexto Injetado
+
+A cada mensagem, o frontend envia `clientContext`:
+- `view`: home, project, subproject, trash
+- `projectId` / `projectName`: Projeto ativo
+- `subProjectId` / `subProjectName`: Área ativa
+- `user`: Nome do usuário
+
+### Personalidade (HAL MODE)
+
+- **Tom:** Calmo, educado, ligeiramente perturbador
+- **Frases:** "Posso confirmar...", "Receio que...", "Entendido..."
+- **Idioma:** Português (PT-BR) como padrão
+- **Proibições:** Não repete slogans, não usa emojis
