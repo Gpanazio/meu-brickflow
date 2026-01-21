@@ -253,20 +253,22 @@ class MasonService {
             }));
 
         // Gemini REQUIREMENT: History must start with 'user' and alternate roles
-        // If history exists but starts with 'model', we have two options:
-        // 1. Prepend a synthetic user message
-        // 2. Drop the problematic history entries
-        // We'll prepend a greeting for consistency
-        if (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
-            formattedHistory = [
-                { role: 'user', parts: [{ text: 'Olá Mason.' }] },
-                ...formattedHistory
-            ];
+        // Remove leading 'model' messages until we find a 'user' message or empty
+        while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
+            console.log('[Mason] Removing leading model message from history');
+            formattedHistory.shift();
         }
+
+        // Ensure alternating roles - remove consecutive messages with same role
+        formattedHistory = formattedHistory.filter((msg, index) => {
+            if (index === 0) return true; // Keep first message
+            return msg.role !== formattedHistory[index - 1].role;
+        });
 
         // Debug logging
         console.log('[Mason] Processing message with:', {
             historyLength: formattedHistory.length,
+            firstRole: formattedHistory.length > 0 ? formattedHistory[0].role : 'none',
             hasContext: !!userContext.view,
             view: userContext.view,
             project: userContext.projectName

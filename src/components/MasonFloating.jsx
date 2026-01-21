@@ -32,9 +32,14 @@ export default function MasonFloating({ clientContext }) {
 
         try {
             // Filtrar mensagens iniciais/sistema e garantir que histórico comece com 'user'
-            const history = messages
+            let history = messages
                 .filter(m => !m.isInitial) // Não enviar mensagem de boas-vindas
                 .map(m => ({ role: m.role, content: m.content }));
+
+            // Garantir que histórico comece com 'user', remover mensagens iniciais da AI
+            while (history.length > 0 && history[0].role === 'ai') {
+                history.shift();
+            }
 
             const response = await fetch('/api/mason/chat', {
                 method: 'POST',
