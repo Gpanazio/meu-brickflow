@@ -8,7 +8,14 @@ build/
 
 # Local environment variables
 .env
-.env.*
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+
+# Allow .env.example to be committed
+!.env.example
 
 # Logs
 npm-debug.log*
