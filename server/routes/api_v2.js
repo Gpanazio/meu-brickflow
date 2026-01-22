@@ -55,6 +55,24 @@ router.post('/projects', requireAuth, async (req, res) => {
     }
 });
 
+// DELETE /api/v2/projects/:id (Delete)
+router.delete('/projects/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Ensure cascading deletion or cleanup if not handled by DB constraints
+        // For now, attempting direct delete. Ideally schema has ON DELETE CASCADE.
+        const { rowCount } = await query('DELETE FROM projects WHERE id = $1', [id]);
+
+        if (rowCount === 0) return res.status(404).json({ error: 'Project not found' });
+
+        res.json({ success: true, message: 'Project deleted successfully' });
+    } catch (err) {
+        console.error('Project Delete Error:', err);
+        res.status(500).json({ error: 'Failed to delete project. Check for dependencies.' });
+    }
+});
+
 // --- SUBPROJECTS ---
 
 // GET /api/v2/subprojects/:id (Board Data)

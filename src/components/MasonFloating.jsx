@@ -60,8 +60,19 @@ const saveChatHistory = (messages) => {
     }
 };
 
-export default function MasonFloating({ clientContext }) {
-    const [isOpen, setIsOpen] = useState(false); // false = collapsed (orb), true = expanded (chat)
+export default function MasonFloating({ clientContext, isOpen: controlledIsOpen, onOpenChange }) {
+    const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+    const isControlled = controlledIsOpen !== undefined;
+    const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+    const setIsOpen = (value) => {
+        if (isControlled) {
+            onOpenChange?.(value);
+        } else {
+            setInternalIsOpen(value);
+        }
+    };
+    // false = collapsed (orb), true = expanded (chat)
     const [messages, setMessages] = useState(loadChatHistory);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -286,14 +297,13 @@ export default function MasonFloating({ clientContext }) {
                             <div className="p-3 border-t border-white/10 bg-black/60 z-10">
                                 <div className="flex flex-col gap-1.5">
                                     <div className="flex gap-2">
-                                        <input
-                                            type="text"
+                                        <textarea
                                             value={input}
                                             onChange={(e) => setInput(e.target.value)}
                                             onKeyDown={handleKeyDown}
                                             placeholder="Command..."
                                             maxLength={MAX_MESSAGE_LENGTH}
-                                            className="flex-1 bg-zinc-900/50 border border-white/5 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-zinc-700 focus:outline-none focus:border-red-900/50 focus:ring-1 focus:ring-red-900/20 transition-all"
+                                            className="flex-1 bg-zinc-900/50 border border-white/5 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-zinc-700 focus:outline-none focus:border-red-900/50 focus:ring-1 focus:ring-red-900/20 transition-all resize-none h-[38px] leading-tight custom-scrollbar"
                                             disabled={isLoading}
                                             autoFocus
                                             aria-label="Mensagem para Mason AI"

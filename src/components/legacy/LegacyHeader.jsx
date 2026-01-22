@@ -5,7 +5,7 @@ import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '../ui/dropdown-menu';
 import { Separator } from '../ui/separator';
-import { RotateCcw, LogOut, Settings, Users, Activity } from 'lucide-react';
+import { RotateCcw, LogOut, Settings, Users, Activity, Bot } from 'lucide-react';
 import { Search } from '../Search';
 import MechButton from '../ui/MechButton';
 import { isAdmin } from '@/constants/permissions';
@@ -105,6 +105,14 @@ function LegacyHeader({
           <div className="hidden md:block">
             <Search projects={projects} onNavigate={handleSearchNavigate} />
           </div>
+
+          <MechButton
+            className="h-8 px-3 text-red-500 border-red-900/30 bg-red-950/10 hover:bg-red-900/20 hover:text-red-400 hover:border-red-500/50 hidden md:flex"
+            icon={Bot}
+            onClick={onOpenMason}
+          >
+            MASON
+          </MechButton>
 
           <MechButton
             className="h-8 px-3 text-green-600 border-green-900/30 bg-green-950/10 hover:bg-green-900/20 hover:text-green-400 hover:border-green-500/50 hidden md:flex"

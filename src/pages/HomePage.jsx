@@ -57,7 +57,24 @@ export default function HomePage() {
             projects={projects}
             setModalState={() => { }} // TODO: Implement Modals Context
             handleAccessProject={handleAccessProject}
-            handleDeleteProject={() => { }} // TODO: Implement Delete
+            handleDeleteProject={async (project) => {
+                if (!window.confirm(`Tem certeza que deseja excluir o projeto "${project.name}"? Esta ação não pode ser desfeita.`)) return;
+
+                try {
+                    const res = await fetch(`/api/v2/projects/${project.id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        setProjects(prev => prev.filter(p => p.id !== project.id));
+                        // Assuming Toaster is available globally or log it
+                        console.log('Project deleted');
+                    } else {
+                        const err = await res.json();
+                        alert(`Erro ao excluir: ${err.error || 'Erro desconhecido'}`);
+                    }
+                } catch (error) {
+                    console.error('Delete error:', error);
+                    alert('Erro de conexão ao tentar excluir o projeto.');
+                }
+            }}
             isLoading={isLoading}
             COLOR_VARIANTS={COLOR_VARIANTS}
             handleDragStart={() => { }}

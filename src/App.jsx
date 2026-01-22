@@ -28,33 +28,81 @@ function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Derive Mason context from URL
-  const masonContext = useMemo(() => {
-    const path = location.pathname;
-    const context = {
-      user: currentUser?.name || 'User',
-      view: 'home',
-      projectId: null,
-      projectName: null,
-      subProjectId: null,
-      subProjectName: null
-    };
+  const [projectMetadata, setProjectMetadata] = useState({ projectName: null, subProjectName: null });
 
-    // Parse URL to determine view
+  // Derive IDs from URL
+  const routeParams = useMemo(() => {
+    const path = location.pathname;
     const projectMatch = path.match(/^\/project\/([^/]+)/);
     const areaMatch = path.match(/^\/project\/([^/]+)\/area\/([^/]+)/);
 
     if (areaMatch) {
-      context.view = 'subproject';
-      context.projectId = areaMatch[1];
-      context.subProjectId = areaMatch[2];
+      return { view: 'subproject', projectId: areaMatch[1], subProjectId: areaMatch[2] };
     } else if (projectMatch) {
-      context.view = 'project';
-      context.projectId = projectMatch[1];
+      return { view: 'project', projectId: projectMatch[1], subProjectId: null };
     }
+    return { view: 'home', projectId: null, subProjectId: null };
+  }, [location.pathname]);
 
-    return context;
-  }, [location.pathname, currentUser?.name]);
+  // Fetch Metadata when route changes
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchMetadata = async () => {
+      // Reset immediately on route change
+      setProjectMetadata(prev => ({ ...prev, projectName: null, subProjectName: null }));
+
+      try {
+        if (routeParams.view === 'project' && routeParams.projectId) {
+          const res = await fetch(`/api/v2/projects/${routeParams.projectId}`, { signal: controller.signal });
+          if (!res.ok) throw new Error('Failed to fetch project');
+          const data = await res.json();
+          setProjectMetadata(prev => ({ ...prev, projectName: data.name }));
+        }
+        else if (routeParams.view === 'subproject' && routeParams.subProjectId) {
+          // We might need project name too, usually typically fetched from subproject's parent or separate call
+          // For simplicity, let's try fetching subproject. If API supports returning parent info, great.
+          // Looking at API: GET /api/v2/subprojects/:id returns subproject data.
+          // To get Project Name, we might need a separate call or rely on context if we store projects globally.
+          // Let's just fetch subproject name for now.
+          const res = await fetch(`/api/v2/subprojects/${routeParams.subProjectId}`, { signal: controller.signal });
+          if (!res.ok) throw new Error('Failed to fetch subproject');
+          const data = await res.json();
+
+          // If we also want project name, we might need to fetch project :id too.
+          // Let's do it if we have projectId (which we do from URL)
+          if (routeParams.projectId) {
+            const resProj = await fetch(`/api/v2/projects/${routeParams.projectId}`, { signal: controller.signal });
+            if (resProj.ok) {
+              const dataProj = await resProj.json();
+              setProjectMetadata({ projectName: dataProj.name, subProjectName: data.title || data.name }); // subproject usually has 'title' or 'name'
+              return;
+            }
+          }
+          setProjectMetadata(prev => ({ ...prev, subProjectName: data.title || data.name }));
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Metadata fetch error:', error);
+          // Optional: set error state
+        }
+      }
+    };
+
+    fetchMetadata();
+
+    return () => controller.abort();
+  }, [routeParams.view, routeParams.projectId, routeParams.subProjectId]);
+
+  // Construct Mason Context
+  const masonContext = useMemo(() => ({
+    user: currentUser?.name || 'User',
+    view: routeParams.view,
+    projectId: routeParams.projectId,
+    projectName: projectMetadata.projectName,
+    subProjectId: routeParams.subProjectId,
+    subProjectName: projectMetadata.subProjectName
+  }), [currentUser?.name, routeParams, projectMetadata]);
 
   // Simple Auth Wall
   if (isAuthLoading) {
@@ -106,7 +154,11 @@ function AppShell() {
         </div>
       </main>
 
-      <MasonFloating clientContext={masonContext} />
+      <MasonFloating
+        clientContext={masonContext}
+        isOpen={isMasonOpen}
+        onOpenChange={setIsMasonOpen}
+      />
       <Toaster />
     </div>
   );
