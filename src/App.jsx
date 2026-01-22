@@ -245,9 +245,9 @@ function AppShell() {
 
   // Realtime updates
   useRealtime('brickflow:project:updated', useCallback((payload) => {
-    // Only fetch if version is newer or from another user
-    if (payload.version > (appDataRef.current?.version || 0)) {
-      console.log('🔄 Sincronizando nova versão:', payload.version);
+    // Fetch if version is newer OR if it matches current (to confirm optimistic updates and get server-computed fields)
+    if (payload.version >= (appDataRef.current?.version || 0)) {
+      console.log('🔄 Sincronizando versão:', payload.version);
       loadData();
     }
   }, [loadData]));

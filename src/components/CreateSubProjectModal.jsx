@@ -50,20 +50,39 @@ export function CreateSubProjectModal({ isOpen, onClose, onCreate, mode = 'creat
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const enabledTabs = Object.keys(modules).filter(k => modules[k]);
+
     // Mapeamento dos dados para a estrutura do sistema
     const subProjectData = {
       name,
       description,
-      enabledTabs: Object.keys(modules).filter(k => modules[k]),
+      enabledTabs,
+    };
+
+    const defaultBoardData = {
+      todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'CONCLUÍDO', tasks: [] }] },
+      kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] },
+      files: { files: [] },
+      goals: {}
     };
 
     // Se for modo de criação, incluir boardData inicial
     if (mode === 'create') {
-      subProjectData.boardData = {
-        todo: { lists: [{ id: 'l1', title: 'A FAZER', tasks: [] }, { id: 'l2', title: 'FAZENDO', tasks: [] }, { id: 'l3', title: 'CONCLUÍDO', tasks: [] }] },
-        kanban: { lists: [{ id: 'k1', title: 'BACKLOG', tasks: [] }, { id: 'k2', title: 'EM PROGRESSO', tasks: [] }, { id: 'k3', title: 'CONCLUÍDO', tasks: [] }] },
-        files: { files: [] }
-      };
+      subProjectData.boardData = defaultBoardData;
+    } else if (mode === 'edit') {
+      // No modo edição, precisamos garantir que se o usuário ativou um módulo novo,
+      // a estrutura de dados inicial para ele seja criada.
+      const currentBoardData = initialData?.boardData || {};
+      const updatedBoardData = { ...currentBoardData };
+
+      enabledTabs.forEach(tab => {
+        // Se o módulo está ativo mas não tem dados, inicializa com o default
+        if (!updatedBoardData[tab] && defaultBoardData[tab]) {
+          updatedBoardData[tab] = defaultBoardData[tab];
+        }
+      });
+
+      subProjectData.boardData = updatedBoardData;
     }
 
     onCreate(subProjectData);

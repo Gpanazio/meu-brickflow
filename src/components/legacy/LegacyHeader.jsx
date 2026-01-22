@@ -87,13 +87,7 @@ function LegacyHeader({
             LOGS
           </MechButton>
 
-          <MechButton
-            className="h-8 px-3 text-indigo-400 border-indigo-900/30 bg-indigo-950/10 hover:bg-indigo-900/20 hover:text-indigo-300 hover:border-indigo-500/50 hidden md:flex"
-            icon={Bot}
-            onClick={onOpenMason}
-          >
-            MASON
-          </MechButton>
+
 
           {/* Search Trigger oculto mas funcional via props para o MobileTabBar abrir o Command Palette */}
           <div className="md:hidden h-0 w-0 overflow-hidden">
