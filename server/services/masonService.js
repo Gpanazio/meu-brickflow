@@ -458,9 +458,9 @@ const tools = [
     }
 ];
 
-// Mutation Handlers - Extract logic from giant handleMutation function
+// Mutation Handlers - Refactored for Direct SQL (V2 Architecture)
 const mutationHandlers = {
-    create_project: (data, args) => {
+    create_project: async (args, client) => {
         // Validate input sizes
         const nameError = validateInputSize(args.name, 'Nome do projeto', MAX_NAME_LENGTH);
         if (nameError) return { error: `ERRO: ${nameError}` };
@@ -469,270 +469,266 @@ const mutationHandlers = {
         if (descError) return { error: `ERRO: ${descError}` };
 
         const newProjectId = generateId('proj');
-        const newProject = {
-            id: newProjectId,
-            name: args.name,
-            description: args.description || '',
-            color: args.color || '#DC2626', // Brick Red default
-            members: [],
-            subProjects: [],
-            isArchived: false,
-            createdAt: new Date().toISOString()
-        };
+        const color = args.color || '#DC2626';
+
+        await client.query(
+            'INSERT INTO projects (id, name, description, color, created_at, is_archived) VALUES ($1, $2, $3, $4, NOW(), false)',
+            [newProjectId, args.name, args.description || '', color]
+        );
 
         // Create subprojects if requested
+        let areaCount = 0;
         if (args.subProjects && Array.isArray(args.subProjects)) {
             for (const spName of args.subProjects) {
                 const spId = generateId('sub');
-                newProject.subProjects.push({
-                    id: spId,
-                    name: spName,
-                    boardData: {
-                        kanban: {
-                            lists: createDefaultKanbanLists()
-                        }
-                    }
-                });
+                // Assume order based on array index
+                await client.query(
+                    'INSERT INTO sub_projects (id, project_id, title) VALUES ($1, $2, $3)',
+                    [spId, newProjectId, spName]
+                );
+
+                // Create default lists for this subproject
+                for (const listTitle of Object.values(KANBAN_LISTS)) {
+                    const listId = generateId('list');
+                    const orderIndex = listTitle === KANBAN_LISTS.TODO ? 0 : listTitle === KANBAN_LISTS.IN_PROGRESS ? 1 : 2;
+                    await client.query(
+                        'INSERT INTO lists (id, sub_project_id, title, order_index) VALUES ($1, $2, $3, $4)',
+                        [listId, spId, listTitle, orderIndex]
+                    );
+                }
+                areaCount++;
             }
         }
 
-        data.projects.push(newProject);
-        return { message: `Projeto '${args.name}' instanciado. ${newProject.subProjects.length} área(s) estruturadas. Sistema operacional.` };
+        // Emit Event
+        await eventService.publish(CHANNELS.PROJECT_CREATED, { id: newProjectId, name: args.name });
+
+        return { message: `Projeto '${args.name}' instanciado. ${areaCount} área(s) estruturadas. Sistema operacional.` };
     },
 
-    create_subproject: (data, args) => {
-        // Validate input sizes
+    create_subproject: async (args, client) => {
         const nameError = validateInputSize(args.name, 'Nome da área', MAX_NAME_LENGTH);
         if (nameError) return { error: `ERRO: ${nameError}` };
 
-        const descError = validateInputSize(args.description, 'Descrição da área', MAX_DESCRIPTION_LENGTH);
-        if (descError) return { error: `ERRO: ${descError}` };
-
-        const project = findProject(data.projects, args.projectName);
-        if (!project) return { error: `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.` };
-        if (project.ambiguous) {
-            return { error: `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.` };
-        }
+        // Find Project ID
+        // Note: We need a helper to resolve Project Name -> ID using SQL
+        const projectRes = await client.query('SELECT id, name FROM projects WHERE name ILIKE $1 OR id = $1 LIMIT 1', [args.projectName]);
+        if (projectRes.rows.length === 0) return { error: `ERRO: projeto '${args.projectName}' não encontrado.` };
+        const project = projectRes.rows[0];
 
         const newSubId = generateId('sub');
-        const newSubProject = {
-            id: newSubId,
-            name: args.name,
-            description: args.description || '',
-            boardData: {
-                kanban: {
-                    lists: createDefaultKanbanLists()
-                }
-            }
-        };
+        await client.query(
+            'INSERT INTO sub_projects (id, project_id, title) VALUES ($1, $2, $3)',
+            [newSubId, project.id, args.name]
+        );
 
-        if (!project.subProjects) project.subProjects = [];
-        project.subProjects.push(newSubProject);
+        // Create default lists
+        for (const listTitle of Object.values(KANBAN_LISTS)) {
+            const listId = generateId('list');
+            const orderIndex = listTitle === KANBAN_LISTS.TODO ? 0 : listTitle === KANBAN_LISTS.IN_PROGRESS ? 1 : 2;
+            await client.query(
+                'INSERT INTO lists (id, sub_project_id, title, order_index) VALUES ($1, $2, $3, $4)',
+                [listId, newSubId, listTitle, orderIndex]
+            );
+        }
+
+        await eventService.publish(CHANNELS.SUBPROJECT_CREATED, { id: newSubId, projectId: project.id, name: args.name });
         return { message: `Área '${args.name}' incorporada ao projeto '${project.name}'. Estrutura atualizada.` };
     },
 
-    create_project_with_tasks: (data, args) => {
-        // Validate input sizes
-        const nameError = validateInputSize(args.name, 'Nome do projeto', MAX_NAME_LENGTH);
-        if (nameError) return { error: `ERRO: ${nameError}` };
-
-        const descError = validateInputSize(args.description, 'Descrição do projeto', MAX_DESCRIPTION_LENGTH);
-        if (descError) return { error: `ERRO: ${descError}` };
-
+    create_project_with_tasks: async (args, client) => {
+        // 1. Create Project
+        const projectName = args.name;
         const newProjectId = generateId('proj');
-        const newProject = {
-            id: newProjectId,
-            name: args.name,
-            description: args.description || '',
-            color: args.color || '#DC2626',
-            members: [],
-            subProjects: [],
-            isArchived: false,
-            createdAt: new Date().toISOString()
-        };
+        const color = args.color || '#DC2626';
+
+        await client.query(
+            'INSERT INTO projects (id, name, description, color, created_at, is_archived) VALUES ($1, $2, $3, $4, NOW(), false)',
+            [newProjectId, projectName, args.description || '', color]
+        );
 
         let totalTasks = 0;
+        let areaCount = 0;
 
-        // Build structure from args.structure
+        // 2. Create Structure
         if (args.structure && Array.isArray(args.structure)) {
-            for (const area of args.structure) {
+            for (const [areaIndex, area] of args.structure.entries()) {
                 const spId = generateId('sub');
-                const lists = createDefaultKanbanLists();
-                const todoList = lists[0]; // First list is TODO
+                // Create Subproject
+                await client.query(
+                    'INSERT INTO sub_projects (id, project_id, title, order_index) VALUES ($1, $2, $3, $4)',
+                    [spId, newProjectId, area.areaName || 'Área sem nome', areaIndex]
+                );
+                areaCount++;
 
-                // Create tasks for this area
+                // Create Standard Lists
+                const listIds = {}; // Map title -> id
+                for (const listTitle of Object.values(KANBAN_LISTS)) {
+                    const listId = generateId('list');
+                    const orderIndex = listTitle === KANBAN_LISTS.TODO ? 0 : listTitle === KANBAN_LISTS.IN_PROGRESS ? 1 : 2;
+                    await client.query(
+                        'INSERT INTO lists (id, sub_project_id, title, order_index) VALUES ($1, $2, $3, $4)',
+                        [listId, spId, listTitle, orderIndex]
+                    );
+                    listIds[listTitle] = listId;
+                }
+
+                // 3. Create Tasks (All go to TODO by default)
                 if (area.tasks && Array.isArray(area.tasks)) {
-                    for (const taskTitle of area.tasks) {
+                    for (const [taskIndex, taskTitle] of area.tasks.entries()) {
                         const taskId = generateId('card');
-                        todoList.cards.push({
-                            id: taskId,
-                            title: taskTitle,
-                            description: '',
-                            labels: [],
-                            members: [],
-                            attachments: [],
-                            comments: [],
-                            createdAt: new Date().toISOString()
-                        });
+                        const todoListId = listIds[KANBAN_LISTS.TODO];
+
+                        await client.query(
+                            'INSERT INTO cards (id, list_id, title, description, order_index, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+                            [taskId, todoListId, taskTitle, '', taskIndex]
+                        );
                         totalTasks++;
                     }
                 }
-
-                newProject.subProjects.push({
-                    id: spId,
-                    name: area.areaName || 'Área sem nome',
-                    description: '',
-                    boardData: {
-                        kanban: { lists }
-                    }
-                });
             }
         }
 
-        data.projects.push(newProject);
-
-        console.log(`[Mason] Batch created project '${args.name}' with ${newProject.subProjects.length} areas and ${totalTasks} tasks.`);
+        await eventService.publish(CHANNELS.PROJECT_CREATED, { id: newProjectId, name: projectName });
 
         return {
-            message: `Projeto '${args.name}' criado com ${newProject.subProjects.length} área(s) e ${totalTasks} tarefa(s). Estrutura completa.`,
-            details: {
-                projectId: newProjectId,
-                areas: newProject.subProjects.map(sp => sp.name),
-                totalTasks
-            }
+            message: `Projeto '${projectName}' criado com ${areaCount} área(s) e ${totalTasks} tarefa(s). Estrutura completa.`,
+            details: { projectId: newProjectId, totalTasks }
         };
     },
 
-    create_task: (data, args) => {
-        // Validate input sizes
-        const titleError = validateInputSize(args.title, 'Título da tarefa', MAX_TITLE_LENGTH);
-        if (titleError) return { error: `ERRO: ${titleError}` };
+    create_task: async (args, client) => {
+        // Resolve Project
+        const projectRes = await client.query('SELECT id, name FROM projects WHERE name ILIKE $1 OR id = $1 LIMIT 1', [args.projectName]);
+        if (projectRes.rows.length === 0) return { error: `ERRO: projeto '${args.projectName}' não encontrado.` };
+        const project = projectRes.rows[0];
 
-        const descError = validateInputSize(args.description, 'Descrição da tarefa', MAX_DESCRIPTION_LENGTH);
-        if (descError) return { error: `ERRO: ${descError}` };
+        // Resolve Subproject (Area)
+        let subProjectId = null;
+        let subProjectName = 'Geral';
 
-        const project = findProject(data.projects, args.projectName);
-        if (!project) return { error: `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.` };
-        if (project.ambiguous) {
-            return { error: `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.` };
-        }
-
-        // --- SUBPROJECT SELECTION LOGIC ---
-        let subProject = null;
         if (args.subProjectName) {
-            // Try fuzzy match on provided name
-            subProject = project.subProjects?.find(sp => sp.name.toLowerCase().includes(args.subProjectName.toLowerCase()));
+            const spRes = await client.query('SELECT id, title FROM sub_projects WHERE project_id = $1 AND (title ILIKE $2 OR id = $2) LIMIT 1', [project.id, args.subProjectName]);
+            if (spRes.rows.length > 0) {
+                subProjectId = spRes.rows[0].id;
+                subProjectName = spRes.rows[0].title;
+            }
         }
 
-        // Fallback: if no specific subProject found or requested, use the FIRST one available
-        if (!subProject && project.subProjects && project.subProjects.length > 0) {
-            subProject = project.subProjects[0];
-            // Inferring subproject (auto-assigned)
-        }
-
-        if (!subProject) {
-            // Auto-create a default "Geral" subproject
-            console.log(`[Mason] Project '${project.name}' has no subprojects. Auto-creating 'Geral'.`);
-            const newSubId = generateId('sub');
-            subProject = {
-                id: newSubId,
-                name: 'Geral',
-                description: 'Área padrão criada automaticamente por Mason.',
-                boardData: {
-                    kanban: {
-                        lists: createDefaultKanbanLists()
-                    }
+        // If no subproject found or specified, try to find ANY subproject or create default
+        if (!subProjectId) {
+            const anySp = await client.query('SELECT id, title FROM sub_projects WHERE project_id = $1 ORDER BY order_index ASC LIMIT 1', [project.id]);
+            if (anySp.rows.length > 0) {
+                subProjectId = anySp.rows[0].id;
+                subProjectName = anySp.rows[0].title;
+            } else {
+                // Auto-create 'Geral'
+                subProjectId = generateId('sub');
+                await client.query('INSERT INTO sub_projects (id, project_id, title) VALUES ($1, $2, $3)', [subProjectId, project.id, 'Geral']);
+                // Create lists
+                for (const listTitle of Object.values(KANBAN_LISTS)) {
+                    const lId = generateId('list');
+                    const idx = listTitle === KANBAN_LISTS.TODO ? 0 : listTitle === KANBAN_LISTS.IN_PROGRESS ? 1 : 2;
+                    await client.query('INSERT INTO lists (id, sub_project_id, title, order_index) VALUES ($1, $2, $3, $4)', [lId, subProjectId, listTitle, idx]);
                 }
-            };
-            if (!project.subProjects) project.subProjects = [];
-            project.subProjects.push(subProject);
+            }
         }
 
-        // --- BOARD DATA INITIALIZATION ---
-        if (!subProject.boardData) subProject.boardData = {};
-        if (!subProject.boardData.kanban) subProject.boardData.kanban = { lists: [] };
+        // Resolve List
+        const targetListTitle = args.listName || KANBAN_LISTS.TODO;
+        let listId = null;
+        let listTitle = targetListTitle;
 
-        const board = subProject.boardData.kanban; // Ref
-        if (!board.lists || board.lists.length === 0) {
-            board.lists = createDefaultKanbanLists();
+        const listRes = await client.query('SELECT id, title FROM lists WHERE sub_project_id = $1 AND title ILIKE $2 LIMIT 1', [subProjectId, `%${targetListTitle}%`]);
+        if (listRes.rows.length > 0) {
+            listId = listRes.rows[0].id;
+            listTitle = listRes.rows[0].title;
+        } else {
+            // Fallback to first list if specific not found
+            const anyList = await client.query('SELECT id, title FROM lists WHERE sub_project_id = $1 ORDER BY order_index ASC LIMIT 1', [subProjectId]);
+            if (anyList.rows.length > 0) {
+                listId = anyList.rows[0].id;
+                listTitle = anyList.rows[0].title;
+            } else {
+                // This shouldn't happen if we ensured subproject has lists, but just in case
+                return { error: 'ERRO: Estrutura da área inválida (sem listas).' };
+            }
         }
-
-        // --- LIST SELECTION LOGIC ---
-        let list = null;
-        if (args.listName) {
-            list = board.lists.find(l => l.title.toLowerCase().includes(args.listName.toLowerCase()));
-        }
-
-        // Fallback to first list (usually TODO)
-        if (!list) list = board.lists[0];
 
         const taskId = generateId('card');
-        const newTask = {
-            id: taskId,
-            title: args.title,
-            description: args.description || '',
-            labels: [],
-            members: [],
-            attachments: [],
-            comments: [],
-            createdAt: new Date().toISOString()
-        };
+        // Get max order
+        const orderRes = await client.query('SELECT MAX(order_index) as max_order FROM cards WHERE list_id = $1', [listId]);
+        const newOrder = (orderRes.rows[0].max_order || 0) + 1;
 
-        list.cards.push(newTask);
+        await client.query(
+            'INSERT INTO cards (id, list_id, title, description, order_index, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+            [taskId, listId, args.title, args.description || '', newOrder]
+        );
 
-        console.log(`[Mason] Task created: ${taskId} in ${project.name}/${subProject.name}/${list.title}`);
+        await eventService.publish(CHANNELS.TASK_CREATED, { id: taskId, listId, title: args.title });
 
         return {
-            message: `Tarefa '${args.title}' registrada com sucesso em ${list.title}.`,
-            details: {
-                taskId: taskId,
-                project: project.name,
-                subProject: subProject.name,
-                list: list.title
-            }
+            message: `Tarefa '${args.title}' registrada com sucesso em ${listTitle}.`,
+            details: { taskId, project: project.name, subProject: subProjectName, list: listTitle }
         };
     },
 
-    update_task: (data, args) => {
-        // Validate input sizes
-        if (args.title) {
-            const titleError = validateInputSize(args.title, 'Título da tarefa', MAX_TITLE_LENGTH);
-            if (titleError) return { error: `ERRO: ${titleError}` };
-        }
+    update_task: async (args, client) => {
+        const { taskId, title, description } = args;
 
-        if (args.description) {
-            const descError = validateInputSize(args.description, 'Descrição da tarefa', MAX_DESCRIPTION_LENGTH);
-            if (descError) return { error: `ERRO: ${descError}` };
-        }
+        // Build dynamic update query
+        const updates = [];
+        const values = [];
+        let idx = 1;
 
-        const found = findTaskInData(data, args.taskId);
-        if (!found) return { error: `ERRO: Tarefa não localizada nos sistemas.` };
+        if (title) { updates.push(`title = $${idx++}`); values.push(title); }
+        if (description) { updates.push(`description = $${idx++}`); values.push(description); }
 
-        if (args.title) found.card.title = args.title;
-        if (args.description) found.card.description = args.description;
-        return { message: `Parâmetros da tarefa atualizados. Mudanças aplicadas.` };
+        if (updates.length === 0) return { message: 'Nada a atualizar.' };
+
+        values.push(taskId);
+        const res = await client.query(`UPDATE cards SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id`, values);
+
+        if (res.rowCount === 0) return { error: `ERRO: Tarefa não localizada.` };
+
+        return { message: `Parâmetros da tarefa atualizados.` };
     },
 
-    move_task: (data, args) => {
-        const found = findTaskInData(data, args.taskId);
-        if (!found) return { error: `ERRO: Tarefa não localizada nos sistemas.` };
+    move_task: async (args, client) => {
+        // This is complex because we need to find the target list ID within the SAME subproject usually, 
+        // or just by name if we assume current context. 
+        // For simplicity, let's assume we need to find the list in the SAME subproject as the current task.
 
-        const lists = found.subProject.boardData?.kanban?.lists || [];
-        const targetList = lists.find(l => l.title.toLowerCase().includes(args.targetListName.toLowerCase()));
+        // 1. Get Task Current Info
+        const taskRes = await client.query(`
+            SELECT c.id, c.list_id, l.sub_project_id 
+            FROM cards c 
+            JOIN lists l ON c.list_id = l.id 
+            WHERE c.id = $1
+        `, [args.taskId]);
 
-        if (!targetList) return { error: `ERRO: Coluna '${args.targetListName}' não existe neste contexto.` };
+        if (taskRes.rows.length === 0) return { error: `ERRO: Tarefa não encontrada.` };
+        const { list_id: currentListId, sub_project_id: subProjectId } = taskRes.rows[0];
 
-        found.list.cards.splice(found.index, 1);
-        targetList.cards.push(found.card); // Add to end
-        return { message: `Tarefa realocada para ${targetList.title}. Fluxo otimizado.` };
+        // 2. Find Target List in same subproject
+        const listRes = await client.query(
+            'SELECT id, title FROM lists WHERE sub_project_id = $1 AND title ILIKE $2 LIMIT 1',
+            [subProjectId, args.targetListName]
+        );
+
+        if (listRes.rows.length === 0) return { error: `ERRO: Coluna '${args.targetListName}' não encontrada nesta área.` };
+        const targetListId = listRes.rows[0].id;
+
+        // 3. Move
+        await client.query('UPDATE cards SET list_id = $1, updated_at = NOW() WHERE id = $2', [targetListId, args.taskId]);
+
+        return { message: `Tarefa realocada para ${listRes.rows[0].title}.` };
     },
 
-    delete_task: (data, args) => {
-        const found = findTaskInData(data, args.taskId);
-        if (!found) return { error: `ERRO: Tarefa não localizada nos sistemas.` };
-
-        found.list.cards.splice(found.index, 1);
-        return { message: `Tarefa removida permanentemente. Operação irreversível executada.` };
+    delete_task: async (args, client) => {
+        const res = await client.query('DELETE FROM cards WHERE id = $1', [args.taskId]);
+        if (res.rowCount === 0) return { error: `ERRO: Tarefa não encontrada.` };
+        return { message: `Tarefa removida permanentemente.` };
     }
 };
 
@@ -939,45 +935,49 @@ class MasonService {
     // Tool Execution Logic
     async executeTool(client, name, args, userContext) {
         if (name === 'get_workspace_insights') {
-            const state = await getProjectState(client);
-            if (!state) return "ERRO: não há dados de estado disponíveis.";
+            // Re-implement using SQL
+            // Get all projects
+            const projRes = await client.query('SELECT * FROM projects WHERE is_archived = false');
+            const projects = projRes.rows;
+
+            const insightsData = await Promise.all(projects.map(async p => {
+                // Get subprojects
+                const spRes = await client.query('SELECT * FROM sub_projects WHERE project_id = $1', [p.id]);
+                const subProjects = spRes.rows;
+
+                // Get Stats
+                const totalTasksRes = await client.query(`
+                    SELECT COUNT(*) as count 
+                    FROM cards c 
+                    JOIN lists l ON c.list_id = l.id 
+                    JOIN sub_projects sp ON l.sub_project_id = sp.id 
+                    WHERE sp.project_id = $1
+                 `, [p.id]);
+
+                const doneTasksRes = await client.query(`
+                    SELECT COUNT(*) as count 
+                    FROM cards c 
+                    JOIN lists l ON c.list_id = l.id 
+                    JOIN sub_projects sp ON l.sub_project_id = sp.id 
+                    WHERE sp.project_id = $1 AND l.title ILIKE '%Done%'
+                 `, [p.id]); // Simplified done detection by list title
+
+                const totalTasks = parseInt(totalTasksRes.rows[0].count);
+                const doneTasks = parseInt(doneTasksRes.rows[0].count);
+
+                return {
+                    id: p.id,
+                    name: p.name,
+                    subProjectsCount: subProjects.length,
+                    totalTasks: totalTasks,
+                    progress: totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0,
+                    isEmpty: totalTasks === 0
+                };
+            }));
 
             const insights = {
-                totalProjects: state.data.projects.length,
-                projects: state.data.projects.map(p => {
-                    const subProjects = p.subProjects || [];
-                    const allTasks = [];
-                    const tasksByStatus = { todo: 0, inProgress: 0, done: 0 };
-
-                    subProjects.forEach(sp => {
-                        const lists = sp.boardData?.kanban?.lists || [];
-                        lists.forEach(list => {
-                            const tasks = list.cards || [];
-                            allTasks.push(...tasks.map(t => ({
-                                id: t.id,
-                                title: t.title,
-                                column: list.title,
-                                subProject: sp.name
-                            })));
-
-                            const status = detectTaskStatus(list.title);
-                            if (status) {
-                                tasksByStatus[status] += tasks.length;
-                            }
-                        });
-                    });
-
-                    return {
-                        id: p.id,
-                        name: p.name,
-                        subProjectsCount: subProjects.length,
-                        totalTasks: allTasks.length,
-                        tasksByStatus,
-                        progress: allTasks.length > 0 ? Math.round((tasksByStatus.done / allTasks.length) * 100) : 0,
-                        recentTasks: allTasks.slice(-3).reverse(),
-                        isEmpty: allTasks.length === 0
-                    };
-                }),
+                totalProjects: projects.length,
+                projects: insightsData,
                 currentContext: userContext
             };
 
@@ -985,40 +985,53 @@ class MasonService {
         }
 
         if (name === 'list_projects') {
-            const state = await getProjectState(client);
-            if (!state) return "Sistema de estado não inicializado. Correção necessária.";
-            return state.data.projects.map(p => ({ id: p.id, name: p.name, subProjects: p.subProjects?.length || 0 }));
+            const res = await client.query('SELECT id, name FROM projects WHERE is_archived = false ORDER BY created_at DESC');
+            return JSON.stringify(res.rows.map(p => ({ id: p.id, name: p.name })));
         }
 
         if (name === 'get_project_details') {
-            const state = await getProjectState(client);
-            if (!state) return "Sistema de estado não inicializado. Correção necessária.";
+            let projectId = args.projectId;
 
-            let project = null;
-            if (args.projectId) {
-                project = state.data.projects.find(p => p.id === args.projectId);
-            } else if (args.projectName) {
-                project = findProject(state.data.projects, args.projectName);
-                if (project && project.ambiguous) {
-                    return `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.`;
-                }
+            if (!projectId && args.projectName) {
+                const res = await client.query('SELECT id FROM projects WHERE name ILIKE $1 LIMIT 1', [args.projectName]);
+                if (res.rows.length > 0) projectId = res.rows[0].id;
             }
 
-            if (!project) return "Projeto não localizado nos registros. Verifique o identificador.";
+            if (!projectId) return "Projeto não localizado nos registros. Verifique o identificador.";
 
-            // Summarize structure and TASKS
+            // Get Project
+            const pRes = await client.query('SELECT * FROM projects WHERE id = $1', [projectId]);
+            if (pRes.rows.length === 0) return "Projeto não encontrado.";
+            const project = pRes.rows[0];
+
+            // Get Hierarchy (Subprojects -> Lists -> Tasks)
+            // This can be heavy, so let's optimize or keep it simple.
+            // We'll fetch subprojects and lists, maybe tasks summary.
+            const spRes = await client.query('SELECT * FROM sub_projects WHERE project_id = $1 ORDER BY order_index ASC', [projectId]);
+
+            const detailedStructure = await Promise.all(spRes.rows.map(async sp => {
+                const lRes = await client.query('SELECT * FROM lists WHERE sub_project_id = $1 ORDER BY order_index ASC', [sp.id]);
+
+                const listsWithTasks = await Promise.all(lRes.rows.map(async l => {
+                    const cRes = await client.query('SELECT id, title FROM cards WHERE list_id = $1 ORDER BY order_index ASC', [l.id]);
+                    return {
+                        id: l.id,
+                        name: l.title,
+                        tasks: cRes.rows
+                    };
+                }));
+
+                return {
+                    id: sp.id,
+                    name: sp.title, // sub_projects uses 'title' in V2
+                    lists: listsWithTasks
+                };
+            }));
+
             const structure = {
                 id: project.id,
                 name: project.name,
-                subProjects: project.subProjects?.map(sp => ({
-                    id: sp.id,
-                    name: sp.name,
-                    lists: sp.boardData?.kanban?.lists?.map(l => ({
-                        id: l.id,
-                        name: l.title,
-                        tasks: l.cards?.map(c => ({ id: c.id, title: c.title, column: l.title })) || []
-                    }))
-                }))
+                subProjects: detailedStructure
             };
             return JSON.stringify(structure);
         }
@@ -1036,44 +1049,23 @@ class MasonService {
     }
 
     async handleMutation(client, toolName, args, userContext) {
-        // Lock state
-        const currentRes = await client.query('SELECT data, version FROM brickflow_state WHERE id = $1 FOR UPDATE', [STATE_DB_ID]);
-        if (currentRes.rows.length === 0) throw new Error("State initialization required");
-
-        let { data } = currentRes.rows[0];
-        const { version } = currentRes.rows[0];
-        data = normalizeStateData(data);
-
         // Dispatch to appropriate handler
         const handler = mutationHandlers[toolName];
         if (!handler) {
             return `ERRO: operação '${toolName}' não reconhecida.`;
         }
 
-        const result = handler(data, args);
-
-        // Check if handler returned an error
-        if (result.error) {
-            return result.error;
+        // Execute atomic SQL mutation
+        // Since client is passed in (and is already inside a transaction from processMessage),
+        // we just execute it.
+        try {
+            const result = await handler(args, client);
+            if (result.error) return result.error;
+            return result.message;
+        } catch (err) {
+            console.error(`[Mason] Mutation Error in ${toolName}:`, err);
+            return `ERRO CRÍTICO ao executar ${toolName}: ${err.message}`;
         }
-
-        // Save changes to database
-        const nextVersion = version + 1;
-
-        await client.query(
-            'UPDATE brickflow_state SET data = $1, version = $2, updated_at = NOW() WHERE id = $3',
-            [JSON.stringify(data), nextVersion, STATE_DB_ID]
-        );
-
-        // Publish event - fire-and-forget (eventService has internal error handling)
-        // If publish fails, database update will still succeed
-        // Frontend will be eventually consistent when it polls/reconnects
-        eventService.publish(CHANNELS.PROJECT_UPDATED, {
-            version: nextVersion,
-            userId: userContext.userId || 'MasonAI'
-        });
-
-        return result.message;
     }
 }
 
