@@ -672,7 +672,25 @@ const mutationHandlers = {
         }
 
         // Resolve List
-        const targetListTitle = args.listName || KANBAN_LISTS.TODO;
+        // Detect board type to choose correct default
+        const subProject = (await client.query('SELECT board_config FROM sub_projects WHERE id = $1', [subProjectId])).rows[0];
+        let defaultList = KANBAN_LISTS.TODO;
+
+        // Try to parse board config
+        if (subProject && subProject.board_config) {
+            try {
+                const config = typeof subProject.board_config === 'string'
+                    ? JSON.parse(subProject.board_config)
+                    : subProject.board_config;
+
+                // Check enabledTabs or just infer from lists
+                if (config.enabledTabs && config.enabledTabs.includes('todo')) {
+                    defaultList = TODO_LISTS.PENDING;
+                }
+            } catch (e) { /* ignore parse error */ }
+        }
+
+        const targetListTitle = args.listName || defaultList;
         let listId = null;
         let listTitle = targetListTitle;
 
@@ -996,7 +1014,7 @@ class MasonService {
                     FROM cards c 
                     JOIN lists l ON c.list_id = l.id 
                     JOIN sub_projects sp ON l.sub_project_id = sp.id 
-                    WHERE sp.project_id = $1 AND l.title ILIKE '%Done%'
+                    WHERE sp.project_id = $1 AND (l.title ILIKE '%Done%' OR l.title ILIKE '%Completed%')
                  `, [p.id]); // Simplified done detection by list title
 
                 const totalTasks = parseInt(totalTasksRes.rows[0].count);
