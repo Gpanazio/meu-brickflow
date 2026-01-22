@@ -140,7 +140,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
         if (p.id !== currentProject?.id) return p;
         return {
           ...p,
-          subProjects: p.subProjects.map(sp => {
+          subProjects: (p.subProjects || []).map(sp => {
             if (sp.id !== currentSubProject?.id) return sp;
             const spBoardData = sp.boardData || {};
             const currentFilesData = spBoardData.files || { files: [], folders: [] };
@@ -192,24 +192,39 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
   }, [updateFilesData]);
 
   const handleDeleteFolder = useCallback((folderId) => {
-    // Move all files in this folder back to parent (or root)
+    // Recursively find all descendant folder IDs
+    const findDescendantFolderIds = (parentId, allFolders) => {
+      const descendants = [];
+      const children = allFolders.filter(f => f.parentId === parentId);
+
+      for (const child of children) {
+        descendants.push(child.id);
+        descendants.push(...findDescendantFolderIds(child.id, allFolders));
+      }
+
+      return descendants;
+    };
+
     const folder = folders.find(f => f.id === folderId);
     const targetParentId = folder?.parentId || null;
 
+    // Get all folder IDs to delete (folder + all descendants)
+    const allFolderIdsToDelete = [folderId, ...findDescendantFolderIds(folderId, folders)];
+
     updateFilesData(data => ({
       ...data,
-      files: (data.files || []).map(f =>
-        f.folderId === folderId ? { ...f, folderId: targetParentId } : f
-      ),
-      folders: (data.folders || []).filter(f => f.id !== folderId)
+      // Delete all files in any of the folders being deleted
+      files: (data.files || []).filter(f => !allFolderIdsToDelete.includes(f.folderId)),
+      // Delete all folders in the list
+      folders: (data.folders || []).filter(f => !allFolderIdsToDelete.includes(f.id))
     }));
 
-    // If we're inside the deleted folder, navigate up
-    if (currentFolderId === folderId) {
+    // If we're inside any deleted folder, navigate up to parent
+    if (allFolderIdsToDelete.includes(currentFolderId)) {
       setCurrentFolderId(targetParentId);
     }
 
-    toast.success('Pasta excluída! Arquivos movidos para o nível anterior.');
+    toast.success('Pasta e subpastas excluídas com sucesso!');
   }, [folders, currentFolderId, updateFilesData]);
 
   const handleMoveFile = useCallback((fileId, targetFolderId) => {
