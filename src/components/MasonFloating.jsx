@@ -68,6 +68,8 @@ export default function MasonFloating({ clientContext }) {
     const scrollRef = useRef(null);
     const constraintsRef = useRef(null); // Ref for drag constraints (usually the screen)
 
+    const isDraggingRef = useRef(false);
+
     // Save messages to localStorage whenever they change
     useEffect(() => {
         saveChatHistory(messages);
@@ -143,14 +145,12 @@ export default function MasonFloating({ clientContext }) {
 
     return (
         <>
-            {/* Drag Constraints Wrapper (Full Screen, Pointer Events None) */}
-            <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[100] overflow-hidden" />
-
             {/* Draggable Widget */}
             <motion.div
                 drag
                 dragMomentum={false}
-                dragConstraints={constraintsRef}
+                onDragStart={() => (isDraggingRef.current = true)}
+                onDragEnd={() => setTimeout(() => (isDraggingRef.current = false), 150)}
                 className="fixed bottom-6 right-6 z-[101] pointer-events-auto"
             >
                 <AnimatePresence mode="wait" initial={false}>
@@ -161,7 +161,9 @@ export default function MasonFloating({ clientContext }) {
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0, opacity: 0 }}
-                            onClick={() => setIsOpen(true)}
+                            onClick={() => {
+                                if (!isDraggingRef.current) setIsOpen(true);
+                            }}
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             className="cursor-pointer group relative"

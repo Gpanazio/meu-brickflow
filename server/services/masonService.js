@@ -185,16 +185,14 @@ When user requests a project, identify the type and use the appropriate template
 **EXAMPLE FLOWS:**
 
 User: "Crie um projeto para o novo comercial da Nike"
-→ create_project: "Comercial Nike" + 4 subProjects
-→ create_task × 16-20 total (4-5 per area)
-→ "Projeto 'Comercial Nike' estruturado. 4 áreas, 18 tarefas essenciais. Sistema operacional."
+→ create_project_with_tasks: name="Comercial Nike", structure=[{areaName: "Pré", tasks: ["Roteiro", "Casting", "Locações"]}, {areaName: "Produção", tasks: ["Filmagem", "Equipamentos"]}, {areaName: "Pós", tasks: ["Edição", "Color Grading"]}]
+→ "Projeto 'Comercial Nike' estruturado com 3 áreas e 7 tarefas. Pronto para execução."
 
 User: "Estou pensando em fazer um app"
-→ create_project: "Novo Aplicativo" + 4 subProjects (Discovery, Design, Dev, Launch)
-→ create_task × 16 total (4 per area)
-→ "Estrutura de desenvolvimento criada. 16 tarefas distribuídas. Iniciar pelo Discovery."
+→ create_project_with_tasks: name="Novo Aplicativo", structure=[{areaName: "Discovery", tasks: ["Briefing", "Benchmark"]}, {areaName: "Design", tasks: ["Wireframes", "UI"]}, {areaName: "Dev", tasks: ["Frontend", "Backend"]}, {areaName: "Launch", tasks: ["QA", "Deploy"]}]
+→ "Estrutura de desenvolvimento criada. 4 áreas, 8 tarefas. Iniciar pelo Discovery."
 
-User: "Agora faça os to dos de cada etapa"
+User: "Agora faça os to dos de cada etapa" (in existing project)
 → create_task × 4-5 for each existing subProject
 → "Tarefas operacionais adicionadas. 16 novas tarefas distribuídas. Estrutura completa."
 
@@ -207,7 +205,8 @@ User in project view with empty project:
 Tools available:
 - get_workspace_insights (intelligence)
 - list_projects, get_project_details (read)
-- create_project, create_subproject, create_task (create)
+- **create_project_with_tasks** (PREFERRED for new projects - batch creates areas + tasks)
+- create_project, create_subproject, create_task (individual creation)
 - update_task, move_task, delete_task (modify)
 
 === COMMUNICATION STYLE ===
@@ -255,10 +254,18 @@ const findProject = (projects, projectName) => {
     const fuzzyMatches = projects.filter(p => p.name.toLowerCase().includes(projectName.toLowerCase()));
 
     if (fuzzyMatches.length === 0) {
+        // Last resort: Check if the input is actually an ID
+        const idMatch = projects.find(p => p.id === projectName);
+        if (idMatch) return idMatch;
+
         return null;
     }
 
     if (fuzzyMatches.length > 1) {
+        // Prefer exact fuzzy match if present
+        const exactFuzzy = fuzzyMatches.find(p => p.name.toLowerCase() === projectName.toLowerCase());
+        if (exactFuzzy) return exactFuzzy;
+
         // Multiple matches - return error object
         return {
             ambiguous: true,
@@ -420,6 +427,34 @@ const tools = [
             },
             required: ['projectName', 'name']
         }
+    },
+    {
+        name: 'create_project_with_tasks',
+        description: 'BATCH OPERATION: Create a new project with subprojects AND tasks in a single call. Use this for efficient project scaffolding.',
+        parameters: {
+            type: 'object',
+            properties: {
+                name: { type: 'string', description: 'Name of the project' },
+                description: { type: 'string', description: 'Description of the project' },
+                color: { type: 'string', description: 'Hex color for the project' },
+                structure: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            areaName: { type: 'string', description: 'Name of the subproject/area' },
+                            tasks: {
+                                type: 'array',
+                                items: { type: 'string' },
+                                description: 'List of task titles for this area'
+                            }
+                        }
+                    },
+                    description: 'Array of areas, each with task titles'
+                }
+            },
+            required: ['name', 'structure']
+        }
     }
 ];
 
@@ -496,6 +531,78 @@ const mutationHandlers = {
         return { message: `Área '${args.name}' incorporada ao projeto '${project.name}'. Estrutura atualizada.` };
     },
 
+    create_project_with_tasks: (data, args) => {
+        // Validate input sizes
+        const nameError = validateInputSize(args.name, 'Nome do projeto', MAX_NAME_LENGTH);
+        if (nameError) return { error: `ERRO: ${nameError}` };
+
+        const descError = validateInputSize(args.description, 'Descrição do projeto', MAX_DESCRIPTION_LENGTH);
+        if (descError) return { error: `ERRO: ${descError}` };
+
+        const newProjectId = generateId('proj');
+        const newProject = {
+            id: newProjectId,
+            name: args.name,
+            description: args.description || '',
+            color: args.color || '#DC2626',
+            members: [],
+            subProjects: [],
+            isArchived: false,
+            createdAt: new Date().toISOString()
+        };
+
+        let totalTasks = 0;
+
+        // Build structure from args.structure
+        if (args.structure && Array.isArray(args.structure)) {
+            for (const area of args.structure) {
+                const spId = generateId('sub');
+                const lists = createDefaultKanbanLists();
+                const todoList = lists[0]; // First list is TODO
+
+                // Create tasks for this area
+                if (area.tasks && Array.isArray(area.tasks)) {
+                    for (const taskTitle of area.tasks) {
+                        const taskId = generateId('card');
+                        todoList.cards.push({
+                            id: taskId,
+                            title: taskTitle,
+                            description: '',
+                            labels: [],
+                            members: [],
+                            attachments: [],
+                            comments: [],
+                            createdAt: new Date().toISOString()
+                        });
+                        totalTasks++;
+                    }
+                }
+
+                newProject.subProjects.push({
+                    id: spId,
+                    name: area.areaName || 'Área sem nome',
+                    description: '',
+                    boardData: {
+                        kanban: { lists }
+                    }
+                });
+            }
+        }
+
+        data.projects.push(newProject);
+
+        console.log(`[Mason] Batch created project '${args.name}' with ${newProject.subProjects.length} areas and ${totalTasks} tasks.`);
+
+        return {
+            message: `Projeto '${args.name}' criado com ${newProject.subProjects.length} área(s) e ${totalTasks} tarefa(s). Estrutura completa.`,
+            details: {
+                projectId: newProjectId,
+                areas: newProject.subProjects.map(sp => sp.name),
+                totalTasks
+            }
+        };
+    },
+
     create_task: (data, args) => {
         // Validate input sizes
         const titleError = validateInputSize(args.title, 'Título da tarefa', MAX_TITLE_LENGTH);
@@ -510,23 +617,53 @@ const mutationHandlers = {
             return { error: `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.` };
         }
 
-        let subProject = args.subProjectName
-            ? project.subProjects.find(sp => sp.name.toLowerCase().includes(args.subProjectName.toLowerCase()))
-            : project.subProjects?.[0];
-
-        if (!subProject) return { error: "ERRO: não há nenhuma área adequada disponível para esta operação." };
-
-        const board = subProject.boardData?.kanban || { lists: [] };
-        if (!board.lists || board.lists.length === 0) {
-            board.lists = createDefaultKanbanLists();
-            if (!subProject.boardData) subProject.boardData = {};
-            subProject.boardData.kanban = board;
+        // --- SUBPROJECT SELECTION LOGIC ---
+        let subProject = null;
+        if (args.subProjectName) {
+            // Try fuzzy match on provided name
+            subProject = project.subProjects?.find(sp => sp.name.toLowerCase().includes(args.subProjectName.toLowerCase()));
         }
 
-        let list = args.listName
-            ? board.lists.find(l => l.title.toLowerCase().includes(args.listName.toLowerCase()))
-            : board.lists[0];
+        // Fallback: if no specific subProject found or requested, use the FIRST one available
+        if (!subProject && project.subProjects && project.subProjects.length > 0) {
+            subProject = project.subProjects[0];
+            // Inferring subproject (auto-assigned)
+        }
 
+        if (!subProject) {
+            // Auto-create a default "Geral" subproject
+            console.log(`[Mason] Project '${project.name}' has no subprojects. Auto-creating 'Geral'.`);
+            const newSubId = generateId('sub');
+            subProject = {
+                id: newSubId,
+                name: 'Geral',
+                description: 'Área padrão criada automaticamente por Mason.',
+                boardData: {
+                    kanban: {
+                        lists: createDefaultKanbanLists()
+                    }
+                }
+            };
+            if (!project.subProjects) project.subProjects = [];
+            project.subProjects.push(subProject);
+        }
+
+        // --- BOARD DATA INITIALIZATION ---
+        if (!subProject.boardData) subProject.boardData = {};
+        if (!subProject.boardData.kanban) subProject.boardData.kanban = { lists: [] };
+
+        const board = subProject.boardData.kanban; // Ref
+        if (!board.lists || board.lists.length === 0) {
+            board.lists = createDefaultKanbanLists();
+        }
+
+        // --- LIST SELECTION LOGIC ---
+        let list = null;
+        if (args.listName) {
+            list = board.lists.find(l => l.title.toLowerCase().includes(args.listName.toLowerCase()));
+        }
+
+        // Fallback to first list (usually TODO)
         if (!list) list = board.lists[0];
 
         const taskId = generateId('card');
@@ -542,7 +679,18 @@ const mutationHandlers = {
         };
 
         list.cards.push(newTask);
-        return { message: `Tarefa '${args.title}' registrada em ${list.title}. Operação completa.` };
+
+        console.log(`[Mason] Task created: ${taskId} in ${project.name}/${subProject.name}/${list.title}`);
+
+        return {
+            message: `Tarefa '${args.title}' registrada com sucesso em ${list.title}.`,
+            details: {
+                taskId: taskId,
+                project: project.name,
+                subProject: subProject.name,
+                list: list.title
+            }
+        };
     },
 
     update_task: (data, args) => {
@@ -880,7 +1028,7 @@ class MasonService {
         }
 
         // Common mutation wrapper
-        if (['create_task', 'update_task', 'move_task', 'delete_task', 'create_project', 'create_subproject'].includes(name)) {
+        if (['create_task', 'update_task', 'move_task', 'delete_task', 'create_project', 'create_subproject', 'create_project_with_tasks'].includes(name)) {
             return this.handleMutation(client, name, args, userContext);
         }
 
