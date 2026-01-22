@@ -4,11 +4,13 @@ export function useRealtime(channel, onMessage) {
     const wsRef = useRef(null);
     const reconnectTimerRef = useRef(null);
     const reconnectAttemptsRef = useRef(0);
+    const shouldReconnectRef = useRef(true); // Flag to control reconnection
     const [isConnected, setIsConnected] = useState(false);
 
     const connectRef = useRef();
 
     const scheduleReconnect = useCallback(() => {
+        if (!shouldReconnectRef.current) return; // Don't reconnect if flag is false
         if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
 
         // Exponential backoff: 3s, 6s, 12s, 24s, max 30s
@@ -55,14 +57,12 @@ export function useRealtime(channel, onMessage) {
             console.log(`❌ WebSocket desconectado: ${channel}`);
             wsRef.current = null;
             setIsConnected(false);
-            scheduleReconnect();
+            scheduleReconnect(); // Only onclose schedules reconnect
         };
 
         ws.onerror = (err) => {
             console.error('❌ Erro WebSocket:', err);
-            wsRef.current = null;
-            setIsConnected(false);
-            scheduleReconnect();
+            // Don't schedule reconnect here - onclose will handle it
         };
 
         wsRef.current = ws;
@@ -73,6 +73,7 @@ export function useRealtime(channel, onMessage) {
     }, [connect]);
 
     const disconnect = useCallback(() => {
+        shouldReconnectRef.current = false; // Prevent reconnection after unmount
         if (wsRef.current) {
             wsRef.current.close();
             wsRef.current = null;
@@ -85,6 +86,7 @@ export function useRealtime(channel, onMessage) {
     }, []);
 
     useEffect(() => {
+        shouldReconnectRef.current = true; // Enable reconnection on mount
         connect();
 
         return () => {

@@ -140,7 +140,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
         if (p.id !== currentProject?.id) return p;
         return {
           ...p,
-          subProjects: p.subProjects.map(sp => {
+          subProjects: (p.subProjects || []).map(sp => {
             if (sp.id !== currentSubProject?.id) return sp;
             const spBoardData = sp.boardData || {};
             const currentFilesData = spBoardData.files || { files: [], folders: [] };
@@ -192,7 +192,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
   }, [updateFilesData]);
 
   const handleDeleteFolder = useCallback((folderId) => {
-    // Move all files in this folder back to parent (or root)
+    // Move all files and subfolders in this folder back to parent (or root)
     const folder = folders.find(f => f.id === folderId);
     const targetParentId = folder?.parentId || null;
 
@@ -201,7 +201,9 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
       files: (data.files || []).map(f =>
         f.folderId === folderId ? { ...f, folderId: targetParentId } : f
       ),
-      folders: (data.folders || []).filter(f => f.id !== folderId)
+      folders: (data.folders || [])
+        .filter(f => f.id !== folderId)
+        .map(f => f.parentId === folderId ? { ...f, parentId: targetParentId } : f)
     }));
 
     // If we're inside the deleted folder, navigate up
@@ -209,7 +211,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
       setCurrentFolderId(targetParentId);
     }
 
-    toast.success('Pasta excluída! Arquivos movidos para o nível anterior.');
+    toast.success('Pasta excluída! Conteúdo movido para o nível anterior.');
   }, [folders, currentFolderId, updateFilesData]);
 
   const handleMoveFile = useCallback((fileId, targetFolderId) => {

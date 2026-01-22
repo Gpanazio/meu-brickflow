@@ -181,8 +181,8 @@ function AppShell() {
 
   const updateProjects = useCallback((updater) => {
     setAppData(prev => {
-      const newProjects = typeof updater === 'function' ? updater(prev.projects) : updater;
-      const newState = { ...prev, projects: newProjects };
+      const newProjects = typeof updater === 'function' ? updater(prev?.projects || []) : updater;
+      const newState = { ...(prev || {}), projects: newProjects };
       appDataRef.current = newState;
       saveDataToApi(newState);
       return newState;
@@ -311,6 +311,7 @@ function AppShell() {
       e.dataTransfer.setData('type', 'task');
     } else if (type === 'list') {
       const index = latestCurrentSubProject?.boardData?.[currentBoardType]?.lists?.findIndex(l => l.id === item.id);
+      if (index === -1) return; // Block drag if list not found
       dragTaskRef.current = { type: 'list', listId: item.id, fromIndex: index };
       e.dataTransfer.setData('type', 'list');
     }
@@ -391,7 +392,7 @@ function AppShell() {
         if (p.id !== parentId) return p;
         return {
           ...p,
-          subProjects: p.subProjects.map(sp => sp.id === item.id ? { ...sp, deleted_at: deletedAt } : sp)
+          subProjects: (p.subProjects || []).map(sp => sp.id === item.id ? { ...sp, deleted_at: deletedAt } : sp)
         };
       }));
       toast.success('Área movida para a lixeira');
@@ -408,7 +409,7 @@ function AppShell() {
         if (p.id !== parentId) return p;
         return {
           ...p,
-          subProjects: p.subProjects.map(sp => sp.id === item.id ? { ...sp, deleted_at: null } : sp)
+          subProjects: (p.subProjects || []).map(sp => sp.id === item.id ? { ...sp, deleted_at: null } : sp)
         };
       }));
       toast.success('Área restaurada');
@@ -554,6 +555,7 @@ function AppShell() {
                     handleDragStart={(e, item, type) => {
                       if (type !== 'subproject') return;
                       const index = latestCurrentProject.subProjects?.findIndex(sp => sp.id === item.id);
+                      if (index === -1) return; // Block drag if subproject not found
                       dragTaskRef.current = { type: 'subproject', subProjectId: item.id, fromIndex: index };
                       e.dataTransfer.setData('type', 'subproject');
                     }}
