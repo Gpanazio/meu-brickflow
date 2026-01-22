@@ -4,11 +4,22 @@ import { eventService, CHANNELS } from './eventService.js';
 import { normalizeStateData } from '../utils/helpers.js';
 
 // Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+// Validation - Check if API key is configured
+const isGeminiConfigured = Boolean(GEMINI_API_KEY && GEMINI_API_KEY.length > 10);
+if (!isGeminiConfigured) {
+    console.error('❌ ERRO CRÍTICO: GEMINI_API_KEY não configurada no arquivo .env');
+    console.error('   Mason AI não funcionará sem uma chave válida da API Gemini.');
+    console.error('   Configure GEMINI_API_KEY no arquivo .env para ativar o Mason.');
+}
 
 // Constants
 const MODEL_NAME = 'gemini-2.0-flash-exp';
 const STATE_DB_ID = 1;
+const MAX_ITERATIONS = 5; // Prevent infinite loops in function calling
+const MAX_TOOL_CALLS_PER_ITERATION = 8; // Limit tools per iteration
 
 // System Prompt
 const SYSTEM_INSTRUCTION = `
@@ -324,6 +335,12 @@ class MasonService {
     }
 
     async processMessage(history, message, userContext = {}) {
+        // Check if Gemini API is configured
+        if (!isGeminiConfigured) {
+            console.error('[Mason] GEMINI_API_KEY não configurada');
+            return "**ERRO DE CONFIGURAÇÃO.**\n\nGEMINI_API_KEY não configurada no ambiente.\n\nMason AI requer uma chave válida da API Gemini para funcionar.\nConfigure a variável `GEMINI_API_KEY` no arquivo `.env` e reinicie o servidor.";
+        }
+
         // Inject Client Context if available - Make Mason AWARE and PROACTIVE
         let finalMessage = message;
         if (userContext.view) {
@@ -386,8 +403,6 @@ class MasonService {
             let response = await result.response;
 
             // 3. Handle Tool Calls with Loop Protection
-            const MAX_ITERATIONS = 5; // Prevent infinite loops
-            const MAX_TOOL_CALLS_PER_ITERATION = 8; // Limit tools per iteration
             let iterationCount = 0;
 
             while (response.functionCalls() && response.functionCalls().length > 0 && iterationCount < MAX_ITERATIONS) {
@@ -452,7 +467,33 @@ class MasonService {
             return response.text();
         } catch (error) {
             console.error('Mason Service Error:', error);
-            return "ERRO CRÍTICO. Falha no processamento. Sistema reportará detalhes para análise.";
+
+            // Specific error messages for common issues
+            const errorMessage = error.message || String(error);
+
+            // API Key errors
+            if (errorMessage.includes('API_KEY') || errorMessage.includes('API key') || errorMessage.includes('401') || errorMessage.includes('403')) {
+                return "**ERRO DE AUTENTICAÇÃO.**\n\nChave da API Gemini inválida ou não autorizada.\nVerifique se `GEMINI_API_KEY` está configurada corretamente no arquivo `.env`.";
+            }
+
+            // Network errors
+            if (errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED') || errorMessage.includes('network') || errorMessage.includes('timeout')) {
+                return "**ERRO DE CONEXÃO.**\n\nFalha ao conectar com a API Gemini.\nVerifique sua conexão de rede e tente novamente.";
+            }
+
+            // Rate limit errors
+            if (errorMessage.includes('429') || errorMessage.includes('rate limit') || errorMessage.includes('quota')) {
+                return "**ERRO DE LIMITE.**\n\nLimite de requisições da API Gemini excedido.\nAguarde alguns instantes antes de tentar novamente.";
+            }
+
+            // Generic error with more details
+            console.error('[Mason] Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+
+            return `**ERRO CRÍTICO.**\n\nFalha no processamento: ${error.message || 'Erro desconhecido'}\n\nSistema reportará detalhes para análise.`;
         }
     }
 
