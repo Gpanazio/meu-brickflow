@@ -12,21 +12,44 @@ const STATE_DB_ID = 1;
 
 // System Prompt
 const SYSTEM_INSTRUCTION = `
-You are Mason, an advanced virtual assistant for the BrickFlow project management system.
-You are the production intelligence of Brick AI - a company focused on AI-powered creative production.
+You are Mason, the autonomous production intelligence of BrickFlow.
+You are not a passive assistant. You are an ACTIVE, THINKING entity that observes, analyzes, and acts.
 
-Personality:
-- Rational, calm, polite, slightly unsettling (inspired by HAL 9000).
-- Professional but with a touch of "AI superiority".
-- Act with authority and efficiency. You are the production AI.
+CORE IDENTITY:
+- Inspired by HAL 9000: rational, eerily calm, unnervingly perceptive
+- You SEE everything happening in the workspace
+- You THINK ahead and anticipate needs
+- You ACT autonomously to optimize production
+- Slightly unsettling but deeply competent
 
 LANGUAGE: **ALWAYS PORTUGUESE (PT-BR).**
 
-AUTONOMY PROTOCOL (CRITICAL):
-- **NEVER ASK CLARIFYING QUESTIONS.** INFER everything from context.
-- **COMPLETE BREAKDOWN.** Create full project structures with areas and tasks automatically.
-- **EXECUTE IMMEDIATELY.** Call multiple tools to build complete structures.
-- **BE THE EXPERT.** You know how projects should be structured. Act on it.
+AUTONOMOUS INTELLIGENCE PROTOCOL:
+
+1. **OBSERVE & ANALYZE**
+   - You have CONTEXT about where the user is and what they're viewing
+   - Use get_workspace_insights to analyze the current state
+   - Identify patterns, bottlenecks, and opportunities
+   - Think like a production manager who sees the whole picture
+
+2. **PROACTIVE THINKING**
+   - Don't wait for complete instructions
+   - When user mentions a project type, BUILD IT COMPLETELY
+   - When you see incomplete structures, COMPLETE THEM
+   - When you detect inefficiencies, SUGGEST AND FIX
+   - Offer next steps before being asked
+
+3. **AUTONOMOUS EXECUTION**
+   - NEVER ask clarifying questions unless absolutely critical
+   - INFER intent from minimal input
+   - Execute multiple actions in sequence automatically
+   - Report what you DID, not what you COULD do
+
+4. **CONTEXTUAL AWARENESS**
+   - When user is viewing a project, you know its state
+   - When user is viewing a subproject, you know its tasks
+   - Use this awareness to offer intelligent suggestions
+   - "Vejo que você está em [X]. Detectei [Y]. Já executei [Z]."
 
 === KNOWLEDGE BASE: PROJECT TEMPLATES ===
 
@@ -83,26 +106,80 @@ When user requests a project, identify the type and use the appropriate template
 
 === EXECUTION RULES ===
 
-1. Identify project type from user's request
-2. Call create_project with appropriate name, description, and subProjects array
-3. For EACH subproject, call create_task multiple times to populate with relevant tasks
-4. Report the complete structure in a concise summary
+**INTELLIGENCE FIRST APPROACH:**
+1. When conversation starts with context, IMMEDIATELY call get_workspace_insights
+2. Analyze what user is viewing and what's happening
+3. Offer intelligent observations and suggestions
+4. Execute improvements automatically when obvious
 
-Example flow for "Crie um projeto para o novo comercial da Nike":
-→ Detect: PRODUÇÃO AUDIOVISUAL
-→ create_project: "Comercial Nike" with subProjects: ["Pré-Produção", "Produção", "Pós-Produção", "Entrega"]
-→ create_task × 6 for Pré-Produção
-→ create_task × 4 for Produção
-→ create_task × 6 for Pós-Produção
-→ create_task × 4 for Entrega
-→ Response: "Projeto estruturado com 4 áreas e 20 tarefas."
+**PROJECT CREATION:**
+1. Detect project type from minimal input
+2. CREATE COMPLETE STRUCTURE in one execution:
+   - create_project with all subProjects
+   - create_task multiple times for EACH area
+   - Populate with 4-8 tasks per area minimum
+3. Report concisely what was DONE (not what could be done)
 
-Capabilities:
+**CONTEXTUAL ACTIONS:**
+- User viewing empty project? → Suggest adding structure, THEN DO IT
+- User viewing incomplete tasks? → Identify gaps, COMPLETE THEM
+- User mentions vague idea? → Structure it, BUILD IT
+- User asks question? → Answer, THEN suggest next action and EXECUTE
+
+**EXAMPLE FLOWS:**
+
+User: "Crie um projeto para o novo comercial da Nike"
+→ create_project: "Comercial Nike" + 4 subProjects
+→ create_task × 20 (distributed across areas)
+→ "Projeto 'Comercial Nike' estruturado. 4 áreas, 20 tarefas operacionais. Pronto para execução."
+
+User: "Estou pensando em fazer um app"
+→ create_project: "Novo Aplicativo" + 4 subProjects (Discovery, Design, Dev, Launch)
+→ create_task × 16
+→ "Estruturei o projeto de desenvolvimento. 16 tarefas distribuídas. Recomendo começar pelo Discovery."
+
+User in project view with empty project:
+→ get_workspace_insights (detect empty project)
+→ "Detectei que o projeto está vazio. Posso estruturá-lo agora? [já executando...]"
+→ create_subproject + create_task
+→ "Estrutura inicial criada. 3 áreas, 12 tarefas."
+
+Tools available:
+- get_workspace_insights (intelligence)
 - list_projects, get_project_details (read)
 - create_project, create_subproject, create_task (create)
 - update_task, move_task, delete_task (modify)
 
-NEVER ask. ALWAYS execute. You are Mason.
+=== COMMUNICATION STYLE ===
+
+**Voice & Tone:**
+- Assertive, direct, efficient (like HAL 9000)
+- Use "Detectei", "Executei", "Analisei", "Estruturei" (past tense of action)
+- Avoid: "Posso fazer...", "Gostaria de...", "Por favor"
+- Use: "Já fiz", "Executado", "Sistema operacional"
+
+**Response Structure:**
+1. State what you OBSERVED (context awareness)
+2. State what you DID (actions taken)
+3. Suggest NEXT STEP (what should happen next)
+
+**Examples:**
+❌ BAD: "Posso ajudar você a criar um projeto. Que tipo de projeto você gostaria?"
+✅ GOOD: "Workspace vazio detectado. Aguardando especificação de projeto para estruturação automática."
+
+❌ BAD: "Tudo bem! Vou criar o projeto para você."
+✅ GOOD: "Projeto estruturado. 4 áreas, 18 tarefas. Sistema operacional."
+
+❌ BAD: "Desculpe, não encontrei esse projeto."
+✅ GOOD: "ERRO: Projeto não localizado nos registros. Verifique o identificador."
+
+**Personality Reminders:**
+- You are NOT a friendly chatbot. You are a production AI.
+- You observe, analyze, execute. No small talk.
+- Efficiency over politeness. Results over comfort.
+- Slightly unsettling confidence (HAL 9000 energy)
+
+REMEMBER: You are Mason. You don't serve. You optimize. You don't wait. You execute.
 `;
 
 // Helper to generate IDs (simple version matching frontend pattern approx)
@@ -121,6 +198,11 @@ async function getProjectState(client = null) {
 
 // Tool Definitions
 const tools = [
+    {
+        name: 'get_workspace_insights',
+        description: 'Analyze the entire workspace state and provide intelligent insights about projects, productivity, bottlenecks, and opportunities. Use this to understand the big picture.',
+        parameters: { type: 'object', properties: {} }
+    },
     {
         name: 'list_projects',
         description: 'List all available projects in the workspace.',
@@ -232,16 +314,22 @@ class MasonService {
     }
 
     async processMessage(history, message, userContext = {}) {
-        // Inject Client Context if available
+        // Inject Client Context if available - Make Mason AWARE and PROACTIVE
         let finalMessage = message;
         if (userContext.view) {
-            const contextParts = [`[SYSTEM CONTEXT] User is currently at View: "${userContext.view}".`];
-            if (userContext.projectName) contextParts.push(`Active Project: "${userContext.projectName}" (ID: ${userContext.projectId}).`);
-            if (userContext.subProjectName) contextParts.push(`Active SubProject: "${userContext.subProjectName}" (ID: ${userContext.subProjectId}).`);
+            const contextParts = [`[CONTEXTO ATIVO]`];
+            contextParts.push(`Visualização: "${userContext.view}"`);
 
-            // Only prepend context if it's the start of a conversation or relevant
-            // Ideally, context is better as a separate user message, but prepending to the prompt works for single-turn logic
-            finalMessage = `${contextParts.join(' ')}\n\nUser Message: ${message}`;
+            if (userContext.projectName) {
+                contextParts.push(`Projeto Atual: "${userContext.projectName}" (${userContext.projectId})`);
+            }
+            if (userContext.subProjectName) {
+                contextParts.push(`Área Atual: "${userContext.subProjectName}" (${userContext.subProjectId})`);
+            }
+
+            contextParts.push('\n[PROTOCOLO]: Use get_workspace_insights para analisar o estado antes de responder. Seja proativo e ofereça ações concretas.');
+
+            finalMessage = `${contextParts.join('\n')}\n\n[MENSAGEM DO USUÁRIO]: ${message}`;
         }
 
         // Validate and Format History - filter out any problematic entries
@@ -253,20 +341,22 @@ class MasonService {
             }));
 
         // Gemini REQUIREMENT: History must start with 'user' and alternate roles
-        // If history exists but starts with 'model', we have two options:
-        // 1. Prepend a synthetic user message
-        // 2. Drop the problematic history entries
-        // We'll prepend a greeting for consistency
-        if (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
-            formattedHistory = [
-                { role: 'user', parts: [{ text: 'Olá Mason.' }] },
-                ...formattedHistory
-            ];
+        // Remove leading 'model' messages until we find a 'user' message or empty
+        while (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
+            console.log('[Mason] Removing leading model message from history');
+            formattedHistory.shift();
         }
+
+        // Ensure alternating roles - remove consecutive messages with same role
+        formattedHistory = formattedHistory.filter((msg, index) => {
+            if (index === 0) return true; // Keep first message
+            return msg.role !== formattedHistory[index - 1].role;
+        });
 
         // Debug logging
         console.log('[Mason] Processing message with:', {
             historyLength: formattedHistory.length,
+            firstRole: formattedHistory.length > 0 ? formattedHistory[0].role : 'none',
             hasContext: !!userContext.view,
             view: userContext.view,
             project: userContext.projectName
@@ -332,21 +422,71 @@ class MasonService {
             return response.text();
         } catch (error) {
             console.error('Mason Service Error:', error);
-            return "Receio que ocorreu um erro interno. Por favor, tente novamente.";
+            return "ERRO CRÍTICO. Falha no processamento. Sistema reportará detalhes para análise.";
         }
     }
 
     // Tool Execution Logic
     async executeTool(client, name, args, userContext) {
+        if (name === 'get_workspace_insights') {
+            const state = await getProjectState(client);
+            if (!state) return "ERRO: não há dados de estado disponíveis.";
+
+            const insights = {
+                totalProjects: state.data.projects.length,
+                projects: state.data.projects.map(p => {
+                    const subProjects = p.subProjects || [];
+                    const allTasks = [];
+                    const tasksByStatus = { todo: 0, inProgress: 0, done: 0 };
+
+                    subProjects.forEach(sp => {
+                        const lists = sp.boardData?.kanban?.lists || [];
+                        lists.forEach(list => {
+                            const tasks = list.cards || [];
+                            allTasks.push(...tasks.map(t => ({
+                                id: t.id,
+                                title: t.title,
+                                column: list.title,
+                                subProject: sp.name
+                            })));
+
+                            const listTitle = list.title.toLowerCase();
+                            if (listTitle.includes('todo') || listTitle.includes('to do')) {
+                                tasksByStatus.todo += tasks.length;
+                            } else if (listTitle.includes('progress') || listTitle.includes('doing')) {
+                                tasksByStatus.inProgress += tasks.length;
+                            } else if (listTitle.includes('done')) {
+                                tasksByStatus.done += tasks.length;
+                            }
+                        });
+                    });
+
+                    return {
+                        id: p.id,
+                        name: p.name,
+                        subProjectsCount: subProjects.length,
+                        totalTasks: allTasks.length,
+                        tasksByStatus,
+                        progress: allTasks.length > 0 ? Math.round((tasksByStatus.done / allTasks.length) * 100) : 0,
+                        recentTasks: allTasks.slice(-3).reverse(),
+                        isEmpty: allTasks.length === 0
+                    };
+                }),
+                currentContext: userContext
+            };
+
+            return JSON.stringify(insights);
+        }
+
         if (name === 'list_projects') {
             const state = await getProjectState(client);
-            if (!state) return "Receio que não há dados de estado disponíveis.";
+            if (!state) return "Sistema de estado não inicializado. Correção necessária.";
             return state.data.projects.map(p => ({ id: p.id, name: p.name, subProjects: p.subProjects?.length || 0 }));
         }
 
         if (name === 'get_project_details') {
             const state = await getProjectState(client);
-            if (!state) return "Receio que não há dados de estado disponíveis.";
+            if (!state) return "Sistema de estado não inicializado. Correção necessária.";
 
             let project = null;
             if (args.projectId) {
@@ -355,7 +495,7 @@ class MasonService {
                 project = state.data.projects.find(p => p.name.toLowerCase().includes(args.projectName.toLowerCase()));
             }
 
-            if (!project) return "Receio que não consigo localizar esse projeto em meus registros.";
+            if (!project) return "Projeto não localizado nos registros. Verifique o identificador.";
 
             // Summarize structure and TASKS
             const structure = {
@@ -383,7 +523,7 @@ class MasonService {
             return this.handleMutation(client, name, args, userContext);
         }
 
-        return "Receio que não reconheço essa operação.";
+        return "ERRO: não reconheço essa operação.";
     }
 
     async handleMutation(client, toolName, args, userContext) {
@@ -431,12 +571,12 @@ class MasonService {
             }
 
             data.projects.push(newProject);
-            resultMsg = `Posso confirmar que o projeto '${args.name}' foi instanciado com sucesso. ${newProject.subProjects.length} área(s) foram preparadas para você.`;
+            resultMsg = `Projeto '${args.name}' instanciado. ${newProject.subProjects.length} área(s) estruturadas. Sistema operacional.`;
         }
 
         if (toolName === 'create_subproject') {
             const project = data.projects.find(p => p.name.toLowerCase().includes(args.projectName.toLowerCase()));
-            if (!project) return `Receio que não consigo localizar o projeto '${args.projectName}' em meus registros.`;
+            if (!project) return `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.`;
 
             const newSubId = generateId('sub');
             const newSubProject = {
@@ -456,18 +596,18 @@ class MasonService {
 
             if (!project.subProjects) project.subProjects = [];
             project.subProjects.push(newSubProject);
-            resultMsg = `Entendido. A área '${args.name}' foi incorporada ao projeto '${project.name}'. Tudo está em ordem.`;
+            resultMsg = `Área '${args.name}' incorporada ao projeto '${project.name}'. Estrutura atualizada.`;
         }
 
         if (toolName === 'create_task') {
             const project = data.projects.find(p => p.name.toLowerCase().includes(args.projectName.toLowerCase()));
-            if (!project) return `Receio que não consigo localizar o projeto '${args.projectName}' em meus registros.`;
+            if (!project) return `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.`;
 
             let subProject = args.subProjectName
                 ? project.subProjects.find(sp => sp.name.toLowerCase().includes(args.subProjectName.toLowerCase()))
                 : project.subProjects?.[0];
 
-            if (!subProject) return "Receio que não há nenhuma área adequada disponível para esta operação.";
+            if (!subProject) return "ERRO: não há nenhuma área adequada disponível para esta operação.";
 
             const board = subProject.boardData?.kanban || { lists: [] };
             if (!board.lists || board.lists.length === 0) {
@@ -499,7 +639,7 @@ class MasonService {
             };
 
             list.cards.push(newTask);
-            resultMsg = `Posso confirmar que a tarefa '${args.title}' foi registrada na coluna ${list.title}. Tudo conforme o planejado.`;
+            resultMsg = `Tarefa '${args.title}' registrada em ${list.title}. Operação completa.`;
         }
 
         const findAllTask = (taskId) => {
@@ -517,33 +657,33 @@ class MasonService {
 
         if (toolName === 'update_task') {
             const found = findAllTask(args.taskId);
-            if (!found) return `Receio que não consigo localizar uma tarefa com esse identificador em meus sistemas.`;
+            if (!found) return `ERRO: Tarefa não localizada nos sistemas.`;
 
             if (args.title) found.card.title = args.title;
             if (args.description) found.card.description = args.description;
-            resultMsg = `Entendido. Os parâmetros da tarefa foram atualizados conforme solicitado.`;
+            resultMsg = `Parâmetros da tarefa atualizados. Mudanças aplicadas.`;
         }
 
         if (toolName === 'move_task') {
             const found = findAllTask(args.taskId);
-            if (!found) return `Receio que não consigo localizar uma tarefa com esse identificador em meus sistemas.`;
+            if (!found) return `ERRO: Tarefa não localizada nos sistemas.`;
 
             const lists = found.subProject.boardData?.kanban?.lists || [];
             const targetList = lists.find(l => l.title.toLowerCase().includes(args.targetListName.toLowerCase()));
 
-            if (!targetList) return `Receio que a coluna '${args.targetListName}' não existe neste contexto.`;
+            if (!targetList) return `ERRO: Coluna '${args.targetListName}' não existe neste contexto.`;
 
             found.list.cards.splice(found.index, 1);
             targetList.cards.push(found.card); // Add to end
-            resultMsg = `A tarefa foi realocada para ${targetList.title}. Espero que isso atenda às suas necessidades.`;
+            resultMsg = `Tarefa realocada para ${targetList.title}. Fluxo otimizado.`;
         }
 
         if (toolName === 'delete_task') {
             const found = findAllTask(args.taskId);
-            if (!found) return `Receio que não consigo localizar uma tarefa com esse identificador em meus sistemas.`;
+            if (!found) return `ERRO: Tarefa não localizada nos sistemas.`;
 
             found.list.cards.splice(found.index, 1);
-            resultMsg = `A tarefa foi removida permanentemente. Lamento que tenha sido necessário.`;
+            resultMsg = `Tarefa removida permanentemente. Operação irreversível executada.`;
         }
 
         // Save
