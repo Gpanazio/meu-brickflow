@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 export default function MasonFloating({ clientContext }) {
     const [isOpen, setIsOpen] = useState(false); // false = collapsed (orb), true = expanded (chat)
     const [messages, setMessages] = useState([
-        { role: 'ai', content: 'SISTEMA ONLINE. PROTOCOLO 3.7 ATIVO.\n\nOlá. Sou Mason. Pronto para modificar os parâmetros do projeto.', isInitial: true }
+        { role: 'ai', content: '**SISTEMA ONLINE. PROTOCOLO 3.7 ATIVO.**\n\nSou Mason. Inteligência de produção autônoma.\n\nNão sou apenas um assistente. Eu **observo**, **analiso** e **executo**.\n\nDiga o que precisa. Ou deixe que eu identifique.', isInitial: true }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +58,7 @@ export default function MasonFloating({ clientContext }) {
             setMessages(prev => [...prev, { role: 'ai', content: data.response }]);
         } catch (error) {
             console.error('Mason Error:', error);
-            setMessages(prev => [...prev, { role: 'ai', content: 'CRITICAL FAILURE. CONNECTION SEVERED.' }]);
+            setMessages(prev => [...prev, { role: 'ai', content: '**FALHA CRÍTICA DE SISTEMA.**\n\nConexão interrompida. Reiniciando protocolos...' }]);
         } finally {
             setIsLoading(false);
         }
