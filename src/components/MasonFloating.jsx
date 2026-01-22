@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Minimize2, Maximize2, X } from 'lucide-react';
+import { Send, Minimize2, Maximize2, X, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+// import { ScrollArea } from '@/components/ui/scroll-area'; // Removed to fix scroll issues
 
 const MAX_MESSAGE_LENGTH = 10000; // Must match backend limit
 const MAX_STORED_MESSAGES = 50; // Store last 50 messages in localStorage
@@ -168,6 +168,20 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
         }
     };
 
+    const handleClearChat = () => {
+        if (window.confirm('Confirma limpeza de memória de curto prazo?')) {
+            localStorage.removeItem(STORAGE_KEY);
+            setMessages([
+                {
+                    id: 'welcome-msg',
+                    role: 'ai',
+                    content: '**MEMÓRIA PURGADA.**\n\nProtocolos reinicializados. Aguardando input.',
+                    isInitial: true
+                }
+            ]);
+        }
+    };
+
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -255,6 +269,14 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <button
+                                        onClick={(e) => { e.stopPropagation(); handleClearChat(); }}
+                                        className="p-1.5 hover:bg-red-900/40 rounded text-zinc-500 hover:text-red-400 transition-colors mr-1"
+                                        aria-label="Limpar chat"
+                                        title="Purgar memória (Limpar chat)"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                    <button
                                         onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
                                         className="p-1.5 hover:bg-white/10 rounded text-zinc-500 hover:text-white transition-colors"
                                         aria-label="Minimizar Mason AI"
@@ -265,10 +287,10 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
                                 </div>
                             </div>
 
-                            {/* Chat Area */}
-                            <ScrollArea
-                                className="flex-1 p-4 z-10"
-                                onPointerDownCapture={(e) => e.stopPropagation()}
+                            {/* Chat Area - REPLACED ScrollArea with native div for better drag compatibility */}
+                            <div
+                                className="flex-1 overflow-y-auto p-4 z-10 custom-scrollbar scroll-smooth"
+                                onPointerDownCapture={(e) => e.stopPropagation()} // Stop drag propagation on chat area
                             >
                                 <div
                                     className="flex flex-col gap-4 pb-4"
@@ -315,7 +337,7 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
                                     )}
                                     <div ref={scrollRef} />
                                 </div>
-                            </ScrollArea>
+                            </div>
 
                             {/* Input Area */}
                             <div className="p-3 border-t border-white/10 bg-black/60 z-10">
