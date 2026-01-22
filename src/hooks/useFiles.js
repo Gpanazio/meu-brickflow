@@ -192,14 +192,31 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
   }, [updateFilesData]);
 
   const handleDeleteFolder = useCallback((folderId) => {
-    // Recursively find all descendant folder IDs
+    // Optimized iterative approach to find all descendant folder IDs
+    // Time complexity: O(N) where N is the number of folders
     const findDescendantFolderIds = (parentId, allFolders) => {
-      const descendants = [];
-      const children = allFolders.filter(f => f.parentId === parentId);
+      // Build a map of parentId -> children for O(1) lookups
+      const childrenMap = new Map();
+      for (const folder of allFolders) {
+        const parent = folder.parentId || null;
+        if (!childrenMap.has(parent)) {
+          childrenMap.set(parent, []);
+        }
+        childrenMap.get(parent).push(folder);
+      }
 
-      for (const child of children) {
-        descendants.push(child.id);
-        descendants.push(...findDescendantFolderIds(child.id, allFolders));
+      // Iterative DFS using a stack to avoid stack overflow
+      const descendants = [];
+      const stack = [parentId];
+
+      while (stack.length > 0) {
+        const currentId = stack.pop();
+        const children = childrenMap.get(currentId) || [];
+
+        for (const child of children) {
+          descendants.push(child.id);
+          stack.push(child.id);
+        }
       }
 
       return descendants;
