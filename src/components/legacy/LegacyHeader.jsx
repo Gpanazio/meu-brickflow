@@ -30,18 +30,24 @@ function LegacyHeader({
   const canManageTeam = isAdmin(currentUser?.username);
 
   return (
-    <header className="sticky top-0 z-50 w-full glass-header">
+    <header className="sticky top-0 z-50 w-full glass-header safe-area-pt">
       {/* Header compacto h-16 (64px) */}
-      <div className="w-full h-16 flex items-center justify-between px-6 md:px-10">
+      <div className="w-full h-14 md:h-16 flex items-center justify-between px-4 md:px-6 lg:px-10">
 
         {/* LADO ESQUERDO */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4 md:gap-8">
           {/* Logo */}
-          <div onClick={() => setCurrentView('home')} className="cursor-pointer hover:opacity-80 transition-opacity">
-            <img src={logoImage} alt="BrickFlow" className="h-7 w-auto" />
+          <div
+            onClick={() => setCurrentView('home')}
+            className="cursor-pointer hover:opacity-80 transition-opacity touch-feedback"
+            role="button"
+            tabIndex={0}
+            aria-label="Voltar para página inicial"
+          >
+            <img src={logoImage} alt="BrickFlow" className="h-6 md:h-7 w-auto" />
           </div>
 
-          <Separator orientation="vertical" className="h-8 bg-zinc-800" />
+          <Separator orientation="vertical" className="hidden md:block h-8 bg-zinc-800" />
 
           {/* Navegação Primária */}
           <nav className="hidden md:flex items-center gap-4">
@@ -68,7 +74,7 @@ function LegacyHeader({
         </div>
 
         {/* LADO DIREITO - AVATAR DE VOLTA */}
-        <div className="flex items-center gap-3 md:gap-6">
+        <div className="flex items-center gap-2 md:gap-3 lg:gap-6">
           <div className="hidden md:block">
             <Search projects={projects} onNavigate={onSearchNavigate} />
           </div>
@@ -103,37 +109,41 @@ function LegacyHeader({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-14 w-14 rounded-full p-0 hover:bg-white/10 border border-transparent hover:border-white/20 transition-all">
-                <Avatar key={currentUser?.avatar || 'fallback'} className="h-12 w-12 border-2 border-zinc-900">
+              <Button
+                variant="ghost"
+                className="h-11 w-11 md:h-14 md:w-14 rounded-full p-0 hover:bg-white/10 border border-transparent hover:border-white/20 transition-all touch-target"
+                aria-label="Menu do usuário"
+              >
+                <Avatar key={currentUser?.avatar || 'fallback'} className="h-10 w-10 md:h-12 md:w-12 border-2 border-zinc-900">
                   <AvatarImage src={currentUser?.avatar} className="object-cover" />
-                  <AvatarFallback className="bg-zinc-800 text-zinc-400 text-lg font-bold">
+                  <AvatarFallback className="bg-zinc-800 text-zinc-400 text-base md:text-lg font-bold">
                     {(currentUser?.name || currentUser?.username || 'U').charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 glass-panel rounded-none p-0" align="end">
-              <DropdownMenuLabel className="p-4 pb-2">
-                <p className="text-xs font-black text-white uppercase tracking-tighter">{currentUser?.name || currentUser?.username}</p>
-                <p className="text-xs text-zinc-600 font-mono tracking-widest mt-1 font-medium">@{currentUser?.username}</p>
+            <DropdownMenuContent className="w-64 md:w-56 glass-panel rounded-none p-0 mr-2 md:mr-0" align="end">
+              <DropdownMenuLabel className="p-4 pb-3 md:pb-2">
+                <p className="text-xs md:text-xs font-black text-white uppercase tracking-tighter">{currentUser?.name || currentUser?.username}</p>
+                <p className="text-xs md:text-xs text-zinc-600 font-mono tracking-widest mt-1 font-medium">@{currentUser?.username}</p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-zinc-900 m-0" />
 
               {canManageTeam && (
-                <DropdownMenuItem onClick={onOpenTeamManagement} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs font-bold tracking-widest h-10 rounded-none px-4">
-                  <Users className="mr-3 h-3 w-3" /> Gerenciar Equipe
+                <DropdownMenuItem onClick={onOpenTeamManagement} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs font-bold tracking-widest h-12 md:h-10 rounded-none px-4 touch-target">
+                  <Users className="mr-3 h-4 w-4 md:h-3 md:w-3" /> Gerenciar Equipe
                 </DropdownMenuItem>
               )}
 
-              <DropdownMenuItem onClick={onOpenSettings} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs font-bold tracking-widest h-10 rounded-none px-4">
-                <Settings className="mr-3 h-3 w-3" /> Configurações
+              <DropdownMenuItem onClick={onOpenSettings} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs font-bold tracking-widest h-12 md:h-10 rounded-none px-4 touch-target">
+                <Settings className="mr-3 h-4 w-4 md:h-3 md:w-3" /> Configurações
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs font-bold tracking-widest h-10 rounded-none px-4">
-                <RotateCcw className="mr-3 h-3 w-3" /> Trocar Conta
+              <DropdownMenuItem onClick={handleSwitchUser} className="focus:bg-zinc-900 focus:text-white cursor-pointer uppercase text-xs font-bold tracking-widest h-12 md:h-10 rounded-none px-4 touch-target">
+                <RotateCcw className="mr-3 h-4 w-4 md:h-3 md:w-3" /> Trocar Conta
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-zinc-900 m-0" />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-900 focus:text-red-500 focus:bg-zinc-900 cursor-pointer uppercase text-xs font-bold tracking-widest h-10 rounded-none px-4">
-                <LogOut className="mr-3 h-3 w-3" /> Sair
+              <DropdownMenuItem onClick={handleLogout} className="text-red-900 focus:text-red-500 focus:bg-zinc-900 cursor-pointer uppercase text-xs font-bold tracking-widest h-12 md:h-10 rounded-none px-4 touch-target">
+                <LogOut className="mr-3 h-4 w-4 md:h-3 md:w-3" /> Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

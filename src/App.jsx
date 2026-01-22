@@ -488,7 +488,7 @@ function AppShell() {
       />
 
       <main className="flex-1 overflow-hidden relative">
-        <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-6 pb-20 md:pb-8 custom-scrollbar">
+        <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-4 md:pt-6 pb-20 md:pb-8 custom-scrollbar safe-area-pb">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentView + (currentProject?.id || '') + (currentSubProject?.id || '')}
