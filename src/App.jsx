@@ -324,17 +324,26 @@ function AppShell() {
     if (!drag) return;
 
     if (drag.type === 'task' && dropType === 'list') {
-      if (drag.fromListId === targetId) return;
+      if (drag.fromListId === targetId) {
+        dragTaskRef.current = null;
+        return;
+      }
       handleTaskAction('move', { taskId: drag.taskId, fromListId: drag.fromListId, toListId: targetId });
     } else if (drag.type === 'list' && dropType === 'list') {
       const lists = latestCurrentSubProject?.boardData?.[currentBoardType]?.lists || [];
       const toIndex = lists.findIndex(l => l.id === targetId);
-      if (drag.fromIndex === toIndex || toIndex === -1) return;
+      if (drag.fromIndex === toIndex || toIndex === -1) {
+        dragTaskRef.current = null;
+        return;
+      }
       handleTaskAction('reorderColumns', { fromIndex: drag.fromIndex, toIndex });
     } else if (drag.type === 'subproject' && dropType === 'subproject') {
       const subProjects = latestCurrentProject?.subProjects || [];
       const toIndex = subProjects.findIndex(sp => sp.id === targetId);
-      if (drag.fromIndex === toIndex || toIndex === -1) return;
+      if (drag.fromIndex === toIndex || toIndex === -1) {
+        dragTaskRef.current = null;
+        return;
+      }
       handleTaskAction('reorderSubProjects', { fromIndex: drag.fromIndex, toIndex });
     }
     dragTaskRef.current = null;
