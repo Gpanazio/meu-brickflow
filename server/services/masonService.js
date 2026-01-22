@@ -8,11 +8,24 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Validation - Check if API key is configured
-const isGeminiConfigured = Boolean(GEMINI_API_KEY && GEMINI_API_KEY.length > 10);
+// Gemini API keys follow the format: AIza[35 characters of alphanumeric, _, -]
+const GEMINI_API_KEY_PATTERN = /^AIza[0-9A-Za-z_-]{35}$/;
+const isGeminiConfigured = Boolean(
+    GEMINI_API_KEY &&
+    GEMINI_API_KEY.length === 39 &&
+    GEMINI_API_KEY_PATTERN.test(GEMINI_API_KEY)
+);
+
 if (!isGeminiConfigured) {
-    console.error('❌ ERRO CRÍTICO: GEMINI_API_KEY não configurada no arquivo .env');
+    if (!GEMINI_API_KEY) {
+        console.error('❌ ERRO CRÍTICO: GEMINI_API_KEY não configurada no arquivo .env');
+    } else {
+        console.error('❌ ERRO CRÍTICO: GEMINI_API_KEY tem formato inválido');
+        console.error('   Formato esperado: AIza[35 caracteres alfanuméricos]');
+        console.error(`   Tamanho recebido: ${GEMINI_API_KEY.length} caracteres (esperado: 39)`);
+    }
     console.error('   Mason AI não funcionará sem uma chave válida da API Gemini.');
-    console.error('   Configure GEMINI_API_KEY no arquivo .env para ativar o Mason.');
+    console.error('   Configure GEMINI_API_KEY corretamente no arquivo .env para ativar o Mason.');
 }
 
 // Constants
@@ -857,10 +870,18 @@ class MasonService {
             [JSON.stringify(data), nextVersion, STATE_DB_ID]
         );
 
-        eventService.publish(CHANNELS.PROJECT_UPDATED, {
-            version: nextVersion,
-            userId: userContext.userId || 'MasonAI'
-        });
+        // Publish event - wrapped in try-catch to prevent race condition issues
+        // If publish fails, we still want the database update to succeed
+        try {
+            eventService.publish(CHANNELS.PROJECT_UPDATED, {
+                version: nextVersion,
+                userId: userContext.userId || 'MasonAI'
+            });
+        } catch (publishError) {
+            // Log error but don't fail the entire operation
+            console.error('[Mason] Failed to publish PROJECT_UPDATED event:', publishError);
+            // Event will be eventually consistent when frontend polls/reconnects
+        }
 
         return resultMsg;
     }
