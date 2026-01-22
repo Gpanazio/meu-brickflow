@@ -61,8 +61,8 @@ function LegacyProjectView({
     return (
       <div className="space-y-6 animate-in fade-in duration-500 pb-20">
         <div className="flex items-center gap-4">
-          <MechButton 
-            onClick={() => setCurrentView('home')} 
+          <MechButton
+            onClick={() => setCurrentView('home')}
             icon={ArrowLeft}
             className="h-10 px-4"
           >
@@ -100,8 +100,8 @@ function LegacyProjectView({
       <div className="relative z-10 space-y-8">
         <div className="flex flex-col gap-6 border-b border-white/10 pb-6">
           <div className="flex justify-between items-center">
-            <MechButton 
-              onClick={() => setCurrentView('home')} 
+            <MechButton
+              onClick={() => setCurrentView('home')}
               icon={ArrowLeft}
               className="h-10 px-4"
             >
@@ -182,7 +182,7 @@ function LegacyProjectView({
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  key={sub.id} 
+                  key={sub.id}
                   draggable
                   onDragStart={(e) => {
                     handleDragStart(e, sub, 'subproject');
@@ -202,7 +202,12 @@ function LegacyProjectView({
                     setDraggingId(null);
                     setDragOverId(null);
                   }}
-                  onClick={() => handleAccessProject(sub, 'subproject')} 
+                  onClick={() => handleAccessProject(sub, 'subproject')}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setModalState({ type: 'subProject', mode: 'edit', isOpen: true, data: sub });
+                  }}
                   className={`group cursor-pointer glass-panel hover:bg-white/5 transition-all p-6 flex flex-col justify-between h-48 relative ${draggingId === sub.id ? 'opacity-40 grayscale' : ''} ${dragOverId === sub.id && draggingId !== sub.id ? 'border-red-600/50 bg-white/5' : ''}`}
                 >
                   <div className="flex justify-between items-start">
