@@ -917,18 +917,13 @@ class MasonService {
             [JSON.stringify(data), nextVersion, STATE_DB_ID]
         );
 
-        // Publish event - wrapped in try-catch to prevent race condition issues
-        // If publish fails, we still want the database update to succeed
-        try {
-            eventService.publish(CHANNELS.PROJECT_UPDATED, {
-                version: nextVersion,
-                userId: userContext.userId || 'MasonAI'
-            });
-        } catch (publishError) {
-            // Log error but don't fail the entire operation
-            console.error('[Mason] Failed to publish PROJECT_UPDATED event:', publishError);
-            // Event will be eventually consistent when frontend polls/reconnects
-        }
+        // Publish event - fire-and-forget (eventService has internal error handling)
+        // If publish fails, database update will still succeed
+        // Frontend will be eventually consistent when it polls/reconnects
+        eventService.publish(CHANNELS.PROJECT_UPDATED, {
+            version: nextVersion,
+            userId: userContext.userId || 'MasonAI'
+        });
 
         return result.message;
     }
