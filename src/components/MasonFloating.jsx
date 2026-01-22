@@ -17,9 +17,22 @@ const loadChatHistory = () => {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             const parsed = JSON.parse(stored);
-            // Validate that it's an array and has valid structure
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                return parsed;
+            // Validate that it's an array with valid message structure
+            if (
+                Array.isArray(parsed) &&
+                parsed.length > 0 &&
+                parsed.every(msg =>
+                    msg &&
+                    typeof msg.role === 'string' &&
+                    typeof msg.content === 'string' &&
+                    (msg.role === 'user' || msg.role === 'ai')
+                )
+            ) {
+                // Ensure all messages have IDs (for React keys)
+                return parsed.map(msg => ({
+                    ...msg,
+                    id: msg.id || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+                }));
             }
         }
     } catch (error) {
@@ -27,7 +40,12 @@ const loadChatHistory = () => {
     }
     // Return default welcome message if no valid history
     return [
-        { role: 'ai', content: '**SISTEMA ONLINE. PROTOCOLO 3.7 ATIVO.**\n\nSou Mason. Inteligência de produção autônoma.\n\nNão sou apenas um assistente. Eu **observo**, **analiso** e **executo**.\n\nDiga o que precisa. Ou deixe que eu identifique.', isInitial: true }
+        {
+            id: 'welcome-msg',
+            role: 'ai',
+            content: '**SISTEMA ONLINE. PROTOCOLO 3.7 ATIVO.**\n\nSou Mason. Inteligência de produção autônoma.\n\nNão sou apenas um assistente. Eu **observo**, **analiso** e **executo**.\n\nDiga o que precisa. Ou deixe que eu identifique.',
+            isInitial: true
+        }
     ];
 };
 
@@ -65,7 +83,11 @@ export default function MasonFloating({ clientContext }) {
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
 
-        const userMsg = { role: 'user', content: input };
+        const userMsg = {
+            id: `user-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            role: 'user',
+            content: input
+        };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setIsLoading(true);
@@ -95,10 +117,18 @@ export default function MasonFloating({ clientContext }) {
 
             if (data.error) throw new Error(data.error);
 
-            setMessages(prev => [...prev, { role: 'ai', content: data.response }]);
+            setMessages(prev => [...prev, {
+                id: `ai-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                role: 'ai',
+                content: data.response
+            }]);
         } catch (error) {
             console.error('Mason Error:', error);
-            setMessages(prev => [...prev, { role: 'ai', content: '**FALHA CRÍTICA DE SISTEMA.**\n\nConexão interrompida. Reiniciando protocolos...' }]);
+            setMessages(prev => [...prev, {
+                id: `error-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                role: 'ai',
+                content: '**FALHA CRÍTICA DE SISTEMA.**\n\nConexão interrompida. Reiniciando protocolos...'
+            }]);
         } finally {
             setIsLoading(false);
         }
@@ -209,8 +239,8 @@ export default function MasonFloating({ clientContext }) {
                                     aria-live="polite"
                                     aria-label="Histórico de conversa com Mason AI"
                                 >
-                                    {messages.map((msg, index) => (
-                                        <div key={index} className={cn("flex flex-col gap-1", msg.role === 'user' ? "items-end" : "items-start")}>
+                                    {messages.map((msg) => (
+                                        <div key={msg.id} className={cn("flex flex-col gap-1", msg.role === 'user' ? "items-end" : "items-start")}>
                                             <div className={cn(
                                                 "max-w-[85%] rounded px-3 py-2 text-xs font-mono leading-relaxed border",
                                                 msg.role === 'user'
