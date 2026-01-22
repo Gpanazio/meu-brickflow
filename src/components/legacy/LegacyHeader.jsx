@@ -1,19 +1,16 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logoImage from '../../assets/brickflowbranco.png';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '../ui/dropdown-menu';
 import { Separator } from '../ui/separator';
-import { RotateCcw, LogOut, Settings, Users, Activity, Bot } from 'lucide-react';
+import { RotateCcw, LogOut, Settings, Users, Activity } from 'lucide-react';
 import { Search } from '../Search';
 import MechButton from '../ui/MechButton';
-import StatusLED from '../ui/StatusLED';
 import { isAdmin } from '@/constants/permissions';
 
 function LegacyHeader({
-  currentView,
-  setCurrentView,
-  currentProject,
-  isSyncing,
   currentUser,
   handleSwitchUser,
   handleLogout,
@@ -21,13 +18,43 @@ function LegacyHeader({
   onOpenTeamManagement,
   onOpenBlackBox,
   onOpenMason,
-
-  projects,
-  onSearchNavigate,
-  isSearchOpen,
-  setIsSearchOpen
+  // Props from App.jsx that might still be useful, or we can ignore
+  currentProject: propCurrentProject
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const canManageTeam = isAdmin(currentUser?.username);
+
+  const [projects, setProjects] = useState([]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    // Fetch projects for search
+    fetch('/api/v2/projects')
+      .then(res => res.json())
+      .then(data => setProjects(data))
+      .catch(console.error);
+  }, []);
+
+  const handleSearchNavigate = (result) => {
+    if (result.type === 'Project') {
+      navigate(`/project/${result.id}`);
+    } else if (result.type === 'SubProject') {
+      // Need parent project ID. The search result usually contains it if the backend provides it.
+      // If not, we might be stuck. But let's assume result has parent info or we navigate to project first.
+      // For now, simple nav to project.
+      navigate(`/project/${result.parentProjectId}/area/${result.id}`);
+    }
+    setIsSearchOpen(false);
+  };
+
+  const isHome = location.pathname === '/';
+  const isProject = location.pathname.startsWith('/project/');
+
+  // Try to determine current project name from URL/projects list if prop is not passed
+  // Phase 4 Part 2: Improve Search result data structure to include full paths
+
+  const currentProjectName = propCurrentProject?.name || projects.find(p => location.pathname.includes(p.id))?.name;
 
   return (
     <header className="sticky top-0 z-50 w-full glass-header safe-area-pt">
@@ -38,7 +65,7 @@ function LegacyHeader({
         <div className="flex items-center gap-4 md:gap-8">
           {/* Logo */}
           <div
-            onClick={() => setCurrentView('home')}
+            onClick={() => navigate('/')}
             className="cursor-pointer hover:opacity-80 transition-opacity touch-feedback"
             role="button"
             tabIndex={0}
@@ -52,21 +79,21 @@ function LegacyHeader({
           {/* Navegação Primária */}
           <nav className="hidden md:flex items-center gap-4">
             <MechButton
-              className={`h-8 px-4 ${currentView === 'home' ? 'text-white border-zinc-600 bg-white/5' : ''}`}
-              onClick={() => setCurrentView('home')}
+              className={`h-8 px-4 ${isHome ? 'text-white border-zinc-600 bg-white/5' : ''}`}
+              onClick={() => navigate('/')}
             >
               Central
             </MechButton>
 
             {/* Breadcrumb de Projeto */}
-            {currentProject && (
+            {isProject && currentProjectName && (
               <>
                 <span className="brick-tech text-zinc-800">/</span>
                 <MechButton
-                  className={`h-8 px-4 ${currentView === 'project' ? 'text-white border-zinc-600 bg-white/5' : ''}`}
-                  onClick={() => setCurrentView('project')}
+                  className={`h-8 px-4 ${isProject ? 'text-white border-zinc-600 bg-white/5' : ''}`}
+                  onClick={() => { /* Navigate to project root if in subproject */ }}
                 >
-                  {currentProject.name}
+                  {currentProjectName}
                 </MechButton>
               </>
             )}
@@ -76,7 +103,7 @@ function LegacyHeader({
         {/* LADO DIREITO - AVATAR DE VOLTA */}
         <div className="flex items-center gap-2 md:gap-3 lg:gap-6">
           <div className="hidden md:block">
-            <Search projects={projects} onNavigate={onSearchNavigate} />
+            <Search projects={projects} onNavigate={handleSearchNavigate} />
           </div>
 
           <MechButton
@@ -87,19 +114,15 @@ function LegacyHeader({
             LOGS
           </MechButton>
 
-
-
           {/* Search Trigger oculto mas funcional via props para o MobileTabBar abrir o Command Palette */}
           <div className="md:hidden h-0 w-0 overflow-hidden">
             <Search
               projects={projects}
-              onNavigate={onSearchNavigate}
+              onNavigate={handleSearchNavigate}
               open={isSearchOpen}
               setOpen={setIsSearchOpen}
             />
           </div>
-
-          {isSyncing && <StatusLED color="red" size="sm" />}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

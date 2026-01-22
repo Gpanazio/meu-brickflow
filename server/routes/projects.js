@@ -2,6 +2,7 @@ import express from 'express';
 import { query, getClient } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { writeLimiter, apiLimiter } from '../middleware/rateLimit.js';
+import { userService } from '../services/userService.js';
 import { SaveProjectSchema, VerifyProjectPasswordSchema } from '../utils/schemas.js';
 
 import { normalizeStateData } from '../utils/helpers.js';
@@ -17,22 +18,54 @@ const CACHE_TTL = 60000;
 router.get('/', requireAuth, async (req, res) => {
   try {
     const now = Date.now();
+
+    // Invalidate cache if older than TTL
+    // NOTE: We might want to be more aggressive with cache invalidation for users, 
+    // but for now 60s is fine as userService has its own cache.
+    // However, if we want real-time user updates, we should fetch users every time 
+    // or rely on the frontend to fetch /api/users independently.
+    // For this "quick fix" maintaining the "monolith" structure, we will inject 
+    // the users into the response.
+
+    let stateResult = null;
+
     if (stateCache && (now - stateCacheTime < CACHE_TTL)) {
-      return res.json(stateCache);
+      stateResult = { ...stateCache };
+    } else {
+      const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
+      if (rows.length > 0) {
+        const data = normalizeStateData(rows[0].data);
+        if (data.projects) {
+          data.projects = data.projects.map(p => ({ ...p, password: p.password ? '****' : '' }));
+        }
+        stateResult = { ...data, version: rows[0].version };
+
+        // Update Internal Cache
+        stateCache = stateResult;
+        stateCacheTime = now;
+      }
     }
 
-    const { rows } = await query('SELECT data, version FROM brickflow_state WHERE id = 1');
-    if (rows.length > 0) {
-      const data = normalizeStateData(rows[0].data);
-      if (data.projects) {
-        data.projects = data.projects.map(p => ({ ...p, password: p.password ? '****' : '' }));
+    if (stateResult) {
+      // --- CRITICAL FIX: INJECT USERS FROM DB ---
+      // The 'users' array in the JSON state is deprecated/unreliable.
+      // We overwrite it with the actual users from master_users table.
+      try {
+        const dbUsers = await userService.getAll();
+        // Map to ensure format compatibility if needed, though userService returns compatible structure
+        stateResult.users = dbUsers.map(u => ({
+          id: u.id,
+          username: u.username,
+          name: u.displayName || u.name, // Ensure displayName is present
+          avatar: u.avatar,
+          color: u.color
+        }));
+      } catch (userErr) {
+        console.error('Failed to inject DB users into state:', userErr);
+        // Fallback to existing state users if DB fetch fails (graceful degradation)
       }
-      const result = { ...data, version: rows[0].version };
 
-      stateCache = result;
-      stateCacheTime = now;
-
-      res.json(result);
+      res.json(stateResult);
     } else {
       res.json(null);
     }

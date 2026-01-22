@@ -11,6 +11,7 @@ import { apiLimiter } from './middleware/rateLimit.js';
 import { setupRoutes } from './routes/index.js';
 import { isProd, getDistPath } from './utils/helpers.js';
 import { setupWebSocket } from './services/websocketService.js';
+import apiV2Router from './routes/api_v2.js'; // V2 API
 import http from 'http';
 
 const app = express();
@@ -83,6 +84,9 @@ app.use('/api/', apiLimiter);
 
 // Setup centralized routes with multi-camada health check
 await setupRoutes(app);
+
+// API v2 (Relational)
+app.use('/api/v2', apiV2Router);
 
 // Setup WebSocket
 setupWebSocket(server);
