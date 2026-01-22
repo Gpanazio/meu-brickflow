@@ -266,7 +266,10 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
                             </div>
 
                             {/* Chat Area */}
-                            <ScrollArea className="flex-1 p-4 z-10">
+                            <ScrollArea
+                                className="flex-1 p-4 z-10"
+                                onPointerDownCapture={(e) => e.stopPropagation()}
+                            >
                                 <div
                                     className="flex flex-col gap-4 pb-4"
                                     role="log"
