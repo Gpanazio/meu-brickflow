@@ -635,10 +635,26 @@ function AppShell() {
         />
 
         <CreateSubProjectModal
-          isOpen={modalState.isOpen && modalState.type === 'subProject' && modalState.mode === 'create'}
+          isOpen={modalState.isOpen && modalState.type === 'subProject' && (modalState.mode === 'create' || modalState.mode === 'edit')}
           onClose={() => setModalState({ isOpen: false })}
+          mode={modalState.mode}
+          initialData={modalState.data}
           onCreate={(data) => {
-            updateProjects(prev => prev.map(p => p.id === currentProject.id ? { ...p, subProjects: [...(p.subProjects || []), { id: generateId('sub'), ...data }] } : p));
+            if (modalState.mode === 'edit') {
+              // Atualizar subprojeto existente
+              updateProjects(prev => prev.map(p => {
+                if (p.id !== currentProject.id) return p;
+                return {
+                  ...p,
+                  subProjects: (p.subProjects || []).map(sp =>
+                    sp.id === modalState.data.id ? { ...sp, ...data } : sp
+                  )
+                };
+              }));
+            } else {
+              // Criar novo subprojeto
+              updateProjects(prev => prev.map(p => p.id === currentProject.id ? { ...p, subProjects: [...(p.subProjects || []), { id: generateId('sub'), ...data }] } : p));
+            }
           }}
         />
 

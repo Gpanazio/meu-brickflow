@@ -1,12 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Lock, ArrowRight, FolderOpen } from 'lucide-react';
+import { Lock, ArrowRight, FolderOpen, MoreVertical } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import PrismaticPanel from '@/components/ui/PrismaticPanel';
 import StatusLED from '@/components/ui/StatusLED';
 import { cn } from '@/lib/utils';
 
-export default function ProjectCard({ project, onSelect, className, ...props }) {
-  
+export default function ProjectCard({ project, onSelect, onEdit, onDelete, className, ...props }) {
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -35,15 +37,45 @@ export default function ProjectCard({ project, onSelect, className, ...props }) 
       {...props}
     >
       {/* Header */}
-      <div className="flex justify-between items-start z-10 pointer-events-none">
-        <StatusLED color={project.color || 'zinc'} size="md" />
+      <div className="flex justify-between items-start z-10">
+        <StatusLED color={project.color || 'zinc'} size="md" className="pointer-events-none" />
 
-        {project.isProtected && (
-          <div className="flex items-center gap-2 bg-black/40 px-2 py-1 border border-zinc-800 rounded-sm">
-            <Lock className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="brick-mono text-[11px] text-zinc-400 uppercase tracking-widest font-bold">LOCKED</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {project.isProtected && (
+            <div className="flex items-center gap-2 bg-black/40 px-2 py-1 border border-zinc-800 rounded-sm pointer-events-none">
+              <Lock className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="brick-mono text-[11px] text-zinc-400 uppercase tracking-widest font-bold">LOCKED</span>
+            </div>
+          )}
+
+          {(onEdit || onDelete) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-white rounded-none pointer-events-auto">
+                  <MoreVertical className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="glass-panel rounded-none">
+                {onEdit && (
+                  <DropdownMenuItem
+                    onClick={e => { e.stopPropagation(); onEdit(project); }}
+                    className="text-[10px] uppercase tracking-widest h-8 cursor-pointer text-zinc-400 hover:text-white hover:bg-white/10"
+                  >
+                    Editar
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem
+                    onClick={e => { e.stopPropagation(); onDelete(project); }}
+                    className="text-red-900 focus:text-red-600 focus:bg-white/10 text-[10px] uppercase tracking-widest h-8 cursor-pointer glitch-hover"
+                  >
+                    Excluir
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* Body */}
@@ -85,5 +117,7 @@ ProjectCard.propTypes = {
     subProjects: PropTypes.array,
   }).isRequired,
   onSelect: PropTypes.func.isRequired,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
   className: PropTypes.string,
 };

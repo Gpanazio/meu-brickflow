@@ -175,80 +175,82 @@ function LegacyHome({
             </MechButton>
           </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-             {isLoading ? (
-               // Skeletons de Carregamento
-               Array.from({ length: 6 }).map((_, i) => (
-                 <div key={i} className="h-64 glass-panel p-8 flex flex-col justify-between overflow-hidden">
-                   <div className="flex justify-between items-start">
-                     <Skeleton className="w-4 h-4 rounded-full" />
-                     <Skeleton className="w-4 h-8" />
-                   </div>
-                   <div className="space-y-4">
-                     <Skeleton className="h-10 w-3/4" />
-                     <Skeleton className="h-4 w-full" />
-                     <Skeleton className="h-4 w-5/6" />
-                   </div>
-                   <div className="flex justify-between items-end border-t border-white/5 pt-4">
-                     <Skeleton className="h-3 w-20" />
-                     <Skeleton className="h-3 w-16" />
-                   </div>
-                 </div>
-               ))
-             ) : (
-               activeProjects.map(project => (
-                 <ProjectCard
-                   key={project.id}
-                   project={project}
-                   draggable={true}
-                   onDragStart={(e) => handleDragStart && handleDragStart(e, project, 'project')}
-                   onDragOver={handleDragOver}
-                   onDrop={(e) => handleDrop && handleDrop(e, project.id, 'project')}
-                   onContextMenu={(e) => {
-                     e.preventDefault();
-                     setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project });
-                   }}
-                   onSelect={async (p) => {
-                     if (p.isProtected) {
-                       const password = prompt('Este projeto é protegido. Digite a senha:');
-                       if (!password) return;
-                       try {
-                         const res = await fetch('/api/projects/verify-password', {
-                           method: 'POST',
-                           headers: { 'Content-Type': 'application/json' },
-                           body: JSON.stringify({ projectId: p.id, password })
-                         });
-                         if (res.ok) {
-                           handleAccessProject(p);
-                         } else {
-                           alert('Senha incorreta.');
-                         }
-                       } catch {
-                         alert('Erro ao verificar senha.');
-                       }
-                     } else {
-                       handleAccessProject(p);
-                     }
-                   }}
-                 />
-               ))
-             )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {isLoading ? (
+              // Skeletons de Carregamento
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-64 glass-panel p-8 flex flex-col justify-between overflow-hidden">
+                  <div className="flex justify-between items-start">
+                    <Skeleton className="w-4 h-4 rounded-full" />
+                    <Skeleton className="w-4 h-8" />
+                  </div>
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                  </div>
+                  <div className="flex justify-between items-end border-t border-white/5 pt-4">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              ))
+            ) : (
+              activeProjects.map(project => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  draggable={true}
+                  onDragStart={(e) => handleDragStart && handleDragStart(e, project, 'project')}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop && handleDrop(e, project.id, 'project')}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setModalState({ type: 'project', mode: 'edit', isOpen: true, data: project });
+                  }}
+                  onEdit={(p) => setModalState({ type: 'project', mode: 'edit', isOpen: true, data: p })}
+                  onDelete={(p) => handleDeleteProject(p)}
+                  onSelect={async (p) => {
+                    if (p.isProtected) {
+                      const password = prompt('Este projeto é protegido. Digite a senha:');
+                      if (!password) return;
+                      try {
+                        const res = await fetch('/api/projects/verify-password', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ projectId: p.id, password })
+                        });
+                        if (res.ok) {
+                          handleAccessProject(p);
+                        } else {
+                          alert('Senha incorreta.');
+                        }
+                      } catch {
+                        alert('Erro ao verificar senha.');
+                      }
+                    } else {
+                      handleAccessProject(p);
+                    }
+                  }}
+                />
+              ))
+            )}
 
-             {/* Card de Adicionar Projeto (Mantido igual) */}
-             {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
-               <PrismaticPanel
-                 hoverEffect
-                 onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-                 className="h-64 border-dashed border-zinc-800 hover:border-zinc-600"
-                 contentClassName="flex flex-col items-center justify-center gap-4"
-               >
-                 <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
-                   <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
-                 </div>
-                 <span className="brick-mono text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">NOVO PROJETO</span>
-               </PrismaticPanel>
-             )}
-           </div>
+            {/* Card de Adicionar Projeto (Mantido igual) */}
+            {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
+              <PrismaticPanel
+                hoverEffect
+                onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
+                className="h-64 border-dashed border-zinc-800 hover:border-zinc-600"
+                contentClassName="flex flex-col items-center justify-center gap-4"
+              >
+                <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
+                  <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
+                </div>
+                <span className="brick-mono text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">NOVO PROJETO</span>
+              </PrismaticPanel>
+            )}
+          </div>
         </div>
       </div>
     </div>
