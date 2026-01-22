@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { AppProvider } from './contexts/AppContext';
 import { useUsers } from './hooks/useUsers';
@@ -26,6 +26,35 @@ function AppShell() {
 
   const [isMasonOpen, setIsMasonOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Derive Mason context from URL
+  const masonContext = useMemo(() => {
+    const path = location.pathname;
+    const context = {
+      user: currentUser?.name || 'User',
+      view: 'home',
+      projectId: null,
+      projectName: null,
+      subProjectId: null,
+      subProjectName: null
+    };
+
+    // Parse URL to determine view
+    const projectMatch = path.match(/^\/project\/([^/]+)/);
+    const areaMatch = path.match(/^\/project\/([^/]+)\/area\/([^/]+)/);
+
+    if (areaMatch) {
+      context.view = 'subproject';
+      context.projectId = areaMatch[1];
+      context.subProjectId = areaMatch[2];
+    } else if (projectMatch) {
+      context.view = 'project';
+      context.projectId = projectMatch[1];
+    }
+
+    return context;
+  }, [location.pathname, currentUser?.name]);
 
   // Simple Auth Wall
   if (isAuthLoading) {
@@ -77,7 +106,7 @@ function AppShell() {
         </div>
       </main>
 
-      <MasonFloating clientContext={{ user: currentUser?.name }} />
+      <MasonFloating clientContext={masonContext} />
       <Toaster />
     </div>
   );
