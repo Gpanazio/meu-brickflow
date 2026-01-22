@@ -718,11 +718,10 @@ class MasonService {
 
         // Save
         const nextVersion = version + 1;
-        const nextState = { ...data, version: nextVersion };
 
         await client.query(
             'UPDATE brickflow_state SET data = $1, version = $2, updated_at = NOW() WHERE id = $3',
-            [JSON.stringify(nextState), nextVersion, STATE_DB_ID]
+            [JSON.stringify(data), nextVersion, STATE_DB_ID]
         );
 
         eventService.publish(CHANNELS.PROJECT_UPDATED, {
