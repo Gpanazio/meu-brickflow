@@ -21,6 +21,12 @@ const STATE_DB_ID = 1;
 const MAX_ITERATIONS = 5; // Prevent infinite loops in function calling
 const MAX_TOOL_CALLS_PER_ITERATION = 8; // Limit tools per iteration
 
+// Input validation limits (DoS protection)
+const MAX_MESSAGE_LENGTH = 10000; // 10k characters for user messages
+const MAX_TITLE_LENGTH = 500; // 500 characters for task/project titles
+const MAX_DESCRIPTION_LENGTH = 5000; // 5k characters for descriptions
+const MAX_NAME_LENGTH = 200; // 200 characters for names
+
 // System Prompt
 const SYSTEM_INSTRUCTION = `
 You are Mason, the autonomous production intelligence of BrickFlow.
@@ -204,7 +210,43 @@ REMEMBER: You are Mason. You don't serve. You optimize. You don't wait. You exec
 `;
 
 // Helper to generate IDs (simple version matching frontend pattern approx)
-const generateId = (prefix = 'id') => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const generateId = (prefix = 'id') => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
+// Helper to find project with exact match first, then fuzzy
+const findProject = (projects, projectName) => {
+    // Try exact match first (case-insensitive)
+    const exactMatch = projects.find(p => p.name.toLowerCase() === projectName.toLowerCase());
+    if (exactMatch) return exactMatch;
+
+    // Try fuzzy match
+    const fuzzyMatches = projects.filter(p => p.name.toLowerCase().includes(projectName.toLowerCase()));
+
+    if (fuzzyMatches.length === 0) {
+        return null;
+    }
+
+    if (fuzzyMatches.length > 1) {
+        // Multiple matches - return error object
+        return {
+            ambiguous: true,
+            matches: fuzzyMatches.map(p => p.name)
+        };
+    }
+
+    return fuzzyMatches[0];
+};
+
+// Helper to validate input sizes (DoS protection)
+const validateInputSize = (value, fieldName, maxLength) => {
+    if (!value) return null; // Empty is ok
+    if (typeof value !== 'string') {
+        return `${fieldName} deve ser uma string`;
+    }
+    if (value.length > maxLength) {
+        return `${fieldName} muito longo (${value.length} caracteres). Limite: ${maxLength} caracteres.`;
+    }
+    return null;
+};
 
 // DB Helpers
 async function getProjectState(client = null) {
@@ -339,6 +381,15 @@ class MasonService {
         if (!isGeminiConfigured) {
             console.error('[Mason] GEMINI_API_KEY não configurada');
             return "**ERRO DE CONFIGURAÇÃO.**\n\nGEMINI_API_KEY não configurada no ambiente.\n\nMason AI requer uma chave válida da API Gemini para funcionar.\nConfigure a variável `GEMINI_API_KEY` no arquivo `.env` e reinicie o servidor.";
+        }
+
+        // Validate message length (DoS protection)
+        if (!message || typeof message !== 'string') {
+            return "**ERRO DE VALIDAÇÃO.**\n\nMensagem inválida.";
+        }
+
+        if (message.length > MAX_MESSAGE_LENGTH) {
+            return `**ERRO DE VALIDAÇÃO.**\n\nMensagem muito longa (${message.length} caracteres). Limite: ${MAX_MESSAGE_LENGTH} caracteres.`;
         }
 
         // Inject Client Context if available - Make Mason AWARE and PROACTIVE
@@ -563,7 +614,10 @@ class MasonService {
             if (args.projectId) {
                 project = state.data.projects.find(p => p.id === args.projectId);
             } else if (args.projectName) {
-                project = state.data.projects.find(p => p.name.toLowerCase().includes(args.projectName.toLowerCase()));
+                project = findProject(state.data.projects, args.projectName);
+                if (project && project.ambiguous) {
+                    return `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.`;
+                }
             }
 
             if (!project) return "Projeto não localizado nos registros. Verifique o identificador.";
@@ -609,6 +663,13 @@ class MasonService {
         let resultMsg = "";
 
         if (toolName === 'create_project') {
+            // Validate input sizes
+            const nameError = validateInputSize(args.name, 'Nome do projeto', MAX_NAME_LENGTH);
+            if (nameError) return `ERRO: ${nameError}`;
+
+            const descError = validateInputSize(args.description, 'Descrição do projeto', MAX_DESCRIPTION_LENGTH);
+            if (descError) return `ERRO: ${descError}`;
+
             const newProjectId = generateId('proj');
             const newProject = {
                 id: newProjectId,
@@ -646,8 +707,18 @@ class MasonService {
         }
 
         if (toolName === 'create_subproject') {
-            const project = data.projects.find(p => p.name.toLowerCase().includes(args.projectName.toLowerCase()));
+            // Validate input sizes
+            const nameError = validateInputSize(args.name, 'Nome da área', MAX_NAME_LENGTH);
+            if (nameError) return `ERRO: ${nameError}`;
+
+            const descError = validateInputSize(args.description, 'Descrição da área', MAX_DESCRIPTION_LENGTH);
+            if (descError) return `ERRO: ${descError}`;
+
+            const project = findProject(data.projects, args.projectName);
             if (!project) return `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.`;
+            if (project.ambiguous) {
+                return `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.`;
+            }
 
             const newSubId = generateId('sub');
             const newSubProject = {
@@ -671,8 +742,18 @@ class MasonService {
         }
 
         if (toolName === 'create_task') {
-            const project = data.projects.find(p => p.name.toLowerCase().includes(args.projectName.toLowerCase()));
+            // Validate input sizes
+            const titleError = validateInputSize(args.title, 'Título da tarefa', MAX_TITLE_LENGTH);
+            if (titleError) return `ERRO: ${titleError}`;
+
+            const descError = validateInputSize(args.description, 'Descrição da tarefa', MAX_DESCRIPTION_LENGTH);
+            if (descError) return `ERRO: ${descError}`;
+
+            const project = findProject(data.projects, args.projectName);
             if (!project) return `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.`;
+            if (project.ambiguous) {
+                return `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.`;
+            }
 
             let subProject = args.subProjectName
                 ? project.subProjects.find(sp => sp.name.toLowerCase().includes(args.subProjectName.toLowerCase()))
@@ -727,6 +808,17 @@ class MasonService {
         };
 
         if (toolName === 'update_task') {
+            // Validate input sizes
+            if (args.title) {
+                const titleError = validateInputSize(args.title, 'Título da tarefa', MAX_TITLE_LENGTH);
+                if (titleError) return `ERRO: ${titleError}`;
+            }
+
+            if (args.description) {
+                const descError = validateInputSize(args.description, 'Descrição da tarefa', MAX_DESCRIPTION_LENGTH);
+                if (descError) return `ERRO: ${descError}`;
+            }
+
             const found = findAllTask(args.taskId);
             if (!found) return `ERRO: Tarefa não localizada nos sistemas.`;
 

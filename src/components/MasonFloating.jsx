@@ -3,6 +3,7 @@ import { Send, Minimize2, Maximize2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -159,9 +160,12 @@ export default function MasonFloating({ clientContext }) {
                                                     : "bg-red-950/10 border-red-900/20 text-red-100 rounded-bl-none shadow-[0_0_15px_rgba(220,38,38,0.05)]"
                                             )}>
                                                 <div className="prose prose-invert prose-xs max-w-none prose-p:mb-2 prose-p:last:mb-0 prose-strong:text-red-400">
-                                                    <ReactMarkdown components={{
-                                                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />
-                                                    }}>
+                                                    <ReactMarkdown
+                                                        rehypePlugins={[rehypeSanitize]}
+                                                        components={{
+                                                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />
+                                                        }}
+                                                    >
                                                         {msg.content}
                                                     </ReactMarkdown>
                                                 </div>

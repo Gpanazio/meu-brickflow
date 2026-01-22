@@ -18,7 +18,7 @@ router.post('/chat', requireAuth, apiLimiter, async (req, res) => {
         const response = await masonService.processMessage(
             history || [],
             message,
-            { userId: req.user.username, ...clientContext } // Merge clientContext into userContext
+            { ...clientContext, userId: req.user.username } // Merge clientContext, but userId cannot be overridden
         );
 
         res.json({ response });
