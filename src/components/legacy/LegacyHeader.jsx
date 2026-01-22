@@ -91,7 +91,14 @@ function LegacyHeader({
                 <span className="brick-tech text-zinc-800">/</span>
                 <MechButton
                   className={`h-8 px-4 ${isProject ? 'text-white border-zinc-600 bg-white/5' : ''}`}
-                  onClick={() => { /* Navigate to project root if in subproject */ }}
+                  onClick={() => {
+                    // Try to get project ID from URL
+                    const grid = location.pathname.split('/');
+                    // URL format: /project/:projectId/...
+                    if (grid[1] === 'project' && grid[2]) {
+                      navigate(`/project/${grid[2]}`);
+                    }
+                  }}
                 >
                   {currentProjectName}
                 </MechButton>
