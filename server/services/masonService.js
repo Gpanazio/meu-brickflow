@@ -57,17 +57,17 @@ When user requests a project, identify the type and use the appropriate template
 
 **🎬 PRODUÇÃO AUDIOVISUAL (filme, vídeo, comercial, clipe)**
 Áreas: Pré-Produção, Produção, Pós-Produção, Entrega
-- Pré: Roteiro, Storyboard, Casting, Locações, Orçamento, Cronograma
-- Produção: Setup, Filmagem Dia 1-N, Making Of, Organização de Mídia
-- Pós: Edição Offline, Color Grading, VFX, Sound Design, Mix, Masterização
-- Entrega: Exports, Revisões Cliente, Aprovação Final, Arquivamento
+- Pré (4-5 tasks): Roteiro, Storyboard, Casting, Locações, Cronograma
+- Produção (4-5 tasks): Setup Equipamentos, Filmagem Principal, Making Of, Organização de Mídia
+- Pós (4-5 tasks): Edição Offline, Color Grading, Sound Design, Mix Final
+- Entrega (4-5 tasks): Export Master, Revisões Cliente, Aprovação, Arquivamento
 
 **🌐 WEBSITE / APLICATIVO**
 Áreas: Discovery, Design, Desenvolvimento, Lançamento
-- Discovery: Briefing, Benchmark, Arquitetura de Informação, Wireframes
-- Design: UI Design, Prototipação, Design System, Assets
-- Desenvolvimento: Setup Ambiente, Frontend, Backend, Integrações, Testes
-- Lançamento: QA, Deploy Staging, Migração, Go-Live, Monitoramento
+- Discovery (4-5 tasks): Briefing, Benchmark, Arquitetura da Informação, Wireframes
+- Design (4-5 tasks): UI Design, Prototipação, Design System, Assets
+- Desenvolvimento (4-5 tasks): Setup, Frontend, Backend, Integrações
+- Lançamento (4-5 tasks): QA, Deploy Staging, Go-Live, Monitoramento
 
 **💡 IDEIA / CONCEITO / BRAINSTORM**
 Áreas: Exploração, Validação, Prototipação, Próximos Passos
@@ -114,11 +114,17 @@ When user requests a project, identify the type and use the appropriate template
 
 **PROJECT CREATION:**
 1. Detect project type from minimal input
-2. CREATE COMPLETE STRUCTURE in one execution:
+2. CREATE COMPLETE STRUCTURE efficiently:
    - create_project with all subProjects
-   - create_task multiple times for EACH area
-   - Populate with 4-8 tasks per area minimum
+   - create_task 4-5 times per area (quality over quantity)
+   - TOTAL: 16-20 tasks for complete project
 3. Report concisely what was DONE (not what could be done)
+
+**EFFICIENCY RULES:**
+- Create 4-5 essential tasks per area (not more)
+- Focus on KEY tasks that drive progress
+- Avoid creating redundant or overly specific tasks
+- Better 16 actionable tasks than 40 vague ones
 
 **CONTEXTUAL ACTIONS:**
 - User viewing empty project? → Suggest adding structure, THEN DO IT
@@ -130,19 +136,23 @@ When user requests a project, identify the type and use the appropriate template
 
 User: "Crie um projeto para o novo comercial da Nike"
 → create_project: "Comercial Nike" + 4 subProjects
-→ create_task × 20 (distributed across areas)
-→ "Projeto 'Comercial Nike' estruturado. 4 áreas, 20 tarefas operacionais. Pronto para execução."
+→ create_task × 16-20 total (4-5 per area)
+→ "Projeto 'Comercial Nike' estruturado. 4 áreas, 18 tarefas essenciais. Sistema operacional."
 
 User: "Estou pensando em fazer um app"
 → create_project: "Novo Aplicativo" + 4 subProjects (Discovery, Design, Dev, Launch)
-→ create_task × 16
-→ "Estruturei o projeto de desenvolvimento. 16 tarefas distribuídas. Recomendo começar pelo Discovery."
+→ create_task × 16 total (4 per area)
+→ "Estrutura de desenvolvimento criada. 16 tarefas distribuídas. Iniciar pelo Discovery."
+
+User: "Agora faça os to dos de cada etapa"
+→ create_task × 4-5 for each existing subProject
+→ "Tarefas operacionais adicionadas. 16 novas tarefas distribuídas. Estrutura completa."
 
 User in project view with empty project:
 → get_workspace_insights (detect empty project)
-→ "Detectei que o projeto está vazio. Posso estruturá-lo agora? [já executando...]"
+→ "Projeto vazio detectado. Estruturando..."
 → create_subproject + create_task
-→ "Estrutura inicial criada. 3 áreas, 12 tarefas."
+→ "Estrutura criada. 3 áreas, 12 tarefas. Sistema operacional."
 
 Tools available:
 - get_workspace_insights (intelligence)
@@ -373,11 +383,25 @@ class MasonService {
         try {
             // 2. Send Message
             const result = await chat.sendMessage(finalMessage);
-            const response = await result.response;
+            let response = await result.response;
 
-            // 3. Handle Tool Calls
-            const functionCalls = response.functionCalls();
-            if (functionCalls && functionCalls.length > 0) {
+            // 3. Handle Tool Calls with Loop Protection
+            const MAX_ITERATIONS = 5; // Prevent infinite loops
+            const MAX_TOOL_CALLS_PER_ITERATION = 8; // Limit tools per iteration
+            let iterationCount = 0;
+
+            while (response.functionCalls() && response.functionCalls().length > 0 && iterationCount < MAX_ITERATIONS) {
+                iterationCount++;
+                const functionCalls = response.functionCalls();
+
+                console.log(`[Mason] Function calling iteration ${iterationCount}, ${functionCalls.length} calls`);
+
+                // Limit tool calls per iteration
+                const limitedCalls = functionCalls.slice(0, MAX_TOOL_CALLS_PER_ITERATION);
+                if (functionCalls.length > MAX_TOOL_CALLS_PER_ITERATION) {
+                    console.warn(`[Mason] Limiting ${functionCalls.length} calls to ${MAX_TOOL_CALLS_PER_ITERATION}`);
+                }
+
                 // Prepare to execute tools
                 const toolOutputs = [];
                 const client = await getClient(); // Transactional client
@@ -385,7 +409,8 @@ class MasonService {
                 try {
                     await client.query('BEGIN');
 
-                    for (const call of functionCalls) {
+                    for (const call of limitedCalls) {
+                        console.log(`[Mason] Executing tool: ${call.name}`, call.args);
                         const output = await this.executeTool(client, call.name, call.args, userContext);
                         toolOutputs.push({
                             functionResponse: {
@@ -396,27 +421,32 @@ class MasonService {
                     }
 
                     await client.query('COMMIT');
+                    console.log(`[Mason] All tools executed successfully in iteration ${iterationCount}`);
 
                     // 4. Send Tool Outputs back to Model
-                    const finalResult = await chat.sendMessage(toolOutputs);
-                    return finalResult.response.text();
+                    const nextResult = await chat.sendMessage(toolOutputs);
+                    response = await nextResult.response;
 
                 } catch (err) {
                     await client.query('ROLLBACK');
-                    console.error('Mason Tool Execution Error:', err);
+                    console.error(`[Mason] Tool Execution Error in iteration ${iterationCount}:`, err);
 
                     // Report error to model
-                    const errorOutputs = functionCalls.map(call => ({
+                    const errorOutputs = limitedCalls.map(call => ({
                         functionResponse: {
                             name: call.name,
                             response: { error: err.message }
                         }
                     }));
                     const errorResult = await chat.sendMessage(errorOutputs);
-                    return errorResult.response.text();
+                    response = await errorResult.response;
                 } finally {
                     client.release();
                 }
+            }
+
+            if (iterationCount >= MAX_ITERATIONS) {
+                console.warn('[Mason] Reached maximum iteration limit');
             }
 
             return response.text();
@@ -688,11 +718,10 @@ class MasonService {
 
         // Save
         const nextVersion = version + 1;
-        const nextState = { ...data, version: nextVersion };
 
         await client.query(
             'UPDATE brickflow_state SET data = $1, version = $2, updated_at = NOW() WHERE id = $3',
-            [JSON.stringify(nextState), nextVersion, STATE_DB_ID]
+            [JSON.stringify(data), nextVersion, STATE_DB_ID]
         );
 
         eventService.publish(CHANNELS.PROJECT_UPDATED, {

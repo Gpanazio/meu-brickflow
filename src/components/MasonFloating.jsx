@@ -172,11 +172,16 @@ export default function MasonFloating({ clientContext }) {
                                         </div>
                                     ))}
                                     {isLoading && (
-                                        <div className="flex items-center gap-2 text-red-500/50 text-[10px] font-mono tracking-widest animate-pulse ml-1">
-                                            <span>COMPUTING</span>
-                                            <span className="animate-bounce">.</span>
-                                            <span className="animate-bounce delay-100">.</span>
-                                            <span className="animate-bounce delay-200">.</span>
+                                        <div className="flex flex-col gap-2 ml-1">
+                                            <div className="flex items-center gap-2 text-red-500/50 text-[10px] font-mono tracking-widest animate-pulse">
+                                                <span>COMPUTING</span>
+                                                <span className="animate-bounce">.</span>
+                                                <span className="animate-bounce delay-100">.</span>
+                                                <span className="animate-bounce delay-200">.</span>
+                                            </div>
+                                            <div className="text-[9px] text-zinc-600 font-mono">
+                                                Executando protocolos de estruturação...
+                                            </div>
                                         </div>
                                     )}
                                     <div ref={scrollRef} />
