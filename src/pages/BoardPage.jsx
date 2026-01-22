@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { useRealtime } from '../hooks/useRealtime';
 import LegacyBoard from '../components/legacy/LegacyBoard';
 import { Loader2 } from 'lucide-react';
 import { useFiles } from '../hooks/useFiles'; // Assuming we still use this for files/folders
@@ -13,30 +14,61 @@ export default function BoardPage() {
     // TODO: Fetch Project as well for context if needed by legacy hooks
     const [projectContext, setProjectContext] = useState(null);
 
-    useEffect(() => {
-        Promise.all([
-            fetch(`/api/v2/projects/${projectId}`).then(res => res.json()),
-            fetch(`/api/v2/subprojects/${areaId}`).then(res => res.json())
-        ]).then(([projData, subData]) => {
-            setProjectContext(projData);
+    // Function to fetch subproject data
+    const fetchBoardData = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/v2/subprojects/${areaId}`);
+            const subData = await res.json();
 
             // Transform SubData Lists into Legacy Structure
             const legacyData = {
                 kanban: { lists: subData.lists.filter(l => l.type === 'KANBAN') },
                 todo: { lists: subData.lists.filter(l => l.type === 'TODO') },
-                // Add other types if necessary
             };
 
-            // Merge transformed legacy data with other subproject fields
-            const fullData = {
+            setData({
                 ...subData,
                 boardData: legacyData
-            };
+            });
 
-            setData(fullData);
+            return subData;
+        } catch (err) {
+            console.error("Failed to load board", err);
+        }
+    }, [areaId]);
+
+    // Listen for realtime events from Mason actions
+    useRealtime('brickflow:task:created', useCallback((payload) => {
+        console.log('[BoardPage] 📡 Tarefa criada via Mason:', payload);
+        fetchBoardData();
+    }, [fetchBoardData]));
+
+    useRealtime('brickflow:task:completed', useCallback((payload) => {
+        console.log('[BoardPage] 📡 Tarefa completada:', payload);
+        fetchBoardData();
+    }, [fetchBoardData]));
+
+    useRealtime('brickflow:task:deleted', useCallback((payload) => {
+        console.log('[BoardPage] 📡 Tarefa deletada:', payload);
+        fetchBoardData();
+    }, [fetchBoardData]));
+
+    useRealtime('brickflow:subproject:updated', useCallback((payload) => {
+        if (payload.id === areaId) {
+            console.log('[BoardPage] 📡 Subprojeto atualizado:', payload);
+            fetchBoardData();
+        }
+    }, [areaId, fetchBoardData]));
+
+    useEffect(() => {
+        Promise.all([
+            fetch(`/api/v2/projects/${projectId}`).then(res => res.json()),
+            fetchBoardData()
+        ]).then(([projData, subData]) => {
+            setProjectContext(projData);
 
             // Set initial board type based on enabled tabs if available
-            if (subData.board_config?.enabledTabs?.length > 0) {
+            if (subData?.board_config?.enabledTabs?.length > 0) {
                 setBoardType(subData.board_config.enabledTabs[0]);
             }
 
@@ -45,7 +77,7 @@ export default function BoardPage() {
             console.error("Failed to load board", err);
             setIsLoading(false);
         });
-    }, [projectId, areaId]);
+    }, [projectId, fetchBoardData]);
 
     // Hook scaffolding (LegacyBoard needs these props)
     // In a real refactor, these hooks would be moved inside LegacyBoard or rewritten

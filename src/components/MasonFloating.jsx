@@ -60,7 +60,7 @@ const saveChatHistory = (messages) => {
     }
 };
 
-export default function MasonFloating({ clientContext, isOpen: controlledIsOpen, onOpenChange }) {
+export default function MasonFloating({ clientContext, isOpen: controlledIsOpen, onOpenChange, onMasonAction }) {
     const [internalIsOpen, setInternalIsOpen] = useState(false);
 
     const isControlled = controlledIsOpen !== undefined;
@@ -130,11 +130,32 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
 
             if (data.error) throw new Error(data.error);
 
+            const aiResponse = data.response;
+
             setMessages(prev => [...prev, {
                 id: `ai-${Date.now()}-${Math.random().toString(36).slice(2)}`,
                 role: 'ai',
-                content: data.response
+                content: aiResponse
             }]);
+
+            // Detect if Mason executed actions and notify parent
+            // Mason's responses contain patterns like:
+            // "Projeto X criado", "Tarefa Y registrada", "área incorporada", etc.
+            const actionPatterns = [
+                /projeto.*criado|instanciado|estruturado/i,
+                /tarefa.*registrada|criada|adicionada/i,
+                /área.*criada|incorporada|adicionada/i,
+                /estrutura.*completa|operacional/i,
+                /removid[ao]|deletad[ao]/i,
+                /atualiza|movid[ao]/i
+            ];
+
+            const hasExecutedAction = actionPatterns.some(pattern => pattern.test(aiResponse));
+
+            if (hasExecutedAction && onMasonAction) {
+                console.log('[Mason] Ação detectada, notificando parent para refresh');
+                onMasonAction({ type: 'action_executed', response: aiResponse });
+            }
         } catch (error) {
             console.error('Mason Error:', error);
             setMessages(prev => [...prev, {

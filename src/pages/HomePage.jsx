@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useUsers } from '../hooks/useUsers';
 import { useNavigate } from 'react-router-dom';
+import { useRealtime } from '../hooks/useRealtime';
 import LegacyHome from '../components/legacy/LegacyHome';
 import { absurdPhrases } from '@/utils/phrases';
 import { Loader2 } from 'lucide-react';
@@ -14,6 +15,33 @@ export default function HomePage() {
     const [dailyPhrase, setDailyPhrase] = useState('');
     const [megaSena, setMegaSena] = useState([]);
 
+    // Function to fetch projects
+    const fetchProjects = useCallback(async () => {
+        try {
+            const res = await fetch('/api/v2/projects');
+            const data = await res.json();
+            setProjects(data);
+        } catch (err) {
+            console.error("Failed to load projects", err);
+        }
+    }, []);
+
+    // Listen for realtime events from Mason actions
+    useRealtime('brickflow:project:created', useCallback((payload) => {
+        console.log('[HomePage] 📡 Projeto criado via Mason:', payload);
+        fetchProjects(); // Refetch projects list
+    }, [fetchProjects]));
+
+    useRealtime('brickflow:project:deleted', useCallback((payload) => {
+        console.log('[HomePage] 📡 Projeto deletado via Mason:', payload);
+        setProjects(prev => prev.filter(p => p.id !== payload.id));
+    }, []));
+
+    useRealtime('brickflow:project:updated', useCallback((payload) => {
+        console.log('[HomePage] 📡 Projeto atualizado:', payload);
+        fetchProjects();
+    }, [fetchProjects]));
+
     useEffect(() => {
         // Random elements
         setDailyPhrase(absurdPhrases[Math.floor(Math.random() * absurdPhrases.length)]);
@@ -25,17 +53,8 @@ export default function HomePage() {
         setMegaSena(numbers.sort((a, b) => a - b));
 
         // Fetch Projects V2
-        fetch('/api/v2/projects')
-            .then(res => res.json())
-            .then(data => {
-                setProjects(data);
-                setIsLoading(false);
-            })
-            .catch(err => {
-                console.error("Failed to load projects", err);
-                setIsLoading(false);
-            });
-    }, []);
+        fetchProjects().finally(() => setIsLoading(false));
+    }, [fetchProjects]);
 
     const handleAccessProject = (project) => {
         navigate(`/project/${project.id}`);
@@ -83,3 +102,4 @@ export default function HomePage() {
         />
     );
 }
+

@@ -1,40 +1,76 @@
 import { cache } from '../cache.js';
+import { EventEmitter } from 'events';
+
+// In-memory fallback for when Redis is not available
+const localEmitter = new EventEmitter();
+localEmitter.setMaxListeners(100); // Increase limit for many subscribers
 
 export const eventService = {
   async publish(channel, data) {
     try {
-      await cache.redis?.publish(channel, JSON.stringify(data));
-      console.log(`📢 PUBLISH [${channel}]:`, data);
+      // Try Redis first
+      if (cache.redis?.isReady) {
+        await cache.redis.publish(channel, JSON.stringify(data));
+        console.log(`📢 PUBLISH [${channel}] (Redis):`, data);
+      } else {
+        // Fallback to local emitter
+        localEmitter.emit(channel, data);
+        console.log(`📢 PUBLISH [${channel}] (Local):`, data);
+      }
     } catch (err) {
       console.error(`❌ Erro ao publicar evento [${channel}]:`, err);
+      // Try local emitter as last resort
+      localEmitter.emit(channel, data);
     }
   },
 
   subscribe(channel, callback) {
-    const subscriber = cache.redis?.duplicate();
+    // Try Redis first
+    if (cache.redis?.isReady) {
+      const subscriber = cache.redis.duplicate();
 
-    if (!subscriber) {
-      console.error('❌ Cliente Redis não disponível para subscribe');
-      return () => {};
+      if (!subscriber) {
+        console.warn('⚠️ Redis subscriber não disponível, usando fallback local');
+        localEmitter.on(channel, callback);
+        console.log(`✅ SUBSCRIBED [${channel}] (Local Fallback)`);
+        return () => localEmitter.off(channel, callback);
+      }
+
+      try {
+        subscriber.connect().then(() => {
+          subscriber.subscribe(channel, (message) => {
+            try {
+              const data = JSON.parse(message);
+              callback(data);
+            } catch (err) {
+              console.error(`❌ Erro ao parse evento [${channel}]:`, err);
+            }
+          });
+          console.log(`✅ SUBSCRIBED [${channel}] (Redis)`);
+        }).catch(err => {
+          console.warn(`⚠️ Falha ao conectar subscriber Redis, usando local: ${err.message}`);
+          localEmitter.on(channel, callback);
+        });
+
+        return () => {
+          subscriber.unsubscribe(channel).catch(() => { });
+          subscriber.quit().catch(() => { });
+        };
+      } catch (err) {
+        console.error(`❌ Erro ao inscrever no canal [${channel}]:`, err);
+        localEmitter.on(channel, callback);
+        return () => localEmitter.off(channel, callback);
+      }
     }
 
-    try {
-      subscriber.subscribe(channel, (message) => {
-        try {
-          const data = JSON.parse(message);
-          callback(data);
-        } catch (err) {
-          console.error(`❌ Erro ao parse evento [${channel}]:`, err);
-        }
-      });
+    // Use local emitter if Redis not available
+    localEmitter.on(channel, callback);
+    console.log(`✅ SUBSCRIBED [${channel}] (Local - Redis não disponível)`);
+    return () => localEmitter.off(channel, callback);
+  },
 
-      console.log(`✅ SUBSCRIBED [${channel}]`);
-      return () => subscriber.unsubscribe(channel);
-    } catch (err) {
-      console.error(`❌ Erro ao inscrever no canal [${channel}]:`, err);
-      return () => {};
-    }
-  }
+  // Expose local emitter for direct use in websocket service
+  localEmitter
 };
 
 export const CHANNELS = {
@@ -50,3 +86,4 @@ export const CHANNELS = {
   SUBPROJECT_CREATED: 'brickflow:subproject:created',
   SUBPROJECT_UPDATED: 'brickflow:subproject:updated'
 };
+

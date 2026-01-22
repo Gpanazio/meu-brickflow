@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useRealtime } from '../hooks/useRealtime';
 import LegacyProjectView from '../components/legacy/LegacyProjectView';
 import { Loader2 } from 'lucide-react';
 import { COLOR_VARIANTS } from '@/constants/theme';
@@ -10,18 +11,49 @@ export default function ProjectPage() {
     const [project, setProject] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        fetch(`/api/v2/projects/${projectId}`)
-            .then(res => res.json())
-            .then(data => {
-                setProject(data);
-                setIsLoading(false);
-            })
-            .catch(err => {
-                console.error("Failed to load project", err);
-                setIsLoading(false);
-            });
+    // Function to fetch project data
+    const fetchProject = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/v2/projects/${projectId}`);
+            const data = await res.json();
+            setProject(data);
+        } catch (err) {
+            console.error("Failed to load project", err);
+        }
     }, [projectId]);
+
+    // Listen for realtime events from Mason actions
+    useRealtime('brickflow:subproject:created', useCallback((payload) => {
+        // Only refetch if the subproject belongs to this project
+        if (payload.projectId === projectId) {
+            console.log('[ProjectPage] 📡 Subprojeto criado via Mason:', payload);
+            fetchProject();
+        }
+    }, [projectId, fetchProject]));
+
+    useRealtime('brickflow:subproject:updated', useCallback((payload) => {
+        if (payload.projectId === projectId) {
+            console.log('[ProjectPage] 📡 Subprojeto atualizado:', payload);
+            fetchProject();
+        }
+    }, [projectId, fetchProject]));
+
+    useRealtime('brickflow:task:created', useCallback((payload) => {
+        // Tasks are nested in subprojects, refetch to update counts/state
+        console.log('[ProjectPage] 📡 Tarefa criada via Mason:', payload);
+        fetchProject();
+    }, [fetchProject]));
+
+    useRealtime('brickflow:project:updated', useCallback((payload) => {
+        if (payload.id === projectId) {
+            console.log('[ProjectPage] 📡 Projeto atualizado:', payload);
+            fetchProject();
+        }
+    }, [projectId, fetchProject]));
+
+    useEffect(() => {
+        fetchProject().finally(() => setIsLoading(false));
+    }, [fetchProject]);
 
     if (isLoading || !project) {
         return (
@@ -51,3 +83,4 @@ export default function ProjectPage() {
         />
     );
 }
+

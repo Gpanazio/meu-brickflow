@@ -31,9 +31,23 @@ export function setupWebSocket(server) {
     });
   });
 
-  // Integrar com Redis events
-  eventService.subscribe(CHANNELS.PROJECT_UPDATED, (payload) => {
-    broadcast(CHANNELS.PROJECT_UPDATED, payload);
+  // Integrar com Redis events - Subscribe to all Mason action channels
+  const channelsToSubscribe = [
+    CHANNELS.PROJECT_UPDATED,
+    CHANNELS.PROJECT_CREATED,
+    CHANNELS.PROJECT_DELETED,
+    CHANNELS.SUBPROJECT_CREATED,
+    CHANNELS.SUBPROJECT_UPDATED,
+    CHANNELS.TASK_CREATED,
+    CHANNELS.TASK_COMPLETED,
+    CHANNELS.TASK_DELETED
+  ];
+
+  channelsToSubscribe.forEach(channel => {
+    eventService.subscribe(channel, (payload) => {
+      console.log(`📡 Broadcasting ${channel} to WebSocket clients`);
+      broadcast(channel, payload);
+    });
   });
 
   function broadcast(channel, payload) {
