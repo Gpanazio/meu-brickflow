@@ -167,4 +167,69 @@
   .custom-scrollbar::-webkit-scrollbar-track { background: #000; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #DC2626; }
+
+  /* Safe Area Support - Mobile Notches & Home Indicators */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-pl {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  .safe-area-pr {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Touch-friendly utilities */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .touch-feedback {
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
+    transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+
+  .touch-feedback:active {
+    transform: scale(0.97);
+    opacity: 0.8;
+  }
+
+  /* Smooth scrolling for mobile */
+  @media (max-width: 768px) {
+    * {
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+
+    /* Improve text legibility on mobile */
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* Prevent zoom on input focus (iOS) */
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="number"],
+    input[type="search"],
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Better mobile button states */
+  @media (hover: none) and (pointer: coarse) {
+    button,
+    [role="button"],
+    a {
+      -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
+    }
+  }
 }

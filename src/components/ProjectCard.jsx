@@ -24,8 +24,14 @@ export default function ProjectCard({ project, onSelect, className, ...props }) 
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      className={cn("h-64 active:scale-[0.98] transition-transform outline-none focus-visible:ring-2 focus-visible:ring-white/20", className)}
-      contentClassName="p-8 flex flex-col justify-between"
+      className={cn(
+        "h-64 md:h-64 min-h-[16rem] transition-all duration-200 outline-none",
+        "active:scale-[0.98] md:active:scale-[0.99]",
+        "focus-visible:ring-2 focus-visible:ring-white/20",
+        "touch-feedback",
+        className
+      )}
+      contentClassName="p-6 md:p-8 flex flex-col justify-between"
       {...props}
     >
       {/* Header */}
