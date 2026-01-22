@@ -34,6 +34,20 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
     return Array.isArray(rawFolders) ? rawFolders : [];
   }, [currentSubProject]);
 
+  // Memoized map of parentId -> children for O(1) lookups
+  // This is rebuilt only when folders change, not on every delete operation
+  const folderChildrenMap = useMemo(() => {
+    const map = new Map();
+    for (const folder of folders) {
+      const parent = folder.parentId || null;
+      if (!map.has(parent)) {
+        map.set(parent, []);
+      }
+      map.get(parent).push(folder);
+    }
+    return map;
+  }, [folders]);
+
   // Get current folder object
   const currentFolder = useMemo(() => {
     if (!currentFolderId) return null;
@@ -193,25 +207,16 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
 
   const handleDeleteFolder = useCallback((folderId) => {
     // Optimized iterative approach to find all descendant folder IDs
-    // Time complexity: O(N) where N is the number of folders
-    const findDescendantFolderIds = (parentId, allFolders) => {
-      // Build a map of parentId -> children for O(1) lookups
-      const childrenMap = new Map();
-      for (const folder of allFolders) {
-        const parent = folder.parentId || null;
-        if (!childrenMap.has(parent)) {
-          childrenMap.set(parent, []);
-        }
-        childrenMap.get(parent).push(folder);
-      }
-
+    // Uses memoized folderChildrenMap for O(1) lookups
+    // Time complexity: O(D) where D is the number of descendants (not total folders)
+    const findDescendantFolderIds = (parentId) => {
       // Iterative DFS using a stack to avoid stack overflow
       const descendants = [];
       const stack = [parentId];
 
       while (stack.length > 0) {
         const currentId = stack.pop();
-        const children = childrenMap.get(currentId) || [];
+        const children = folderChildrenMap.get(currentId) || [];
 
         for (const child of children) {
           descendants.push(child.id);
@@ -226,7 +231,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
     const targetParentId = folder?.parentId || null;
 
     // Get all folder IDs to delete (folder + all descendants)
-    const allFolderIdsToDelete = [folderId, ...findDescendantFolderIds(folderId, folders)];
+    const allFolderIdsToDelete = [folderId, ...findDescendantFolderIds(folderId)];
 
     updateFilesData(data => ({
       ...data,
@@ -242,7 +247,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
     }
 
     toast.success('Pasta e subpastas excluídas com sucesso!');
-  }, [folders, currentFolderId, updateFilesData]);
+  }, [folders, folderChildrenMap, currentFolderId, updateFilesData]);
 
   const handleMoveFile = useCallback((fileId, targetFolderId) => {
     updateFilesData(data => ({
