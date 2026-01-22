@@ -1051,7 +1051,7 @@ class MasonService {
 
                 return {
                     id: sp.id,
-                    name: sp.title, // sub_projects uses 'title' in V2
+                    name: sp.name, // sub_projects uses 'name' column
                     lists: listsWithTasks
                 };
             }));

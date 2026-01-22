@@ -158,6 +158,22 @@ function AppShell() {
         clientContext={masonContext}
         isOpen={isMasonOpen}
         onOpenChange={setIsMasonOpen}
+        onMasonAction={(action) => {
+          console.log('[App] Mason action detected:', action);
+          // Force navigation to refresh the current page
+          // This triggers React Router to re-mount components and refetch data
+          const currentPath = location.pathname;
+          if (currentPath === '/') {
+            // For home, just trigger a state update or navigate away and back
+            navigate('/refresh-temp', { replace: true });
+            setTimeout(() => navigate('/', { replace: true }), 10);
+          } else {
+            // For project/area pages
+            navigate(currentPath, { replace: true });
+            // Alternative: force hard refresh of data using window.dispatchEvent
+            window.dispatchEvent(new CustomEvent('mason-action-executed'));
+          }
+        }}
       />
       <Toaster />
     </div>
