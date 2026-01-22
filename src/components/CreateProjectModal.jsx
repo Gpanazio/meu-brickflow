@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -12,13 +12,13 @@ export default function CreateProjectModal({ isOpen, onClose, onCreate, mode = '
   const [isProtected, setIsProtected] = useState(initialData?.isProtected || false);
   const [selectedColor, setSelectedColor] = useState(initialData?.color || 'blue');
 
-  // Reset states when initialData changes (e.g. switching between create/edit or different projects)
-  useState(() => {
-    if (initialData) {
-      setIsProtected(initialData.isProtected || false);
-      setSelectedColor(initialData.color || 'blue');
+  // Reset states when initialData or isOpen changes (e.g. switching between create/edit or different projects)
+  useEffect(() => {
+    if (isOpen) {
+      setIsProtected(initialData?.isProtected || false);
+      setSelectedColor(initialData?.color || 'blue');
     }
-  });
+  }, [isOpen, initialData]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

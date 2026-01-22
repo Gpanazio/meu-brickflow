@@ -295,7 +295,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
 
     try {
       const newFilesPromises = validFiles.map(async (file) => {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
             resolve({
@@ -310,6 +310,8 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
               folderId: currentFolderId // Upload to current folder
             });
           };
+          reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+          reader.onabort = () => reject(new Error(`File read aborted: ${file.name}`));
           reader.readAsDataURL(file);
         });
       });

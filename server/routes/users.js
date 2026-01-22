@@ -4,7 +4,8 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+// GET /users - Requires auth (users list is sensitive)
+router.get('/', requireAuth, async (req, res) => {
   try {
     const users = await userService.getAll();
     res.json({ users });
@@ -14,9 +15,17 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+// POST /users - Requires auth + admin check
+router.post('/', requireAuth, async (req, res) => {
   try {
-    const user = await userService.create(req.body);
+    // SECURITY: Force role to 'user' unless requester is admin/owner
+    const isAdmin = req.user?.role === 'owner' || ['gabriel', 'lufe'].includes(req.user?.username?.toLowerCase());
+    const safeData = { ...req.body };
+    if (!isAdmin) {
+      safeData.role = 'user'; // Non-admins cannot set role
+    }
+
+    const user = await userService.create(safeData);
     res.json({ user });
   } catch (err) {
     console.error('Error creating user:', err);

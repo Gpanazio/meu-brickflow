@@ -20,7 +20,7 @@ export function useTaskActions(
                     if (p.id !== latestCurrentProject.id) return p;
                     return {
                         ...p,
-                        subProjects: p.subProjects.map(sp => {
+                        subProjects: (p.subProjects || []).map(sp => {
                             if (sp.id !== latestCurrentSubProject.id) return sp;
                             const board = sp.boardData?.[currentBoardType];
                             if (!board) return sp;
@@ -56,7 +56,7 @@ export function useTaskActions(
                     if (p.id !== latestCurrentProject.id) return p;
                     return {
                         ...p,
-                        subProjects: p.subProjects.map(sp => {
+                        subProjects: (p.subProjects || []).map(sp => {
                             if (sp.id !== latestCurrentSubProject.id) return sp;
                             const board = sp.boardData?.[currentBoardType];
                             if (!board) return sp;
@@ -83,7 +83,7 @@ export function useTaskActions(
                     if (p.id !== latestCurrentProject.id) return p;
                     return {
                         ...p,
-                        subProjects: p.subProjects.map(sp => {
+                        subProjects: (p.subProjects || []).map(sp => {
                             if (sp.id !== latestCurrentSubProject.id) return sp;
                             const board = sp.boardData?.[currentBoardType];
                             if (!board) return sp;
@@ -127,7 +127,7 @@ export function useTaskActions(
                     if (p.id !== latestCurrentProject.id) return p;
                     return {
                         ...p,
-                        subProjects: p.subProjects.map(sp => {
+                        subProjects: (p.subProjects || []).map(sp => {
                             if (sp.id !== latestCurrentSubProject.id) return sp;
                             const board = sp.boardData?.[currentBoardType];
                             if (!board) return sp;
@@ -154,7 +154,7 @@ export function useTaskActions(
                     if (p.id !== latestCurrentProject.id) return p;
                     return {
                         ...p,
-                        subProjects: p.subProjects.map(sp => {
+                        subProjects: (p.subProjects || []).map(sp => {
                             if (sp.id !== latestCurrentSubProject.id) return sp;
                             const board = sp.boardData?.[currentBoardType];
                             if (!board) return sp;
@@ -181,7 +181,7 @@ export function useTaskActions(
                     if (p.id !== latestCurrentProject.id) return p;
                     return {
                         ...p,
-                        subProjects: p.subProjects.map(sp => {
+                        subProjects: (p.subProjects || []).map(sp => {
                             if (sp.id !== latestCurrentSubProject.id) return sp;
                             const board = sp.boardData?.[currentBoardType];
                             if (!board) return sp;
@@ -208,13 +208,19 @@ export function useTaskActions(
                     if (p.id !== latestCurrentProject.id) return p;
                     return {
                         ...p,
-                        subProjects: p.subProjects.map(sp => {
+                        subProjects: (p.subProjects || []).map(sp => {
                             if (sp.id !== latestCurrentSubProject.id) return sp;
                             const board = sp.boardData?.[currentBoardType];
                             if (!board) return sp;
 
-                            const newLists = [...board.lists];
+                            const newLists = [...(board.lists || [])];
+                            // Bounds validation
+                            if (data.fromIndex < 0 || data.fromIndex >= newLists.length ||
+                                data.toIndex < 0 || data.toIndex > newLists.length) {
+                                return sp;
+                            }
                             const [movedList] = newLists.splice(data.fromIndex, 1);
+                            if (!movedList) return sp; // Safety check
                             newLists.splice(data.toIndex, 0, movedList);
 
                             return {
@@ -235,7 +241,13 @@ export function useTaskActions(
                 updateProjects(prev => prev.map(p => {
                     if (p.id !== latestCurrentProject.id) return p;
                     const newSubProjects = [...(p.subProjects || [])];
+                    // Bounds validation
+                    if (data.fromIndex < 0 || data.fromIndex >= newSubProjects.length ||
+                        data.toIndex < 0 || data.toIndex > newSubProjects.length) {
+                        return p;
+                    }
                     const [movedSub] = newSubProjects.splice(data.fromIndex, 1);
+                    if (!movedSub) return p; // Safety check
                     newSubProjects.splice(data.toIndex, 0, movedSub);
 
                     return {

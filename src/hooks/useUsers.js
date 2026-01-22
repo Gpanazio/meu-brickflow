@@ -12,16 +12,22 @@ export function useUsers() {
   const [authError, setAuthError] = useState(null)
 
   const fetchMe = useCallback(async () => {
-    try {
-      const response = await fetch('/api/auth/me')
-      if (!response.ok) {
-        return null
-      }
-      const data = await response.json().catch(() => null)
-      return data?.user || null
-    } catch {
-      return null
+    // This function should:
+    // - Return user object if authenticated
+    // - Return null if 401 (not authenticated, but server is reachable)
+    // - THROW if network error (so caller can trigger health fallback)
+    const response = await fetch('/api/auth/me')
+
+    if (response.status === 401 || response.status === 403) {
+      return null // Not logged in, but server is reachable
     }
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`)
+    }
+
+    const data = await response.json().catch(() => null)
+    return data?.user || null
   }, [])
 
   useEffect(() => {
@@ -71,68 +77,68 @@ export function useUsers() {
       return 'aborted'
     }
 
-    ;(async () => {
-      // First, try /api/auth/me directly - if it works, no need to wait for health check
-      try {
-        const user = await fetchMe()
-        if (!alive) return
+      ; (async () => {
+        // First, try /api/auth/me directly - if it works, no need to wait for health check
+        try {
+          const user = await fetchMe()
+          if (!alive) return
 
-        if (user) {
-          setCurrentUser(user)
-          setIsLoggedIn(true)
-          setShowLoginModal(false)
-          setAuthError(null)
-          setIsDatabaseReady(true)
-          setIsAuthLoading(false)
-        } else {
-          setCurrentUser(null)
-          setIsLoggedIn(false)
-          setShowLoginModal(true)
-          setIsDatabaseReady(true)
-          setIsAuthLoading(false)
-        }
-      } catch {
-        // /api/auth/me failed, fallback to waitForServer
-        const status = await waitForServer()
-        if (!alive) return
-
-        if (status === 'ready') {
-          setIsDatabaseReady(true)
-          try {
-            const user = await fetchMe()
-            if (!alive) return
-
-            if (user) {
-              setCurrentUser(user)
-              setIsLoggedIn(true)
-              setShowLoginModal(false)
-              setAuthError(null)
-            } else {
-              setCurrentUser(null)
-              setIsLoggedIn(false)
-              setShowLoginModal(true)
-            }
-          } catch {
-            if (!alive) return
+          if (user) {
+            setCurrentUser(user)
+            setIsLoggedIn(true)
+            setShowLoginModal(false)
+            setAuthError(null)
+            setIsDatabaseReady(true)
+            setIsAuthLoading(false)
+          } else {
             setCurrentUser(null)
             setIsLoggedIn(false)
             setShowLoginModal(true)
+            setIsDatabaseReady(true)
             setIsAuthLoading(false)
           }
-        } else {
-          setIsDatabaseReady(false)
-          setIsAuthLoading(false)
-          setCurrentUser(null)
-          setIsLoggedIn(false)
+        } catch {
+          // /api/auth/me failed, fallback to waitForServer
+          const status = await waitForServer()
+          if (!alive) return
 
-          if (status === 'db_missing') {
-            setAuthError('Configuração do Banco de Dados faltando (DATABASE_URL).')
+          if (status === 'ready') {
+            setIsDatabaseReady(true)
+            try {
+              const user = await fetchMe()
+              if (!alive) return
+
+              if (user) {
+                setCurrentUser(user)
+                setIsLoggedIn(true)
+                setShowLoginModal(false)
+                setAuthError(null)
+              } else {
+                setCurrentUser(null)
+                setIsLoggedIn(false)
+                setShowLoginModal(true)
+              }
+            } catch {
+              if (!alive) return
+              setCurrentUser(null)
+              setIsLoggedIn(false)
+              setShowLoginModal(true)
+              setIsAuthLoading(false)
+            }
           } else {
-            setAuthError('Não foi possível conectar ao servidor. Tente recarregar a página.')
+            setIsDatabaseReady(false)
+            setIsAuthLoading(false)
+            setCurrentUser(null)
+            setIsLoggedIn(false)
+
+            if (status === 'db_missing') {
+              setAuthError('Configuração do Banco de Dados faltando (DATABASE_URL).')
+            } else {
+              setAuthError('Não foi possível conectar ao servidor. Tente recarregar a página.')
+            }
           }
         }
-      }
-    })()
+      })()
 
     return () => {
       alive = false
@@ -144,7 +150,7 @@ export function useUsers() {
       toast.error('Aguardando conexão com o banco de dados...')
       return false
     }
-    
+
     setAuthError(null)
     try {
       const response = await fetch('/api/auth/login', {
@@ -176,7 +182,7 @@ export function useUsers() {
 
   const handleCreateUser = useCallback(async (userData) => {
     if (!isDatabaseReady) return false
-    
+
     setAuthError(null)
     try {
       const response = await fetch('/api/auth/register', {
