@@ -518,7 +518,7 @@ const mutationHandlers = {
 
         const newSubId = generateId('sub');
         await client.query(
-            'INSERT INTO sub_projects (id, project_id, title) VALUES ($1, $2, $3)',
+            'INSERT INTO sub_projects (id, project_id, name) VALUES ($1, $2, $3)',
             [newSubId, project.id, args.name]
         );
 
@@ -556,7 +556,7 @@ const mutationHandlers = {
                 const spId = generateId('sub');
                 // Create Subproject
                 await client.query(
-                    'INSERT INTO sub_projects (id, project_id, title, order_index) VALUES ($1, $2, $3, $4)',
+                    'INSERT INTO sub_projects (id, project_id, name, order_index) VALUES ($1, $2, $3, $4)',
                     [spId, newProjectId, area.areaName || 'Área sem nome', areaIndex]
                 );
                 areaCount++;

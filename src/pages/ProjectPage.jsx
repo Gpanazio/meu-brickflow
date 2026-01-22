@@ -66,7 +66,9 @@ export default function ProjectPage() {
     return (
         <LegacyProjectView
             currentProject={project}
-            setCurrentView={() => { }} // Legacy prop
+            setCurrentView={(view) => {
+                if (view === 'home') navigate('/');
+            }}
             setModalState={() => { }} // TODO
             COLOR_VARIANTS={COLOR_VARIANTS}
             handleAccessProject={(subProject) => {
