@@ -7,21 +7,60 @@ import rehypeSanitize from 'rehype-sanitize';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+const MAX_MESSAGE_LENGTH = 10000; // Must match backend limit
+const MAX_STORED_MESSAGES = 50; // Store last 50 messages in localStorage
+const STORAGE_KEY = 'mason_chat_history';
+
+// Load chat history from localStorage
+const loadChatHistory = () => {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            // Validate that it's an array and has valid structure
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
+        }
+    } catch (error) {
+        console.warn('Failed to load Mason chat history:', error);
+    }
+    // Return default welcome message if no valid history
+    return [
+        { role: 'ai', content: '**SISTEMA ONLINE. PROTOCOLO 3.7 ATIVO.**\n\nSou Mason. Inteligência de produção autônoma.\n\nNão sou apenas um assistente. Eu **observo**, **analiso** e **executo**.\n\nDiga o que precisa. Ou deixe que eu identifique.', isInitial: true }
+    ];
+};
+
+// Save chat history to localStorage
+const saveChatHistory = (messages) => {
+    try {
+        // Only keep last MAX_STORED_MESSAGES messages
+        const toStore = messages.slice(-MAX_STORED_MESSAGES);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+    } catch (error) {
+        console.warn('Failed to save Mason chat history:', error);
+    }
+};
+
 export default function MasonFloating({ clientContext }) {
     const [isOpen, setIsOpen] = useState(false); // false = collapsed (orb), true = expanded (chat)
-    const [messages, setMessages] = useState([
-        { role: 'ai', content: '**SISTEMA ONLINE. PROTOCOLO 3.7 ATIVO.**\n\nSou Mason. Inteligência de produção autônoma.\n\nNão sou apenas um assistente. Eu **observo**, **analiso** e **executo**.\n\nDiga o que precisa. Ou deixe que eu identifique.', isInitial: true }
-    ]);
+    const [messages, setMessages] = useState(loadChatHistory);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef(null);
     const constraintsRef = useRef(null); // Ref for drag constraints (usually the screen)
 
+    // Save messages to localStorage whenever they change
     useEffect(() => {
-        if (scrollRef.current) {
+        saveChatHistory(messages);
+    }, [messages]);
+
+    // Auto-scroll to bottom when messages change (optimized)
+    useEffect(() => {
+        if (isOpen && scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [messages, isOpen]);
+    }, [messages]); // Removed isOpen from deps for performance
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
@@ -96,6 +135,15 @@ export default function MasonFloating({ clientContext }) {
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             className="cursor-pointer group relative"
+                            role="button"
+                            aria-label="Abrir Mason AI - Assistente de Produção"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setIsOpen(true);
+                                }
+                            }}
                         >
                             {/* Glow Effect */}
                             <div className="absolute inset-0 bg-red-600 blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full animate-pulse" />
@@ -120,6 +168,9 @@ export default function MasonFloating({ clientContext }) {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.8, opacity: 0, y: 20 }}
                             className="w-[380px] h-[600px] flex flex-col bg-[#050505]/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl overflow-hidden relative"
+                            role="dialog"
+                            aria-label="Mason AI - Chat de Produção"
+                            aria-modal="false"
                         >
                             {/* Noise Overlay */}
                             <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.03]" style={{
@@ -142,6 +193,8 @@ export default function MasonFloating({ clientContext }) {
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
                                         className="p-1.5 hover:bg-white/10 rounded text-zinc-500 hover:text-white transition-colors"
+                                        aria-label="Minimizar Mason AI"
+                                        title="Minimizar"
                                     >
                                         <Minimize2 className="w-4 h-4" />
                                     </button>
@@ -150,7 +203,12 @@ export default function MasonFloating({ clientContext }) {
 
                             {/* Chat Area */}
                             <ScrollArea className="flex-1 p-4 z-10">
-                                <div className="flex flex-col gap-4 pb-4">
+                                <div
+                                    className="flex flex-col gap-4 pb-4"
+                                    role="log"
+                                    aria-live="polite"
+                                    aria-label="Histórico de conversa com Mason AI"
+                                >
                                     {messages.map((msg, index) => (
                                         <div key={index} className={cn("flex flex-col gap-1", msg.role === 'user' ? "items-end" : "items-start")}>
                                             <div className={cn(
@@ -194,25 +252,53 @@ export default function MasonFloating({ clientContext }) {
 
                             {/* Input Area */}
                             <div className="p-3 border-t border-white/10 bg-black/60 z-10">
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={input}
-                                        onChange={(e) => setInput(e.target.value)}
-                                        onKeyDown={handleKeyDown}
-                                        placeholder="Command..."
-                                        className="flex-1 bg-zinc-900/50 border border-white/5 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-zinc-700 focus:outline-none focus:border-red-900/50 focus:ring-1 focus:ring-red-900/20 transition-all"
-                                        disabled={isLoading}
-                                        autoFocus
-                                    />
-                                    <Button
-                                        size="icon"
-                                        onClick={handleSend}
-                                        disabled={isLoading || !input.trim()}
-                                        className="h-8 w-8 bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/30 rounded"
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={input}
+                                            onChange={(e) => setInput(e.target.value)}
+                                            onKeyDown={handleKeyDown}
+                                            placeholder="Command..."
+                                            maxLength={MAX_MESSAGE_LENGTH}
+                                            className="flex-1 bg-zinc-900/50 border border-white/5 rounded px-3 py-2 text-xs font-mono text-white placeholder:text-zinc-700 focus:outline-none focus:border-red-900/50 focus:ring-1 focus:ring-red-900/20 transition-all"
+                                            disabled={isLoading}
+                                            autoFocus
+                                            aria-label="Mensagem para Mason AI"
+                                            aria-describedby="char-count"
+                                        />
+                                        <Button
+                                            size="icon"
+                                            onClick={handleSend}
+                                            disabled={isLoading || !input.trim()}
+                                            className="h-8 w-8 bg-red-900/20 hover:bg-red-900/40 text-red-500 border border-red-900/30 rounded"
+                                            aria-label="Enviar mensagem"
+                                            title="Enviar (Enter)"
+                                        >
+                                            <Send className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                    {/* Character Counter */}
+                                    <div
+                                        id="char-count"
+                                        className="flex justify-between items-center text-[9px] font-mono px-1"
                                     >
-                                        <Send className="w-3 h-3" />
-                                    </Button>
+                                        <span className="text-zinc-600">
+                                            Shift+Enter para nova linha
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                "transition-colors",
+                                                input.length > MAX_MESSAGE_LENGTH * 0.9
+                                                    ? "text-red-500"
+                                                    : input.length > MAX_MESSAGE_LENGTH * 0.75
+                                                        ? "text-yellow-600"
+                                                        : "text-zinc-600"
+                                            )}
+                                        >
+                                            {input.length}/{MAX_MESSAGE_LENGTH}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
