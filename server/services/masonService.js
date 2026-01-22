@@ -601,11 +601,20 @@ const mutationHandlers = {
                     listIds[listTitle] = listId;
                 }
 
-                // 3. Create Tasks (All go to TODO by default)
+                // 3. Create Tasks
                 if (area.tasks && Array.isArray(area.tasks)) {
+                    // Determine the "starting" list title based on board type
+                    // KANBAN -> "To Do", TODO -> "Pending"
+                    const startListTitle = area.boardType === 'TODO' ? TODO_LISTS.PENDING : KANBAN_LISTS.TODO;
+
                     for (const [taskIndex, taskTitle] of area.tasks.entries()) {
                         const taskId = generateId('card');
-                        const todoListId = listIds[KANBAN_LISTS.TODO];
+                        const todoListId = listIds[startListTitle];
+
+                        if (!todoListId) {
+                            console.warn(`[Mason] List ID not found for title '${startListTitle}' in area '${area.areaName}'`);
+                            continue;
+                        }
 
                         await client.query(
                             'INSERT INTO cards (id, list_id, title, description, order_index, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
