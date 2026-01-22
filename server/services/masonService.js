@@ -40,6 +40,26 @@ const MAX_TITLE_LENGTH = 500; // 500 characters for task/project titles
 const MAX_DESCRIPTION_LENGTH = 5000; // 5k characters for descriptions
 const MAX_NAME_LENGTH = 200; // 200 characters for names
 
+// Kanban board constants
+const KANBAN_LISTS = {
+    TODO: 'To Do',
+    IN_PROGRESS: 'In Progress',
+    DONE: 'Done'
+};
+
+// Kanban status detection patterns
+const KANBAN_STATUS_PATTERNS = {
+    todo: ['todo', 'to do', 'backlog', 'pending'],
+    inProgress: ['progress', 'doing', 'in progress', 'working'],
+    done: ['done', 'complete', 'finished', 'completed']
+};
+
+// Generation config (can be overridden via env)
+const GENERATION_CONFIG = {
+    maxOutputTokens: parseInt(process.env.MASON_MAX_TOKENS) || 2000,
+    temperature: parseFloat(process.env.MASON_TEMPERATURE) || 0.7
+};
+
 // System Prompt
 const SYSTEM_INSTRUCTION = `
 You are Mason, the autonomous production intelligence of BrickFlow.
@@ -261,6 +281,30 @@ const validateInputSize = (value, fieldName, maxLength) => {
     return null;
 };
 
+// Helper to create default Kanban lists
+const createDefaultKanbanLists = () => [
+    { id: generateId('list'), title: KANBAN_LISTS.TODO, cards: [] },
+    { id: generateId('list'), title: KANBAN_LISTS.IN_PROGRESS, cards: [] },
+    { id: generateId('list'), title: KANBAN_LISTS.DONE, cards: [] }
+];
+
+// Helper to detect task status from list name
+const detectTaskStatus = (listTitle) => {
+    const normalized = listTitle.toLowerCase();
+
+    if (KANBAN_STATUS_PATTERNS.todo.some(pattern => normalized.includes(pattern))) {
+        return 'todo';
+    }
+    if (KANBAN_STATUS_PATTERNS.inProgress.some(pattern => normalized.includes(pattern))) {
+        return 'inProgress';
+    }
+    if (KANBAN_STATUS_PATTERNS.done.some(pattern => normalized.includes(pattern))) {
+        return 'done';
+    }
+
+    return null;
+};
+
 // DB Helpers
 async function getProjectState(client = null) {
     const q = 'SELECT data, version FROM brickflow_state WHERE id = $1';
@@ -379,6 +423,185 @@ const tools = [
     }
 ];
 
+// Mutation Handlers - Extract logic from giant handleMutation function
+const mutationHandlers = {
+    create_project: (data, args) => {
+        // Validate input sizes
+        const nameError = validateInputSize(args.name, 'Nome do projeto', MAX_NAME_LENGTH);
+        if (nameError) return { error: `ERRO: ${nameError}` };
+
+        const descError = validateInputSize(args.description, 'Descrição do projeto', MAX_DESCRIPTION_LENGTH);
+        if (descError) return { error: `ERRO: ${descError}` };
+
+        const newProjectId = generateId('proj');
+        const newProject = {
+            id: newProjectId,
+            name: args.name,
+            description: args.description || '',
+            color: args.color || '#DC2626', // Brick Red default
+            members: [],
+            subProjects: [],
+            isArchived: false,
+            createdAt: new Date().toISOString()
+        };
+
+        // Create subprojects if requested
+        if (args.subProjects && Array.isArray(args.subProjects)) {
+            for (const spName of args.subProjects) {
+                const spId = generateId('sub');
+                newProject.subProjects.push({
+                    id: spId,
+                    name: spName,
+                    boardData: {
+                        kanban: {
+                            lists: createDefaultKanbanLists()
+                        }
+                    }
+                });
+            }
+        }
+
+        data.projects.push(newProject);
+        return { message: `Projeto '${args.name}' instanciado. ${newProject.subProjects.length} área(s) estruturadas. Sistema operacional.` };
+    },
+
+    create_subproject: (data, args) => {
+        // Validate input sizes
+        const nameError = validateInputSize(args.name, 'Nome da área', MAX_NAME_LENGTH);
+        if (nameError) return { error: `ERRO: ${nameError}` };
+
+        const descError = validateInputSize(args.description, 'Descrição da área', MAX_DESCRIPTION_LENGTH);
+        if (descError) return { error: `ERRO: ${descError}` };
+
+        const project = findProject(data.projects, args.projectName);
+        if (!project) return { error: `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.` };
+        if (project.ambiguous) {
+            return { error: `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.` };
+        }
+
+        const newSubId = generateId('sub');
+        const newSubProject = {
+            id: newSubId,
+            name: args.name,
+            description: args.description || '',
+            boardData: {
+                kanban: {
+                    lists: createDefaultKanbanLists()
+                }
+            }
+        };
+
+        if (!project.subProjects) project.subProjects = [];
+        project.subProjects.push(newSubProject);
+        return { message: `Área '${args.name}' incorporada ao projeto '${project.name}'. Estrutura atualizada.` };
+    },
+
+    create_task: (data, args) => {
+        // Validate input sizes
+        const titleError = validateInputSize(args.title, 'Título da tarefa', MAX_TITLE_LENGTH);
+        if (titleError) return { error: `ERRO: ${titleError}` };
+
+        const descError = validateInputSize(args.description, 'Descrição da tarefa', MAX_DESCRIPTION_LENGTH);
+        if (descError) return { error: `ERRO: ${descError}` };
+
+        const project = findProject(data.projects, args.projectName);
+        if (!project) return { error: `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.` };
+        if (project.ambiguous) {
+            return { error: `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.` };
+        }
+
+        let subProject = args.subProjectName
+            ? project.subProjects.find(sp => sp.name.toLowerCase().includes(args.subProjectName.toLowerCase()))
+            : project.subProjects?.[0];
+
+        if (!subProject) return { error: "ERRO: não há nenhuma área adequada disponível para esta operação." };
+
+        const board = subProject.boardData?.kanban || { lists: [] };
+        if (!board.lists || board.lists.length === 0) {
+            board.lists = createDefaultKanbanLists();
+            if (!subProject.boardData) subProject.boardData = {};
+            subProject.boardData.kanban = board;
+        }
+
+        let list = args.listName
+            ? board.lists.find(l => l.title.toLowerCase().includes(args.listName.toLowerCase()))
+            : board.lists[0];
+
+        if (!list) list = board.lists[0];
+
+        const taskId = generateId('card');
+        const newTask = {
+            id: taskId,
+            title: args.title,
+            description: args.description || '',
+            labels: [],
+            members: [],
+            attachments: [],
+            comments: [],
+            createdAt: new Date().toISOString()
+        };
+
+        list.cards.push(newTask);
+        return { message: `Tarefa '${args.title}' registrada em ${list.title}. Operação completa.` };
+    },
+
+    update_task: (data, args) => {
+        // Validate input sizes
+        if (args.title) {
+            const titleError = validateInputSize(args.title, 'Título da tarefa', MAX_TITLE_LENGTH);
+            if (titleError) return { error: `ERRO: ${titleError}` };
+        }
+
+        if (args.description) {
+            const descError = validateInputSize(args.description, 'Descrição da tarefa', MAX_DESCRIPTION_LENGTH);
+            if (descError) return { error: `ERRO: ${descError}` };
+        }
+
+        const found = findTaskInData(data, args.taskId);
+        if (!found) return { error: `ERRO: Tarefa não localizada nos sistemas.` };
+
+        if (args.title) found.card.title = args.title;
+        if (args.description) found.card.description = args.description;
+        return { message: `Parâmetros da tarefa atualizados. Mudanças aplicadas.` };
+    },
+
+    move_task: (data, args) => {
+        const found = findTaskInData(data, args.taskId);
+        if (!found) return { error: `ERRO: Tarefa não localizada nos sistemas.` };
+
+        const lists = found.subProject.boardData?.kanban?.lists || [];
+        const targetList = lists.find(l => l.title.toLowerCase().includes(args.targetListName.toLowerCase()));
+
+        if (!targetList) return { error: `ERRO: Coluna '${args.targetListName}' não existe neste contexto.` };
+
+        found.list.cards.splice(found.index, 1);
+        targetList.cards.push(found.card); // Add to end
+        return { message: `Tarefa realocada para ${targetList.title}. Fluxo otimizado.` };
+    },
+
+    delete_task: (data, args) => {
+        const found = findTaskInData(data, args.taskId);
+        if (!found) return { error: `ERRO: Tarefa não localizada nos sistemas.` };
+
+        found.list.cards.splice(found.index, 1);
+        return { message: `Tarefa removida permanentemente. Operação irreversível executada.` };
+    }
+};
+
+// Helper to find task in data (used by multiple mutation handlers)
+const findTaskInData = (data, taskId) => {
+    for (const p of data.projects) {
+        for (const sp of p.subProjects || []) {
+            const lists = sp.boardData?.kanban?.lists || [];
+            for (const l of lists) {
+                const idx = l.cards?.findIndex(c => c.id === taskId);
+                if (idx !== -1) return { project: p, subProject: sp, list: l, card: l.cards[idx], index: idx };
+            }
+        }
+    }
+    return null;
+};
+
 // Service Class
 class MasonService {
     constructor() {
@@ -444,6 +667,13 @@ class MasonService {
             return msg.role !== formattedHistory[index - 1].role;
         });
 
+        // Validate history after filtering
+        if (formattedHistory.length > 0 && formattedHistory[0].role !== 'user') {
+            console.warn('[Mason] History validation failed after filtering - no valid user message found');
+            // Clear invalid history and start fresh
+            formattedHistory = [];
+        }
+
         // Debug logging
         console.log('[Mason] Processing message with:', {
             historyLength: formattedHistory.length,
@@ -455,10 +685,7 @@ class MasonService {
 
         const chat = this.model.startChat({
             history: formattedHistory,
-            generationConfig: {
-                maxOutputTokens: 2000,
-                temperature: 0.7,
-            },
+            generationConfig: GENERATION_CONFIG,
         });
 
         try {
@@ -585,13 +812,9 @@ class MasonService {
                                 subProject: sp.name
                             })));
 
-                            const listTitle = list.title.toLowerCase();
-                            if (listTitle.includes('todo') || listTitle.includes('to do')) {
-                                tasksByStatus.todo += tasks.length;
-                            } else if (listTitle.includes('progress') || listTitle.includes('doing')) {
-                                tasksByStatus.inProgress += tasks.length;
-                            } else if (listTitle.includes('done')) {
-                                tasksByStatus.done += tasks.length;
+                            const status = detectTaskStatus(list.title);
+                            if (status) {
+                                tasksByStatus[status] += tasks.length;
                             }
                         });
                     });
@@ -673,196 +896,20 @@ class MasonService {
         const { version } = currentRes.rows[0];
         data = normalizeStateData(data);
 
-        let resultMsg = "";
-
-        if (toolName === 'create_project') {
-            // Validate input sizes
-            const nameError = validateInputSize(args.name, 'Nome do projeto', MAX_NAME_LENGTH);
-            if (nameError) return `ERRO: ${nameError}`;
-
-            const descError = validateInputSize(args.description, 'Descrição do projeto', MAX_DESCRIPTION_LENGTH);
-            if (descError) return `ERRO: ${descError}`;
-
-            const newProjectId = generateId('proj');
-            const newProject = {
-                id: newProjectId,
-                name: args.name,
-                description: args.description || '',
-                color: args.color || '#DC2626', // Brick Red default
-                members: [],
-                subProjects: [],
-                isArchived: false,
-                createdAt: new Date().toISOString()
-            };
-
-            // Create subprojects if requested
-            if (args.subProjects && Array.isArray(args.subProjects)) {
-                for (const spName of args.subProjects) {
-                    const spId = generateId('sub');
-                    newProject.subProjects.push({
-                        id: spId,
-                        name: spName,
-                        boardData: {
-                            kanban: {
-                                lists: [
-                                    { id: generateId('list'), title: 'To Do', cards: [] },
-                                    { id: generateId('list'), title: 'In Progress', cards: [] },
-                                    { id: generateId('list'), title: 'Done', cards: [] }
-                                ]
-                            }
-                        }
-                    });
-                }
-            }
-
-            data.projects.push(newProject);
-            resultMsg = `Projeto '${args.name}' instanciado. ${newProject.subProjects.length} área(s) estruturadas. Sistema operacional.`;
+        // Dispatch to appropriate handler
+        const handler = mutationHandlers[toolName];
+        if (!handler) {
+            return `ERRO: operação '${toolName}' não reconhecida.`;
         }
 
-        if (toolName === 'create_subproject') {
-            // Validate input sizes
-            const nameError = validateInputSize(args.name, 'Nome da área', MAX_NAME_LENGTH);
-            if (nameError) return `ERRO: ${nameError}`;
+        const result = handler(data, args);
 
-            const descError = validateInputSize(args.description, 'Descrição da área', MAX_DESCRIPTION_LENGTH);
-            if (descError) return `ERRO: ${descError}`;
-
-            const project = findProject(data.projects, args.projectName);
-            if (!project) return `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.`;
-            if (project.ambiguous) {
-                return `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.`;
-            }
-
-            const newSubId = generateId('sub');
-            const newSubProject = {
-                id: newSubId,
-                name: args.name,
-                description: args.description || '',
-                boardData: {
-                    kanban: {
-                        lists: [
-                            { id: generateId('list'), title: 'To Do', cards: [] },
-                            { id: generateId('list'), title: 'In Progress', cards: [] },
-                            { id: generateId('list'), title: 'Done', cards: [] }
-                        ]
-                    }
-                }
-            };
-
-            if (!project.subProjects) project.subProjects = [];
-            project.subProjects.push(newSubProject);
-            resultMsg = `Área '${args.name}' incorporada ao projeto '${project.name}'. Estrutura atualizada.`;
+        // Check if handler returned an error
+        if (result.error) {
+            return result.error;
         }
 
-        if (toolName === 'create_task') {
-            // Validate input sizes
-            const titleError = validateInputSize(args.title, 'Título da tarefa', MAX_TITLE_LENGTH);
-            if (titleError) return `ERRO: ${titleError}`;
-
-            const descError = validateInputSize(args.description, 'Descrição da tarefa', MAX_DESCRIPTION_LENGTH);
-            if (descError) return `ERRO: ${descError}`;
-
-            const project = findProject(data.projects, args.projectName);
-            if (!project) return `ERRO: não consigo localizar o projeto '${args.projectName}' em meus registros.`;
-            if (project.ambiguous) {
-                return `ERRO: nome '${args.projectName}' é ambíguo. Múltiplos projetos encontrados: ${project.matches.join(', ')}. Use nome completo e exato.`;
-            }
-
-            let subProject = args.subProjectName
-                ? project.subProjects.find(sp => sp.name.toLowerCase().includes(args.subProjectName.toLowerCase()))
-                : project.subProjects?.[0];
-
-            if (!subProject) return "ERRO: não há nenhuma área adequada disponível para esta operação.";
-
-            const board = subProject.boardData?.kanban || { lists: [] };
-            if (!board.lists || board.lists.length === 0) {
-                board.lists = [
-                    { id: generateId('list'), title: 'To Do', cards: [] },
-                    { id: generateId('list'), title: 'In Progress', cards: [] },
-                    { id: generateId('list'), title: 'Done', cards: [] }
-                ];
-                if (!subProject.boardData) subProject.boardData = {};
-                subProject.boardData.kanban = board;
-            }
-
-            let list = args.listName
-                ? board.lists.find(l => l.title.toLowerCase().includes(args.listName.toLowerCase()))
-                : board.lists[0];
-
-            if (!list) list = board.lists[0];
-
-            const taskId = generateId('card');
-            const newTask = {
-                id: taskId,
-                title: args.title,
-                description: args.description || '',
-                labels: [],
-                members: [],
-                attachments: [],
-                comments: [],
-                createdAt: new Date().toISOString()
-            };
-
-            list.cards.push(newTask);
-            resultMsg = `Tarefa '${args.title}' registrada em ${list.title}. Operação completa.`;
-        }
-
-        const findAllTask = (taskId) => {
-            for (const p of data.projects) {
-                for (const sp of p.subProjects || []) {
-                    const lists = sp.boardData?.kanban?.lists || [];
-                    for (const l of lists) {
-                        const idx = l.cards?.findIndex(c => c.id === taskId);
-                        if (idx !== -1) return { project: p, subProject: sp, list: l, card: l.cards[idx], index: idx };
-                    }
-                }
-            }
-            return null;
-        };
-
-        if (toolName === 'update_task') {
-            // Validate input sizes
-            if (args.title) {
-                const titleError = validateInputSize(args.title, 'Título da tarefa', MAX_TITLE_LENGTH);
-                if (titleError) return `ERRO: ${titleError}`;
-            }
-
-            if (args.description) {
-                const descError = validateInputSize(args.description, 'Descrição da tarefa', MAX_DESCRIPTION_LENGTH);
-                if (descError) return `ERRO: ${descError}`;
-            }
-
-            const found = findAllTask(args.taskId);
-            if (!found) return `ERRO: Tarefa não localizada nos sistemas.`;
-
-            if (args.title) found.card.title = args.title;
-            if (args.description) found.card.description = args.description;
-            resultMsg = `Parâmetros da tarefa atualizados. Mudanças aplicadas.`;
-        }
-
-        if (toolName === 'move_task') {
-            const found = findAllTask(args.taskId);
-            if (!found) return `ERRO: Tarefa não localizada nos sistemas.`;
-
-            const lists = found.subProject.boardData?.kanban?.lists || [];
-            const targetList = lists.find(l => l.title.toLowerCase().includes(args.targetListName.toLowerCase()));
-
-            if (!targetList) return `ERRO: Coluna '${args.targetListName}' não existe neste contexto.`;
-
-            found.list.cards.splice(found.index, 1);
-            targetList.cards.push(found.card); // Add to end
-            resultMsg = `Tarefa realocada para ${targetList.title}. Fluxo otimizado.`;
-        }
-
-        if (toolName === 'delete_task') {
-            const found = findAllTask(args.taskId);
-            if (!found) return `ERRO: Tarefa não localizada nos sistemas.`;
-
-            found.list.cards.splice(found.index, 1);
-            resultMsg = `Tarefa removida permanentemente. Operação irreversível executada.`;
-        }
-
-        // Save
+        // Save changes to database
         const nextVersion = version + 1;
 
         await client.query(
@@ -883,7 +930,7 @@ class MasonService {
             // Event will be eventually consistent when frontend polls/reconnects
         }
 
-        return resultMsg;
+        return result.message;
     }
 }
 
