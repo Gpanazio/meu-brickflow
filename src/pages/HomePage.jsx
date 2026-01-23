@@ -73,13 +73,14 @@ export default function HomePage() {
             if (res.ok) {
                 const newProject = await res.json();
                 setProjects(prev => [newProject, ...prev]);
+                toast.success('Projeto criado com sucesso!');
             } else {
                 const err = await res.json();
-                alert(`Erro ao criar projeto: ${err.error || 'Erro desconhecido'}`);
+                toast.error(`Erro ao criar projeto: ${err.error || 'Erro desconhecido'}`);
             }
         } catch (error) {
             console.error('Create project error:', error);
-            alert('Erro de conexão ao tentar criar o projeto.');
+            toast.error('Erro de conexão ao tentar criar o projeto.');
         }
     };
 
@@ -92,13 +93,14 @@ export default function HomePage() {
             });
             if (res.ok) {
                 fetchProjects(); // Refresh the list
+                toast.success('Projeto atualizado!');
             } else {
                 const err = await res.json();
-                alert(`Erro ao atualizar projeto: ${err.error || 'Erro desconhecido'}`);
+                toast.error(`Erro ao atualizar projeto: ${err.error || 'Erro desconhecido'}`);
             }
         } catch (error) {
             console.error('Update project error:', error);
-            alert('Erro de conexão ao tentar atualizar o projeto.');
+            toast.error('Erro de conexão ao tentar atualizar o projeto.');
         }
     };
 
@@ -126,15 +128,22 @@ export default function HomePage() {
                         const res = await fetch(`/api/v2/projects/${project.id}`, { method: 'DELETE' });
                         if (res.ok) {
                             setProjects(prev => prev.filter(p => p.id !== project.id));
-                            // Assuming Toaster is available globally or log it
-                            console.log('Project deleted');
+                            toast.success('Projeto excluído.');
                         } else {
                             const err = await res.json();
-                            alert(`Erro ao excluir: ${err.error || 'Erro desconhecido'}`);
+                            toast.error(`Erro ao excluir: ${err.error || 'Erro desconhecido'}`);
                         }
                     } catch (error) {
                         console.error('Delete error:', error);
-                        alert('Erro de conexão ao tentar excluir o projeto.');
+                        toast.error('Erro de conexão ao tentar excluir o projeto.');
+                    }
+                }}
+                onTaskClick={(task) => {
+                    // Navigate to project/subproject with taskId param
+                    if (task.projectId && task.subProjectId) {
+                        navigate(`/project/${task.projectId}/area/${task.subProjectId}?taskId=${task.id}`);
+                    } else {
+                        console.warn("Task missing project/subproject context", task);
                     }
                 }}
                 isLoading={isLoading}

@@ -18,7 +18,8 @@ export function setupWebSocket(server) {
         const data = JSON.parse(message);
         if (data.type === 'subscribe') {
           console.log(`📡 Cliente inscrito no canal: ${data.channel} (User: ${req.user.username})`);
-          ws.channel = data.channel;
+          if (!ws.channels) ws.channels = new Set();
+          ws.channels.add(data.channel);
         }
       } catch (err) {
         console.error('Erro ao processar mensagem WS:', err);
@@ -40,7 +41,12 @@ export function setupWebSocket(server) {
     CHANNELS.SUBPROJECT_UPDATED,
     CHANNELS.TASK_CREATED,
     CHANNELS.TASK_COMPLETED,
-    CHANNELS.TASK_DELETED
+    CHANNELS.TASK_DELETED,
+    CHANNELS.SUBPROJECT_DELETED,
+    CHANNELS.LIST_CREATED,
+    CHANNELS.LIST_UPDATED,
+    CHANNELS.LIST_DELETED,
+    CHANNELS.TASK_UPDATED
   ];
 
   channelsToSubscribe.forEach(channel => {
@@ -53,8 +59,13 @@ export function setupWebSocket(server) {
   function broadcast(channel, payload) {
     const message = JSON.stringify({ channel, payload });
     clients.forEach((client) => {
-      if (client.readyState === 1 && (!client.channel || client.channel === channel)) {
-        client.send(message);
+      if (client.readyState === 1) {
+        // If client has subscribed to specific channels, check if this channel is in their list
+        // If no channels set, maybe assume broadcast all? Or restrict? 
+        // Default behavior usually requires subscription.
+        if (client.channels && client.channels.has(channel)) {
+          client.send(message);
+        }
       }
     });
   }

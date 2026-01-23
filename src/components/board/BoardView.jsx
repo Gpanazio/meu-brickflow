@@ -17,7 +17,7 @@ import {
 import SortableColumn from './SortableColumn';
 import SortableTask from './SortableTask';
 import { createPortal } from 'react-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 
 export default function BoardView({
     boardData,
@@ -154,6 +154,18 @@ export default function BoardView({
                             onTaskClick={onTaskClick}
                         />
                     ))}
+                    {/* New List Button Column */}
+                    <div className="flex flex-col w-72 shrink-0 h-full max-h-full rounded-xl overflow-hidden glass-panel-premium mx-1 items-center justify-center opacity-70 hover:opacity-100 transition-opacity">
+                        <button
+                            className="flex flex-col items-center gap-4 group"
+                            onClick={() => onAddTask && onAddTask('NEW_LIST')} // Using 'NEW_LIST' as signal
+                        >
+                            <div className="w-16 h-16 rounded-full border-2 border-dashed border-zinc-700 flex items-center justify-center group-hover:border-zinc-400 transition-colors">
+                                <Plus className="w-8 h-8 text-zinc-700 group-hover:text-zinc-400" />
+                            </div>
+                            <span className="brick-mono text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">Nova Lista</span>
+                        </button>
+                    </div>
                 </SortableContext>
             </div>
 

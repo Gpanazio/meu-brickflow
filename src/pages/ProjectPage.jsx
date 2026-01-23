@@ -71,9 +71,10 @@ export default function ProjectPage() {
             }
             // Refetch project to get updated subprojects
             fetchProject();
+            toast.success('Área criada com sucesso!');
         } catch (err) {
             console.error('Failed to create subproject:', err);
-            alert(`Erro ao criar área: ${err.message}`);
+            toast.error(`Erro ao criar área: ${err.message}`);
         }
     };
 
@@ -94,9 +95,10 @@ export default function ProjectPage() {
             }
             // Refetch project to get updated subprojects
             fetchProject();
+            toast.success('Área atualizada!');
         } catch (err) {
             console.error('Failed to update subproject:', err);
-            alert(`Erro ao atualizar área: ${err.message}`);
+            toast.error(`Erro ao atualizar área: ${err.message}`);
         }
     };
 
@@ -114,9 +116,10 @@ export default function ProjectPage() {
             }
             // Refetch project to get updated subprojects
             fetchProject();
+            toast.success('Área excluída.');
         } catch (err) {
             console.error('Failed to delete subproject:', err);
-            alert(`Erro ao excluir área: ${err.message}`);
+            toast.error(`Erro ao excluir área: ${err.message}`);
         }
     };
 

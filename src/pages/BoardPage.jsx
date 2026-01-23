@@ -11,6 +11,7 @@ import TaskModal from '@/components/modals/TaskModal';
 import BoardView from '../components/board/BoardView';
 import FilesBoard from '../components/boards/FilesBoard';
 import GoalsBoard from '../components/boards/GoalsBoard';
+import TodoBoard from '../components/boards/TodoBoard';
 
 // Utility functions for list filtering
 const getKanbanLists = (lists) => lists.filter(l => !l.type || l.type === 'KANBAN');
@@ -119,6 +120,27 @@ export default function BoardPage() {
     useEffect(() => {
         fetchBoardData().finally(() => setIsLoading(false));
     }, [fetchBoardData]);
+
+    // Deep Linking: Check for taskId in URL
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const taskId = params.get('taskId');
+        if (taskId && data) {
+            // Find task in all lists
+            let foundTask = null;
+            (data.lists || []).forEach(list => {
+                const task = (list.cards || list.tasks || []).find(t => t.id === taskId);
+                if (task) foundTask = task;
+            });
+
+            if (foundTask) {
+                setModalState({ isOpen: true, type: 'task', mode: 'edit', data: foundTask });
+                // Clean URL without refresh
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            }
+        }
+    }, [data]);
 
     // Realtime Sync Listeners
     useRealtime('brickflow:task:created', useCallback(() => fetchBoardData(), [fetchBoardData]));
@@ -261,7 +283,7 @@ export default function BoardPage() {
                             <TabsTrigger
                                 key={tab.id}
                                 value={tab.id}
-                                className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600"
+                                className="rounded-none uppercase text-xs font-bold tracking-widest h-full border-b-2 border-transparent data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-red-600 text-zinc-500 hover:text-white transition-colors px-4 pb-2"
                             >
                                 {tab.title}
                             </TabsTrigger>
@@ -287,9 +309,43 @@ export default function BoardPage() {
                         sortBy={sortBy}
                         setSortBy={setSortBy}
 
+                        // Handlers
+                        handleFileUploadWithFeedback={async (e) => {
+                            const files = e.target.files ? Array.from(e.target.files) : [];
+                            if (files.length === 0) return;
+
+                            const formData = new FormData();
+                            files.forEach(file => formData.append('files', file));
+                            formData.append('projectId', projectId);
+                            if (areaId) formData.append('subProjectId', areaId);
+                            // Folder ID support if needed, currently referencing root or need state for current folder
+                            // if (currentFolderId) formData.append('folderId', currentFolderId);
+
+                            try {
+                                const res = await fetch('/api/v2/files/upload', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                                if (res.ok) {
+                                    fetchBoardData();
+                                    toast.success('Upload concluído!');
+                                } else {
+                                    console.error("Upload failed");
+                                    toast.error("Falha no upload");
+                                }
+                            } catch (err) {
+                                console.error("Upload error", err);
+                            }
+                        }}
                         // Pass mock handlers for now or reimplement hooks if needed for full file support
                         currentFolderPath={[]}
                     // ... other props ...
+                    />
+                ) : boardType === 'todo' ? (
+                    <TodoBoard
+                        boardData={currentBoardData}
+                        onTaskClick={(task) => setModalState({ isOpen: true, type: 'task', mode: 'edit', data: task })}
+                        isLoading={false}
                     />
                 ) : boardType === 'goals' ? (
                     <GoalsBoard data={data} handleTaskAction={handleTaskAction} setModalState={setModalState} />
