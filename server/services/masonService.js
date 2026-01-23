@@ -546,14 +546,14 @@ const mutationHandlers = {
         const listDefinitions = args.boardType === 'TODO' ? TODO_LISTS : KANBAN_LISTS;
         const listType = args.boardType === 'TODO' ? 'TODO' : 'KANBAN';
 
-        let idx = 0;
-        for (const listTitle of Object.values(listDefinitions)) {
+        const listCreationPromises = Object.values(listDefinitions).map((listTitle, idx) => {
             const listId = generateId('list');
-            await client.query(
+            return client.query(
                 'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-                [listId, newSubId, listTitle, idx++, listType]
+                [listId, newSubId, listTitle, idx, listType]
             );
-        }
+        });
+        await Promise.all(listCreationPromises);
 
         await eventService.publish(CHANNELS.SUBPROJECT_CREATED, { id: newSubId, projectId: project.id, name: args.name });
         return { message: `Área '${args.name}' incorporada ao projeto '${project.name}'. Estrutura atualizada.` };
@@ -591,15 +591,16 @@ const mutationHandlers = {
                 const listDefinitions = area.boardType === 'TODO' ? TODO_LISTS : KANBAN_LISTS;
                 const listType = area.boardType === 'TODO' ? 'TODO' : 'KANBAN';
 
-                let idx = 0;
-                for (const listTitle of Object.values(listDefinitions)) {
+                // Pre-generate IDs and build mapping, then insert in parallel
+                const listCreationPromises = Object.values(listDefinitions).map((listTitle, idx) => {
                     const listId = generateId('list');
-                    await client.query(
-                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-                        [listId, spId, listTitle, idx++, listType]
-                    );
                     listIds[listTitle] = listId;
-                }
+                    return client.query(
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+                        [listId, spId, listTitle, idx, listType]
+                    );
+                });
+                await Promise.all(listCreationPromises);
 
                 // 3. Create Tasks
                 if (area.tasks && Array.isArray(area.tasks)) {
