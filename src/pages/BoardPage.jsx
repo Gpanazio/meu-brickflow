@@ -35,7 +35,75 @@ export default function BoardPage() {
     // TODO: Fetch Project as well for context if needed by legacy hooks
     const [projectContext, setProjectContext] = useState(null);
 
-    // ... (fetchBoardData and useRealtime hooks remain same)
+    // Fetch Board Data
+    const fetchBoardData = useCallback(async () => {
+        if (!areaId) return;
+
+        try {
+            const res = await fetch(`/api/v2/subprojects/${areaId}`);
+            if (!res.ok) throw new Error('Failed to fetch subproject');
+
+            const subProjectData = await res.json();
+
+            // Transform lists into legacy board structure
+            const boardData = transformToLegacyData(subProjectData.lists || []);
+
+            // Merge with existing boardData from API (files, folders, etc.)
+            const mergedBoardData = {
+                ...boardData,
+                ...(subProjectData.boardData || {}),
+                files: subProjectData.boardData?.files || { files: [], folders: [] }
+            };
+
+            setData({
+                ...subProjectData,
+                boardData: mergedBoardData
+            });
+
+            // Optionally fetch project context
+            if (projectId) {
+                try {
+                    const projRes = await fetch(`/api/v2/projects/${projectId}`);
+                    if (projRes.ok) {
+                        const projData = await projRes.json();
+                        setProjectContext(projData);
+                    }
+                } catch (err) {
+                    console.warn('Failed to fetch project context:', err);
+                }
+            }
+
+            // Set default board type based on enabled tabs
+            const enabledTabs = subProjectData.board_config?.enabledTabs || ['kanban'];
+            if (enabledTabs.length > 0 && !enabledTabs.includes(boardType)) {
+                setBoardType(enabledTabs[0]);
+            }
+
+        } catch (err) {
+            console.error('Failed to load board data:', err);
+        }
+    }, [areaId, projectId, boardType]);
+
+    // Initial Load
+    useEffect(() => {
+        fetchBoardData().finally(() => setIsLoading(false));
+    }, [fetchBoardData]);
+
+    // Realtime Sync Listeners
+    useRealtime('brickflow:task:created', useCallback((payload) => {
+        console.log('[BoardPage] 📡 Task created:', payload);
+        fetchBoardData();
+    }, [fetchBoardData]));
+
+    useRealtime('brickflow:task:updated', useCallback((payload) => {
+        console.log('[BoardPage] 📡 Task updated:', payload);
+        fetchBoardData();
+    }, [fetchBoardData]));
+
+    useRealtime('brickflow:task:deleted', useCallback((payload) => {
+        console.log('[BoardPage] 📡 Task deleted:', payload);
+        fetchBoardData();
+    }, [fetchBoardData]));
 
     // Task Actions
     const handleTaskAction = async (action, payload) => {
