@@ -29,7 +29,7 @@ if (!isGeminiConfigured) {
 }
 
 // Constants
-const MODEL_NAME = 'gemini-2.0-flash-exp';
+const MODEL_NAME = 'gemini-3-flash-preview';
 const STATE_DB_ID = 1;
 const MAX_ITERATIONS = 5; // Prevent infinite loops in function calling
 const MAX_TOOL_CALLS_PER_ITERATION = 8; // Limit tools per iteration
