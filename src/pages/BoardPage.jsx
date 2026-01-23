@@ -9,11 +9,19 @@ const getKanbanLists = (lists) => lists.filter(l => !l.type || l.type === 'KANBA
 const getTodoLists = (lists) => lists.filter(l => l.type === 'TODO');
 const getGoalLists = (lists) => lists.filter(l => l.type === 'GOALS');
 
-const transformToLegacyData = (lists) => ({
-    kanban: { lists: getKanbanLists(lists) },
-    todo: { lists: getTodoLists(lists) },
-    goals: { lists: getGoalLists(lists) }
-});
+const transformToLegacyData = (lists) => {
+    // Normalize lists: map 'cards' to 'tasks' if tasks is missing
+    const normalizedLists = lists.map(list => ({
+        ...list,
+        tasks: list.tasks || list.cards || []
+    }));
+
+    return {
+        kanban: { lists: getKanbanLists(normalizedLists) },
+        todo: { lists: getTodoLists(normalizedLists) },
+        goals: { lists: getGoalLists(normalizedLists) }
+    };
+};
 
 import { Dialog } from '@/components/ui/dialog';
 import TaskModal from '@/components/modals/TaskModal';
