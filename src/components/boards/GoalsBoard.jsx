@@ -1,173 +1,145 @@
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { format, isToday, isTomorrow, isPast, isThisWeek, addDays, parseISO, isValid } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { Calendar, CheckCircle2, Circle, Clock, AlertCircle, Plus, MoreHorizontal } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useMemo, useState } from 'react';
+import { Plus, GripVertical, Target, Calendar } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Checkbox } from '../ui/checkbox';
 import MechButton from '../ui/MechButton';
+import StatusLED from '../ui/StatusLED';
+import ResponsibleUsersButton from '../ResponsibleUsersButton';
+import { format, isPast, isToday, isTomorrow, addDays, isThisWeek } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-// Utility to group tasks by date
-const groupTasksByDate = (lists) => {
-    const groups = {
-        overdue: { title: 'Atrasado', tasks: [], color: 'text-red-500', borderColor: 'border-red-900/50' },
-        today: { title: 'Hoje', tasks: [], color: 'text-green-500', borderColor: 'border-green-900/50' },
-        tomorrow: { title: 'Amanhã', tasks: [], color: 'text-blue-500', borderColor: 'border-blue-900/50' },
-        thisWeek: { title: 'Esta Semana', tasks: [], color: 'text-purple-500', borderColor: 'border-purple-900/50' },
-        later: { title: 'Mais Tarde', tasks: [], color: 'text-zinc-500', borderColor: 'border-zinc-800' },
-        noDate: { title: 'Sem Data', tasks: [], color: 'text-zinc-600', borderColor: 'border-zinc-800' }
+export default function GoalsBoard({
+    data,
+    currentBoardType,
+    handleTaskAction,
+    setModalState
+}) {
+    // 1. Filter lists for 'GOALS' type
+    // If explicit type 'GOALS' exists, use it. Failing that, fallback logic (optional)
+    const goalLists = useMemo(() => {
+        if (!data?.lists) return [];
+        return data.lists.filter(l => l.type === 'GOALS' || l.title.includes('Prazo'));
+    }, [data]);
+
+    // 2. We want to display these lists as "Lanes" but perhaps visualized differently.
+    // For MVP, we can reuse a column layout but with specific styling for Goals (e.g. emphasising Dates)
+
+    // Helper to get relative date label
+    const getDateLabel = (dateStr) => {
+        if (!dateStr) return 'Sem Prazo';
+        const date = new Date(dateStr);
+        if (isPast(date) && !isToday(date)) return 'Atrasado';
+        if (isToday(date)) return 'Hoje';
+        if (isTomorrow(date)) return 'Amanhã';
+        if (isThisWeek(date)) return 'Esta Semana';
+        return format(date, 'dd/MM/yyyy');
     };
 
-    lists.forEach(list => {
-        (list.tasks || []).forEach(task => {
-            // Add list info to task for context
-            const enhancedTask = { ...task, listTitle: list.title, listId: list.id };
-
-            if (!task.due_date) {
-                groups.noDate.tasks.push(enhancedTask);
-                return;
-            }
-
-            const date = parseISO(task.due_date);
-            if (!isValid(date)) {
-                groups.noDate.tasks.push(enhancedTask);
-                return;
-            }
-
-            if (isPast(date) && !isToday(date)) {
-                groups.overdue.tasks.push(enhancedTask);
-            } else if (isToday(date)) {
-                groups.today.tasks.push(enhancedTask);
-            } else if (isTomorrow(date)) {
-                groups.tomorrow.tasks.push(enhancedTask);
-            } else if (isThisWeek(date)) {
-                groups.thisWeek.tasks.push(enhancedTask);
-            } else {
-                groups.later.tasks.push(enhancedTask);
-            }
-        });
-    });
-
-    return groups;
-};
-
-const GoalsBoard = ({ data, handleTaskAction, setModalState }) => {
-    // Only process GOALS type lists if possible, or all lists if mixed
-    const goalLists = data?.lists || [];
-    const groupedTasks = useMemo(() => groupTasksByDate(goalLists), [goalLists]);
-
-    const handleCreateGoal = (groupKey) => {
-        // Determine default date based on group
-        let defaultDate = null;
-        const today = new Date();
-
-        if (groupKey === 'today') defaultDate = today;
-        else if (groupKey === 'tomorrow') defaultDate = addDays(today, 1);
-        else if (groupKey === 'thisWeek') defaultDate = addDays(today, 3); // Approx
-
-        // Find the first available list to add to (usually "Curto Prazo" or similar)
-        const targetList = goalLists[0];
-        if (!targetList) return;
-
-        // Open modal with pre-filled date context if feasible, or just quick add
-        // For now, simpler: user creates via modal, we just trigger generic create
-        setModalState({
-            isOpen: true,
-            type: 'create-task',
-            listId: targetList.id,
-            initialDate: defaultDate
-        });
+    const getDateColor = (dateStr) => {
+        if (!dateStr) return 'text-zinc-600';
+        const date = new Date(dateStr);
+        if (isPast(date) && !isToday(date)) return 'text-red-500 font-bold';
+        if (isToday(date)) return 'text-amber-500 font-bold';
+        return 'text-zinc-400';
     };
 
     return (
-        <div className="h-full overflow-y-auto p-4 md:p-8 pt-0 pb-32">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-                {Object.entries(groupedTasks).map(([key, group]) => {
-                    if (group.tasks.length === 0 && key === 'overdue') return null; // Hide overdue if empty
+        <div className="flex flex-col h-full overflow-x-auto">
+            {/* Header / Instructions */}
+            <div className="p-8 pb-4">
+                <h2 className="text-2xl font-black uppercase tracking-tighter text-white flex items-center gap-3">
+                    <Target className="text-red-600 h-6 w-6" />
+                    Metas & Prazos
+                </h2>
+                <p className="text-zinc-500 text-sm font-mono mt-2 max-w-2xl">
+                    Visualize seus objetivos classificados por horizonte de tempo. Defina datas de entrega para ver o progresso.
+                </p>
+            </div>
 
-                    return (
-                        <div key={key} className="flex flex-col gap-4">
-                            <div className={cn("flex items-center justify-between border-b pb-2", group.borderColor)}>
-                                <h3 className={cn("text-sm font-bold uppercase tracking-widest", group.color)}>
-                                    {group.title} <span className="text-zinc-600 ml-2 text-xs">({group.tasks.length})</span>
-                                </h3>
-                                {key !== 'overdue' && (
-                                    <button
-                                        onClick={() => handleCreateGoal(key)}
-                                        className="text-zinc-600 hover:text-white transition-colors"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </button>
-                                )}
+            <div className="flex-1 flex gap-6 p-8 min-w-max">
+                {goalLists.map(list => (
+                    <motion.div
+                        key={list.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-96 flex flex-col h-full bg-zinc-950/50 border border-zinc-900 rounded-none relative group/list"
+                    >
+                        {/* Header */}
+                        <div className="p-4 border-b border-zinc-900 bg-black/50 backdrop-blur-sm flex justify-between items-center sticky top-0 z-10">
+                            <div className="flex items-center gap-3">
+                                <div className={`h-2 w-2 rounded-full ${list.title.includes('Curto') ? 'bg-red-500' : list.title.includes('Médio') ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-300">{list.title}</h3>
                             </div>
-
-                            <div className="flex flex-col gap-2">
-                                {group.tasks.map(task => (
-                                    <GoalCard key={task.id} task={task} />
-                                ))}
-                                {group.tasks.length === 0 && (
-                                    <div className="h-24 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center text-zinc-700 text-xs font-mono uppercase tracking-widest">
-                                        Vazio
-                                    </div>
-                                )}
-                            </div>
+                            <span className="text-xs font-mono text-zinc-600">{list.tasks?.length || 0}</span>
                         </div>
-                    );
-                })}
+
+                        {/* Tasks */}
+                        <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+                            <AnimatePresence>
+                                {list.tasks?.map(task => (
+                                    <motion.div
+                                        key={task.id}
+                                        layout
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        onClick={() => setModalState({ type: 'task', mode: 'edit', isOpen: true, data: task, listId: list.id })}
+                                        className="bg-black border border-zinc-900 hover:border-zinc-700 p-4 cursor-pointer group transition-all relative hover:shadow-lg hover:shadow-black/50"
+                                    >
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className="text-sm font-bold text-zinc-200 group-hover:text-white uppercase leading-tight line-clamp-2">{task.title}</span>
+                                            {task.priority === 'high' && <StatusLED color="red" size="sm" />}
+                                        </div>
+
+                                        <div className="flex justify-between items-end border-t border-zinc-900/50 pt-3">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold">Prazo</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Calendar className="w-3 h-3 text-zinc-700" />
+                                                    <span className={`text-xs font-mono uppercase ${getDateColor(task.endDate)}`}>
+                                                        {getDateLabel(task.endDate)}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {task.responsibleUsers?.length > 0 && (
+                                                <ResponsibleUsersButton users={task.responsibleUsers} />
+                                            )}
+                                        </div>
+
+                                        {/* Progress Bar if checkitems exist */}
+                                        {task.checklists?.length > 0 && (
+                                            <div className="mt-3 h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-zinc-700 group-hover:bg-red-600 transition-colors"
+                                                    style={{ width: `${(task.checklists.filter(i => i.completed).length / task.checklists.length) * 100}%` }}
+                                                />
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+
+                            <MechButton
+                                className="w-full border-dashed border-zinc-900 text-zinc-700 hover:text-white hover:bg-zinc-900 h-12"
+                                icon={Plus}
+                                onClick={() => setModalState({ type: 'task', mode: 'create', isOpen: true, data: { listId: list.id } })}
+                            >
+                                Nova Meta
+                            </MechButton>
+                        </div>
+                    </motion.div>
+                ))}
+
+                {/* Empty State */}
+                {goalLists.length === 0 && (
+                    <div className="p-8 text-zinc-500 border border-dashed border-zinc-800 flex items-center justify-center h-64 w-full">
+                        <div className="text-center">
+                            <p className="text-sm uppercase tracking-widest font-bold">Nenhuma lista de metas encontrada</p>
+                            <p className="text-xs text-zinc-600 mt-2">Peça ao Mason para "Criar listas de metas" ou adicione manualmente.</p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
-};
-
-const GoalCard = ({ task }) => {
-    const date = task.due_date ? parseISO(task.due_date) : null;
-
-    return (
-        <motion.div
-            layoutId={task.id}
-            className="group relative bg-[#09090b] border border-zinc-800 hover:border-zinc-700 p-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:shadow-black/50"
-        >
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 space-y-2">
-                    <div className="flex items-start gap-2">
-                        {/* Status Indicator */}
-                        <div className="mt-1">
-                            <Circle className="w-3 h-3 text-zinc-600" />
-                        </div>
-                        <h4 className="text-sm font-medium text-zinc-200 leading-tight group-hover:text-white transition-colors">
-                            {task.title}
-                        </h4>
-                    </div>
-
-                    {/* Metadata Row */}
-                    <div className="flex items-center gap-3 pl-5">
-                        {/* List/Category Badge */}
-                        <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
-                            {task.listTitle}
-                        </span>
-
-                        {/* Date Badge */}
-                        {date && (
-                            <div className={cn(
-                                "flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider",
-                                isPast(date) && !isToday(date) ? "text-red-400" :
-                                    isToday(date) ? "text-green-400" : "text-zinc-500"
-                            )}>
-                                <Clock className="w-3 h-3" />
-                                <span>{format(date, "dd/MM", { locale: ptBR })}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Actions (Hidden until hover) */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-white">
-                        <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-        </motion.div>
-    );
 }
-
-export default GoalsBoard;
