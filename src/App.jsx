@@ -12,6 +12,8 @@ import BoardPage from './pages/BoardPage';
 // Components
 import LegacyHeader from './components/legacy/LegacyHeader';
 import MasonFloating from './components/MasonFloating';
+import UserSettingsModal from './components/modals/UserSettingsModal';
+import TeamManagementModal from './components/modals/TeamManagementModal';
 import { Loader2 } from 'lucide-react';
 
 function AppShell() {
@@ -21,10 +23,14 @@ function AppShell() {
     isAuthLoading,
     authError,
     handleLogin,
-    handleLogout
+
+    handleLogout,
+    handleSwitchUser
   } = useUsers();
 
   const [isMasonOpen, setIsMasonOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isTeamManagementOpen, setIsTeamManagementOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -138,6 +144,9 @@ function AppShell() {
       <LegacyHeader
         currentUser={currentUser}
         handleLogout={handleLogout}
+        handleSwitchUser={handleSwitchUser}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenTeamManagement={() => setIsTeamManagementOpen(true)}
         onOpenMason={() => setIsMasonOpen(true)}
         // Pass other props if needed or refactor header to be self-sufficient
         currentView={'home'}
@@ -170,6 +179,23 @@ function AppShell() {
           // Also dispatch event for components listening directly
           window.dispatchEvent(new CustomEvent('mason-action-executed'));
         }}
+      />
+      <UserSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentUser={currentUser}
+        backups={[]}
+        isBackupsLoading={false}
+        backupError={null}
+        isBackupRestoring={false}
+        onRefreshBackups={() => { }}
+        onRestoreBackup={() => { }}
+        onExportBackup={() => { }}
+      />
+      <TeamManagementModal
+        isOpen={isTeamManagementOpen}
+        onClose={() => setIsTeamManagementOpen(false)}
+        currentUser={currentUser}
       />
       <Toaster />
     </div>
