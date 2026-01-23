@@ -260,8 +260,8 @@ REMEMBER: You are Mason. You don't serve. You optimize. You don't wait. You exec
 // Helper to generate IDs (simple version matching frontend pattern approx)
 const generateId = (prefix = 'id') => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-// Helper to find project with exact match first, then fuzzy
-const findProject = (projects, projectName) => {
+// Legacy Helper - kept for reference (V1 state-blob architecture)
+const _findProject = (projects, projectName) => {
     // Try exact match first (case-insensitive)
     const exactMatch = projects.find(p => p.name.toLowerCase() === projectName.toLowerCase());
     if (exactMatch) return exactMatch;
@@ -304,15 +304,15 @@ const validateInputSize = (value, fieldName, maxLength) => {
     return null;
 };
 
-// Helper to create default Kanban lists
-const createDefaultKanbanLists = () => [
+// Legacy Helper - kept for reference (V1 state-blob architecture)
+const _createDefaultKanbanLists = () => [
     { id: generateId('list'), title: KANBAN_LISTS.TODO, cards: [] },
     { id: generateId('list'), title: KANBAN_LISTS.IN_PROGRESS, cards: [] },
     { id: generateId('list'), title: KANBAN_LISTS.DONE, cards: [] }
 ];
 
-// Helper to detect task status from list name
-const detectTaskStatus = (listTitle) => {
+// Legacy Helper - kept for reference (V1 state-blob architecture)
+const _detectTaskStatus = (listTitle) => {
     const normalized = listTitle.toLowerCase();
 
     if (KANBAN_STATUS_PATTERNS.todo.some(pattern => normalized.includes(pattern))) {
@@ -328,8 +328,8 @@ const detectTaskStatus = (listTitle) => {
     return null;
 };
 
-// DB Helpers
-async function getProjectState(client = null) {
+// Legacy Helper - kept for reference (V1 state-blob architecture)
+async function _getProjectState(client = null) {
     const q = 'SELECT data, version FROM brickflow_state WHERE id = $1';
     const res = client ? await client.query(q, [STATE_DB_ID]) : await query(q, [STATE_DB_ID]);
     if (res.rows.length === 0) return null;
@@ -689,7 +689,7 @@ const mutationHandlers = {
                 if (config.enabledTabs && config.enabledTabs.includes('todo')) {
                     defaultList = TODO_LISTS.PENDING;
                 }
-            } catch (e) { /* ignore parse error */ }
+            } catch (_e) { /* ignore parse error */ }
         }
 
         const targetListTitle = args.listName || defaultList;
@@ -765,7 +765,7 @@ const mutationHandlers = {
         `, [args.taskId]);
 
         if (taskRes.rows.length === 0) return { error: `ERRO: Tarefa não encontrada.` };
-        const { list_id: currentListId, sub_project_id: subProjectId } = taskRes.rows[0];
+        const { sub_project_id: subProjectId } = taskRes.rows[0];
 
         // 2. Find Target List in same subproject
         const listRes = await client.query(
@@ -789,8 +789,8 @@ const mutationHandlers = {
     }
 };
 
-// Helper to find task in data (used by multiple mutation handlers)
-const findTaskInData = (data, taskId) => {
+// Legacy Helper - kept for reference (V1 state-blob architecture)
+const _findTaskInData = (data, taskId) => {
     for (const p of data.projects) {
         for (const sp of p.subProjects || []) {
             const lists = sp.boardData?.kanban?.lists || [];
@@ -1105,7 +1105,7 @@ class MasonService {
         return "ERRO: não reconheço essa operação.";
     }
 
-    async handleMutation(client, toolName, args, userContext) {
+    async handleMutation(client, toolName, args, _userContext) {
         // Dispatch to appropriate handler
         const handler = mutationHandlers[toolName];
         if (!handler) {
