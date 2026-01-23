@@ -5,6 +5,7 @@ import MechButton from '../ui/MechButton';
 // Refactored Components
 import FilesBoard from '../boards/FilesBoard';
 import KanbanBoard from '../boards/KanbanBoard';
+import GoalsBoard from '../boards/GoalsBoard';
 
 function LegacyBoard({
   data,
@@ -129,6 +130,15 @@ function LegacyBoard({
               handleDragStart={handleDragStart}
               handleDragEnter={handleDragEnter}
               dragOverTargetId={dragOverTargetId}
+              handleTaskAction={handleTaskAction}
+              setModalState={setModalState}
+            />
+          )}
+
+          {/* GOALS BOARD */}
+          {currentBoardType === 'goals' && (
+            <GoalsBoard
+              data={data}
               handleTaskAction={handleTaskAction}
               setModalState={setModalState}
             />

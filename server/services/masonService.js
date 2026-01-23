@@ -59,6 +59,12 @@ const KANBAN_STATUS_PATTERNS = {
     done: ['done', 'complete', 'finished', 'completed']
 };
 
+const GOAL_LISTS = {
+    SHORT_TERM: 'Curto Prazo',
+    MEDIUM_TERM: 'Médio Prazo',
+    LONG_TERM: 'Longo Prazo'
+};
+
 // Generation config (can be overridden via env)
 const GENERATION_CONFIG = {
     maxOutputTokens: parseInt(process.env.MASON_MAX_TOKENS) || 2000,
@@ -168,7 +174,12 @@ CHOOSE the best board type for each subproject/area:
 2. **TODO** (Simple List): Use for simple checklists or items that are just "done" or "not done".
    - Best for: Brainstorming, Shopping Lists, Requirements, Feedback lists.
 
-Valid types for tools: 'KANBAN' or 'TODO'. If unsure, use 'KANBAN'.
+   - Best for: Brainstorming, Shopping Lists, Requirements, Feedback lists.
+
+3. **GOALS** (Metas): Use for tracking deadlines and objectives.
+   - Best for: "Definir Metas", "Planejamento Anual", "Objetivos de Marketing".
+
+Valid types for tools: 'KANBAN', 'TODO' or 'GOALS'. If unsure, use 'KANBAN'.
 
 === EXECUTION RULES ===
 
@@ -393,7 +404,7 @@ const tools = [
                         type: 'object',
                         properties: {
                             areaName: { type: 'string', description: 'Name of the subproject/area' },
-                            boardType: { type: 'string', description: 'Type of board: "KANBAN" or "TODO". Default is KANBAN.' },
+                            boardType: { type: 'string', description: 'Type of board: "KANBAN", "TODO" or "GOALS". Default is KANBAN.' },
                             tasks: {
                                 type: 'array',
                                 items: { type: 'string' },
@@ -412,8 +423,12 @@ const tools = [
 // Helper: Create default subproject with Kanban lists
 const createDefaultSubProject = async (client, projectId, subProjectName, boardType = 'KANBAN') => {
     const subProjectId = generateId('sub');
-    const boardConfig = { enabledTabs: [boardType === 'TODO' ? 'todo' : 'kanban', 'files'] };
-    const listDefinitions = boardType === 'TODO' ? TODO_LISTS : KANBAN_LISTS;
+    const boardConfig = { enabledTabs: [boardType === 'TODO' ? 'todo' : (boardType === 'GOALS' ? 'goals' : 'kanban'), 'files'] };
+
+    let listDefinitions;
+    if (boardType === 'TODO') listDefinitions = TODO_LISTS;
+    else if (boardType === 'GOALS') listDefinitions = GOAL_LISTS;
+    else listDefinitions = KANBAN_LISTS;
 
     await client.query(
         'INSERT INTO sub_projects (id, project_id, name, board_config) VALUES ($1, $2, $3, $4)',
@@ -476,7 +491,7 @@ const mutationHandlers = {
         const project = projectRes.rows[0];
 
         const newSubId = generateId('sub');
-        const boardConfig = { enabledTabs: [args.boardType === 'TODO' ? 'todo' : 'kanban', 'files'] };
+        const boardConfig = { enabledTabs: [args.boardType === 'TODO' ? 'todo' : (args.boardType === 'GOALS' ? 'goals' : 'kanban'), 'files'] };
 
         await client.query(
             'INSERT INTO sub_projects (id, project_id, name, board_config) VALUES ($1, $2, $3, $4)',
@@ -484,8 +499,16 @@ const mutationHandlers = {
         );
 
         // Create lists based on boardType
-        const listDefinitions = args.boardType === 'TODO' ? TODO_LISTS : KANBAN_LISTS;
-        const listType = args.boardType === 'TODO' ? 'TODO' : 'KANBAN';
+        let listDefinitions = KANBAN_LISTS;
+        let listType = 'KANBAN';
+
+        if (args.boardType === 'TODO') {
+            listDefinitions = TODO_LISTS;
+            listType = 'TODO';
+        } else if (args.boardType === 'GOALS') {
+            listDefinitions = GOAL_LISTS;
+            listType = 'GOALS';
+        }
 
         const listCreationPromises = Object.values(listDefinitions).map((listTitle, idx) => {
             const listId = generateId('list');
@@ -518,7 +541,7 @@ const mutationHandlers = {
         if (args.structure && Array.isArray(args.structure)) {
             for (const [areaIndex, area] of args.structure.entries()) {
                 const spId = generateId('sub');
-                const boardConfig = { enabledTabs: [area.boardType === 'TODO' ? 'todo' : 'kanban', 'files'] };
+                const boardConfig = { enabledTabs: [area.boardType === 'TODO' ? 'todo' : (area.boardType === 'GOALS' ? 'goals' : 'kanban'), 'files'] };
 
                 // Create Subproject
                 await client.query(
@@ -529,8 +552,16 @@ const mutationHandlers = {
 
                 // Create Standard Lists
                 const listIds = {}; // Map title -> id
-                const listDefinitions = area.boardType === 'TODO' ? TODO_LISTS : KANBAN_LISTS;
-                const listType = area.boardType === 'TODO' ? 'TODO' : 'KANBAN';
+                let listDefinitions = KANBAN_LISTS;
+                let listType = 'KANBAN';
+
+                if (area.boardType === 'TODO') {
+                    listDefinitions = TODO_LISTS;
+                    listType = 'TODO';
+                } else if (area.boardType === 'GOALS') {
+                    listDefinitions = GOAL_LISTS;
+                    listType = 'GOALS';
+                }
 
                 // Pre-generate IDs and build mapping, then insert in parallel
                 const listCreationPromises = Object.values(listDefinitions).map((listTitle, idx) => {
@@ -546,8 +577,10 @@ const mutationHandlers = {
                 // 3. Create Tasks
                 if (area.tasks && Array.isArray(area.tasks)) {
                     // Determine the "starting" list title based on board type
-                    // KANBAN -> "To Do", TODO -> "Pending"
-                    const startListTitle = area.boardType === 'TODO' ? TODO_LISTS.PENDING : KANBAN_LISTS.TODO;
+                    // KANBAN -> "To Do", TODO -> "Pending", GOALS -> "Curto Prazo"
+                    let startListTitle = KANBAN_LISTS.TODO;
+                    if (area.boardType === 'TODO') startListTitle = TODO_LISTS.PENDING;
+                    else if (area.boardType === 'GOALS') startListTitle = GOAL_LISTS.SHORT_TERM;
 
                     for (const [taskIndex, taskTitle] of area.tasks.entries()) {
                         const taskId = generateId('card');
@@ -558,8 +591,15 @@ const mutationHandlers = {
                             continue;
                         }
 
+                        // Date Inference for Goals
+                        let dueDateSQL = 'NULL';
+                        if (area.boardType === 'GOALS') {
+                            // Default to +7 days for short term
+                            dueDateSQL = "NOW() + INTERVAL '7 days'";
+                        }
+
                         await client.query(
-                            'INSERT INTO cards (id, list_id, title, description, order_index, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
+                            `INSERT INTO cards (id, list_id, title, description, order_index, due_date, created_at) VALUES ($1, $2, $3, $4, $5, ${dueDateSQL}, NOW())`,
                             [taskId, todoListId, taskTitle, '', taskIndex]
                         );
                         totalTasks++;

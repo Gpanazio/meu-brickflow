@@ -269,7 +269,7 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
     }));
   }, [updateFilesData]);
 
-  // File Upload (updated to include folderId)
+  // File Upload
   const handleFileUpload = useCallback(async (event) => {
     const uploadedFiles = Array.from(
       (event.target && event.target.files) ||
@@ -294,29 +294,21 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
     setIsUploading(true);
 
     try {
-      const newFilesPromises = validFiles.map(async (file) => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            resolve({
-              id: generateId('file'),
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              data: reader.result,
-              uploadDate: new Date().toISOString(),
-              projectId: currentProject?.id,
-              subProjectId: currentSubProject?.id,
-              folderId: currentFolderId // Upload to current folder
-            });
-          };
-          reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
-          reader.onabort = () => reject(new Error(`File read aborted: ${file.name}`));
-          reader.readAsDataURL(file);
-        });
+      const formData = new FormData();
+      validFiles.forEach(file => formData.append('files', file));
+
+      formData.append('projectId', currentProject?.id);
+      formData.append('subProjectId', currentSubProject?.id);
+      if (currentFolderId) formData.append('folderId', currentFolderId);
+
+      const res = await fetch('/api/v2/files/upload', {
+        method: 'POST',
+        body: formData // Content-Type header set automatically by browser
       });
 
-      const newFiles = await Promise.all(newFilesPromises);
+      if (!res.ok) throw new Error('Upload failed');
+
+      const newFiles = await res.json();
 
       updateFilesData(data => ({
         ...data,
@@ -333,12 +325,19 @@ export function useFiles(currentProject, currentSubProject, updateProjects) {
   }, [currentProject, currentSubProject, updateProjects, currentFolderId, updateFilesData]);
 
   // File Delete
-  const handleDeleteFile = useCallback((fileId) => {
-    updateFilesData(data => ({
-      ...data,
-      files: (data.files || []).filter(f => f.id !== fileId)
-    }));
-    toast.success('Arquivo excluído com sucesso');
+  const handleDeleteFile = useCallback(async (fileId) => {
+    try {
+      await fetch(`/api/v2/files/${fileId}`, { method: 'DELETE' });
+
+      updateFilesData(data => ({
+        ...data,
+        files: (data.files || []).filter(f => f.id !== fileId)
+      }));
+      toast.success('Arquivo excluído com sucesso');
+    } catch (err) {
+      console.error('Erro ao excluir:', err);
+      toast.error('Falha ao excluir arquivo');
+    }
   }, [updateFilesData]);
 
   return {

@@ -1,8 +1,29 @@
 import express from 'express';
 import { query, getClient } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+// File Storage Config
+const UPLOAD_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || './uploads'; // Use Railway volume or local fallback
+if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, UPLOAD_DIR);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
 
 const router = express.Router();
 
@@ -146,6 +167,7 @@ router.post('/projects/:projectId/subprojects', requireAuth, async (req, res) =>
         // Create default lists based on enabled tabs
         const KANBAN_LISTS = ['BACKLOG', 'EM PROGRESSO', 'CONCLUÍDO'];
         const TODO_LISTS = ['A FAZER', 'FAZENDO', 'CONCLUÍDO'];
+        const GOAL_LISTS = ['Curto Prazo', 'Médio Prazo', 'Longo Prazo'];
         const tabs = enabledTabs ?? ['kanban', 'files'];
 
         let listIdx = 0;
@@ -164,6 +186,15 @@ router.post('/projects/:projectId/subprojects', requireAuth, async (req, res) =>
                 await client.query(
                     'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
                     [listId, id, title, listIdx++, 'TODO']
+                );
+            }
+        }
+        if (tabs.includes('goals')) {
+            for (const title of GOAL_LISTS) {
+                const listId = generateId('list');
+                await client.query(
+                    'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+                    [listId, id, title, listIdx++, 'GOALS']
                 );
             }
         }
@@ -246,6 +277,7 @@ router.put('/subprojects/:id', requireAuth, async (req, res) => {
 
             const KANBAN_LISTS = ['BACKLOG', 'EM PROGRESSO', 'CONCLUÍDO'];
             const TODO_LISTS = ['A FAZER', 'FAZENDO', 'CONCLUÍDO'];
+            const GOAL_LISTS = ['Curto Prazo', 'Médio Prazo', 'Longo Prazo'];
 
             // Get max order_index
             const { rows: orderRows } = await client.query(
@@ -272,6 +304,16 @@ router.put('/subprojects/:id', requireAuth, async (req, res) => {
                     await client.query(
                         'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
                         [listId, id, title, listIdx++, 'TODO']
+                    );
+                }
+            }
+            // Create GOALS lists if enabled but don't exist
+            if (enabledTabs.includes('goals') && !existingTypes.has('GOALS')) {
+                for (const title of GOAL_LISTS) {
+                    const listId = generateId('list');
+                    await client.query(
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+                        [listId, id, title, listIdx++, 'GOALS']
                     );
                 }
             }
@@ -382,3 +424,174 @@ router.put('/tasks/:id/move', requireAuth, async (req, res) => {
 });
 
 export default router;
+
+// --- FILES ---
+
+// POST /api/v2/files/upload (Upload)
+router.post('/files/upload', requireAuth, upload.array('files', 10), async (req, res) => {
+    let client;
+    try {
+        const files = req.files;
+        const { projectId, subProjectId, folderId } = req.body;
+
+        if (!files || files.length === 0) {
+            return res.status(400).json({ error: 'No files uploaded' });
+        }
+
+        client = await getClient();
+        await client.query('BEGIN');
+
+        const insertedFiles = [];
+
+        for (const file of files) {
+            const id = generateId('file');
+            const filePath = file.path; // Absolute path on disk
+            const size = file.size;
+            const type = file.mimetype;
+            const name = file.originalname; // Or sanitize this
+
+            const { rows } = await client.query(
+                'INSERT INTO files (id, project_id, sub_project_id, folder_id, name, type, size, path, upload_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *',
+                [id, projectId, subProjectId || null, folderId || null, name, type, size, filePath]
+            );
+            insertedFiles.push(rows[0]);
+        }
+
+        await client.query('COMMIT');
+        res.json(insertedFiles);
+
+    } catch (err) {
+        if (client) await client.query('ROLLBACK').catch(() => { });
+        console.error('File Upload Error:', err);
+        res.status(500).json({ error: 'Failed to upload files' });
+    } finally {
+        if (client) client.release();
+    }
+});
+
+// GET /api/v2/files/:id/download (Download/Serve)
+router.get('/files/:id/download', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rows } = await query('SELECT * FROM files WHERE id = $1', [id]);
+
+        if (rows.length === 0) return res.status(404).json({ error: 'File not found' });
+        const fileRecord = rows[0];
+
+        // Check if file exists on disk
+        if (fileRecord.path && fs.existsSync(fileRecord.path)) {
+            res.download(fileRecord.path, fileRecord.name);
+        } else {
+            // Fallback for legacy base64 data (migration support)
+            if (fileRecord.data) {
+                const fileBuffer = Buffer.from(fileRecord.data.split(',')[1], 'base64');
+                res.writeHead(200, {
+                    'Content-Type': fileRecord.type,
+                    'Content-Length': fileBuffer.length,
+                    'Content-Disposition': `attachment; filename="${fileRecord.name}"`
+                });
+                res.end(fileBuffer);
+            } else {
+                res.status(404).json({ error: 'Physical file not found' });
+            }
+        }
+
+    } catch (err) {
+        console.error('File Download Error:', err);
+        res.status(500).json({ error: 'Failed to download file' });
+    }
+});
+
+// DELETE /api/v2/files/:id (Delete)
+router.delete('/files/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rows } = await query('DELETE FROM files WHERE id = $1 RETURNING *', [id]);
+
+        if (rows.length === 0) return res.status(404).json({ error: 'File not found' });
+        const fileRecord = rows[0];
+
+        // Delete from disk
+        if (fileRecord.path && fs.existsSync(fileRecord.path)) {
+            try {
+                fs.unlinkSync(fileRecord.path);
+            } catch (fsErr) {
+                console.warn(`Failed to delete file from disk: ${fileRecord.path}`, fsErr);
+            }
+        }
+
+        res.json({ success: true, message: 'File deleted' });
+    } catch (err) {
+        console.error('File Delete Error:', err);
+        res.status(500).json({ error: 'Failed to delete file' });
+    }
+});
+
+// --- FOLDERS ---
+
+// POST /api/v2/folders (Create)
+router.post('/folders', requireAuth, async (req, res) => {
+    try {
+        const { projectId, subProjectId, parentId, name, color } = req.body;
+        const id = generateId('folder');
+
+        const { rows } = await query(
+            'INSERT INTO folders (id, project_id, sub_project_id, parent_id, name, color) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [id, projectId, subProjectId, parentId || null, name, color || 'default']
+        );
+        res.json(rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to create folder' });
+    }
+});
+
+// PUT /api/v2/folders/:id (Rename/Color)
+router.put('/folders/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, color } = req.body;
+        // TODO: Implement selective update
+        const { rows } = await query(
+            'UPDATE folders SET name = COALESCE($1, name), color = COALESCE($2, color), updated_at = NOW() WHERE id = $3 RETURNING *',
+            [name, color, id]
+        );
+        if (rows.length === 0) return res.status(404).json({ error: 'Folder not found' });
+        res.json(rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update folder' });
+    }
+});
+
+// DELETE /api/v2/folders/:id (Delete)
+router.delete('/folders/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Postgres ON DELETE CASCADE should handle children folders and files linked to this folder
+        // HOWEVER, we need to delete physical files for all deleted file records.
+        // Complex query needed to find all affected files first, or just rely on a periodic cleanup job / ignoring orphaned files.
+        // For MVP: recursive delete logic is safer in code if we want to ensure disk cleanup.
+
+        // 1. Find all descendant folders (recursive CTE)
+        // 2. Find all files in these folders
+        // 3. Delete files from disk
+        // 4. Delete root folder (cascade takes care of DB records)
+
+        // Simplified approach: Just delete DB record, leave potential orphaned files for now (or implement robust cleanup later)
+        // Or fetch files linked to this folder directly:
+        const { rows: filesToDelete } = await query('SELECT path FROM files WHERE folder_id = $1', [id]);
+
+        await query('DELETE FROM folders WHERE id = $1', [id]); // Cascade deletes subfolders/files in DB
+
+        // Cleanup disk
+        filesToDelete.forEach(f => {
+            if (f.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to delete folder' });
+    }
+});
