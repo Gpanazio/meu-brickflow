@@ -476,6 +476,29 @@ const tools = [
     }
 ];
 
+// Helper: Create default subproject with Kanban lists
+const createDefaultSubProject = async (client, projectId, subProjectName, boardType = 'KANBAN') => {
+    const subProjectId = generateId('sub');
+    const boardConfig = { enabledTabs: [boardType === 'TODO' ? 'todo' : 'kanban', 'files'] };
+    const listDefinitions = boardType === 'TODO' ? TODO_LISTS : KANBAN_LISTS;
+
+    await client.query(
+        'INSERT INTO sub_projects (id, project_id, name, board_config) VALUES ($1, $2, $3, $4)',
+        [subProjectId, projectId, subProjectName, JSON.stringify(boardConfig)]
+    );
+
+    let idx = 0;
+    for (const listTitle of Object.values(listDefinitions)) {
+        const listId = generateId('list');
+        await client.query(
+            'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+            [listId, subProjectId, listTitle, idx++, boardType]
+        );
+    }
+
+    return subProjectId;
+};
+
 // Mutation Handlers - Refactored for Direct SQL (V2 Architecture)
 const mutationHandlers = {
     create_project: async (args, client) => {
@@ -498,22 +521,7 @@ const mutationHandlers = {
         let areaCount = 0;
         if (args.subProjects && Array.isArray(args.subProjects)) {
             for (const spName of args.subProjects) {
-                const spId = generateId('sub');
-                const defaultBoardConfig = { enabledTabs: ['kanban', 'files'] };
-                await client.query(
-                    'INSERT INTO sub_projects (id, project_id, name, board_config) VALUES ($1, $2, $3, $4)',
-                    [spId, newProjectId, spName, JSON.stringify(defaultBoardConfig)]
-                );
-
-                // Create default lists for this subproject
-                for (const listTitle of Object.values(KANBAN_LISTS)) {
-                    const listId = generateId('list');
-                    const orderIndex = listTitle === KANBAN_LISTS.TODO ? 0 : listTitle === KANBAN_LISTS.IN_PROGRESS ? 1 : 2;
-                    await client.query(
-                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-                        [listId, spId, listTitle, orderIndex, 'KANBAN']
-                    );
-                }
+                await createDefaultSubProject(client, newProjectId, spName);
                 areaCount++;
             }
         }
@@ -659,22 +667,8 @@ const mutationHandlers = {
                 subProjectId = anySp.rows[0].id;
                 subProjectName = anySp.rows[0].name;
             } else {
-                // Auto-create 'Geral'
-                subProjectId = generateId('sub');
-                const defaultBoardConfig = { enabledTabs: ['kanban', 'files'] };
-                await client.query(
-                    'INSERT INTO sub_projects (id, project_id, name, board_config) VALUES ($1, $2, $3, $4)',
-                    [subProjectId, project.id, 'Geral', JSON.stringify(defaultBoardConfig)]
-                );
-                // Create lists
-                for (const listTitle of Object.values(KANBAN_LISTS)) {
-                    const lId = generateId('list');
-                    const idx = listTitle === KANBAN_LISTS.TODO ? 0 : listTitle === KANBAN_LISTS.IN_PROGRESS ? 1 : 2;
-                    await client.query(
-                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-                        [lId, subProjectId, listTitle, idx, 'KANBAN']
-                    );
-                }
+                // Auto-create 'Geral' subproject
+                subProjectId = await createDefaultSubProject(client, project.id, 'Geral');
             }
         }
 

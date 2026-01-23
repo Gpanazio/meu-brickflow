@@ -65,9 +65,10 @@ router.put('/projects/:id', requireAuth, async (req, res) => {
         const values = [];
         let idx = 1;
 
-        if (name) { updates.push(`name = $${idx++}`); values.push(name); }
-        if (description !== undefined) { updates.push(`description = $${idx++}`); values.push(description); }
-        if (color) { updates.push(`color = $${idx++}`); values.push(color); }
+        // Check for property existence (allows empty strings)
+        if (Object.prototype.hasOwnProperty.call(req.body, 'name')) { updates.push(`name = $${idx++}`); values.push(name); }
+        if (Object.prototype.hasOwnProperty.call(req.body, 'description')) { updates.push(`description = $${idx++}`); values.push(description); }
+        if (Object.prototype.hasOwnProperty.call(req.body, 'color')) { updates.push(`color = $${idx++}`); values.push(color); }
 
         if (updates.length === 0) {
             return res.status(400).json({ error: 'No fields to update' });
