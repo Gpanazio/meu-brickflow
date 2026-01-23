@@ -29,12 +29,31 @@ const transformToLegacyData = (lists) => {
     };
 };
 
+import { useFileFilters } from '../hooks/useFileFilters';
+
 export default function BoardPage() {
     const { projectId, areaId } = useParams();
     const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [boardType, setBoardType] = useState('kanban'); // Default
     const [isLoading, setIsLoading] = useState(true);
+
+    // File Filter State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('newest');
+
+    // Calculate Filtered Files
+    const files = useMemo(() => data?.boardData?.files?.files || [], [data]);
+    const folders = useMemo(() => data?.boardData?.files?.folders || [], [data]);
+
+    const { filteredFiles, filteredFolders } = useFileFilters(
+        files,
+        folders,
+        searchQuery,
+        typeFilter,
+        sortBy
+    );
 
     // Modal State
     const [modalState, setModalState] = useState({
@@ -256,7 +275,18 @@ export default function BoardPage() {
                 {boardType === 'files' ? (
                     <FilesBoard
                         files={data.boardData?.files?.files || []}
+                        filteredFiles={filteredFiles}
                         folders={data.boardData?.files?.folders || []}
+                        filteredFolders={filteredFolders}
+
+                        // State
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        typeFilter={typeFilter}
+                        setTypeFilter={setTypeFilter}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+
                         // Pass mock handlers for now or reimplement hooks if needed for full file support
                         currentFolderPath={[]}
                     // ... other props ...

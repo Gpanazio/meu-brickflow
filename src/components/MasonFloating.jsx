@@ -299,7 +299,7 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
                                     aria-label="Histórico de conversa com Mason AI"
                                 >
                                     {messages.map((msg) => (
-                                        <div key={msg.id} className={cn("flex flex-col gap-1", msg.role === 'user' ? "items-end" : "items-start")}>
+                                        <div key={msg.id} className={cn("flex flex-col gap-1 select-text", msg.role === 'user' ? "items-end" : "items-start")}>
                                             <div className={cn(
                                                 "max-w-[85%] rounded px-3 py-2 text-xs font-mono leading-relaxed border",
                                                 msg.role === 'user'

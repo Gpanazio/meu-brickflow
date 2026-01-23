@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useRealtime } from '../hooks/useRealtime';
-import LegacyProjectView from '../components/legacy/LegacyProjectView';
+import ProjectView from '../components/ProjectView';
 import { CreateSubProjectModal } from '../components/CreateSubProjectModal';
 import { Loader2 } from 'lucide-react';
 import { COLOR_VARIANTS } from '@/constants/theme';
@@ -147,15 +147,13 @@ export default function ProjectPage() {
 
     return (
         <>
-            <LegacyProjectView
+            <ProjectView
                 currentProject={project}
                 setCurrentView={(view) => {
                     if (view === 'home') navigate('/');
                 }}
                 setModalState={setModalState}
-                COLOR_VARIANTS={COLOR_VARIANTS}
                 handleAccessProject={(subProject) => {
-                    // Navigate to Board Page
                     navigate(`/project/${projectId}/area/${subProject.id}`);
                 }}
                 handleDeleteProject={(item, isSubProject) => {
@@ -163,10 +161,32 @@ export default function ProjectPage() {
                         handleDeleteSubProject(item);
                     }
                 }}
-                handleDragStart={() => { }}
-                handleDragOver={() => { }}
-                handleDrop={() => { }}
-                history={[]}
+                onSubProjectReorder={async (activeId, overId) => {
+                    // Optimistic update
+                    const oldIndex = project.subProjects.findIndex(s => s.id === activeId);
+                    const newIndex = project.subProjects.findIndex(s => s.id === overId);
+
+                    if (oldIndex !== -1 && newIndex !== -1) {
+                        const newSubProjects = [...project.subProjects];
+                        const [moved] = newSubProjects.splice(oldIndex, 1);
+                        newSubProjects.splice(newIndex, 0, moved);
+
+                        setProject(prev => ({ ...prev, subProjects: newSubProjects }));
+
+                        // API Call
+                        try {
+                            await fetch('/api/v2/subprojects/reorder', {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ subProjectIds: newSubProjects.map(s => s.id) })
+                            });
+                        } catch (err) {
+                            console.error("Failed to reorder subprojects", err);
+                            fetchProject(); // Revert
+                        }
+                    }
+                }}
+                history={[]} // If history is needed, implement fetchHistory logic or pass dummy for now
                 isHistoryLoading={false}
                 historyError={null}
             />

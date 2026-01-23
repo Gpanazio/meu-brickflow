@@ -397,6 +397,35 @@ router.delete('/subprojects/:id', requireAuth, async (req, res) => {
     }
 });
 
+// PUT /api/v2/subprojects/reorder (Reorder)
+router.put('/subprojects/reorder', requireAuth, async (req, res) => {
+    try {
+        const { subProjectIds } = req.body; // Array of IDs in new order
+
+        if (!Array.isArray(subProjectIds)) {
+            return res.status(400).json({ error: 'Invalid input' });
+        }
+
+        const client = await getClient();
+        try {
+            await client.query('BEGIN');
+            for (let i = 0; i < subProjectIds.length; i++) {
+                await client.query('UPDATE sub_projects SET order_index = $1 WHERE id = $2', [i, subProjectIds[i]]);
+            }
+            await client.query('COMMIT');
+            res.json({ success: true });
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Subproject Reorder Error:', err);
+        res.status(500).json({ error: 'Failed to reorder subprojects' });
+    }
+});
+
 // GET /api/v2/subprojects/:id (Board Data)
 // GET /api/v2/subprojects/:id (Board Data)
 router.get('/subprojects/:id', requireAuth, async (req, res) => {
