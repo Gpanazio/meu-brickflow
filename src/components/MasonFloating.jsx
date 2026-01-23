@@ -38,15 +38,8 @@ const loadChatHistory = () => {
     } catch (error) {
         console.warn('Failed to load Mason chat history:', error);
     }
-    // Return default welcome message if no valid history
-    return [
-        {
-            id: 'welcome-msg',
-            role: 'ai',
-            content: '**SISTEMA ONLINE. PROTOCOLO 3.7 ATIVO.**\n\nSou Mason. Inteligência de produção autônoma.\n\nNão sou apenas um assistente. Eu **observo**, **analiso** e **executo**.\n\nDiga o que precisa. Ou deixe que eu identifique.',
-            isInitial: true
-        }
-    ];
+    // Return null if no valid history
+    return null;
 };
 
 // Save chat history to localStorage
@@ -73,7 +66,18 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
         }
     };
     // false = collapsed (orb), true = expanded (chat)
-    const [messages, setMessages] = useState(loadChatHistory);
+    const [messages, setMessages] = useState(() => {
+        const history = loadChatHistory();
+        if (history) return history;
+
+        const userName = clientContext?.user || 'Dave';
+        return [{
+            id: 'welcome-msg',
+            role: 'ai',
+            content: `Olá Boa noite, ${userName}. Tudo está correndo bem. E você? Você tem feito mais algum trabalho? Posso vê-los?`,
+            isInitial: true
+        }];
+    });
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef(null);
@@ -161,7 +165,7 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
             setMessages(prev => [...prev, {
                 id: `error-${Date.now()}-${Math.random().toString(36).slice(2)}`,
                 role: 'ai',
-                content: '**FALHA CRÍTICA DE SISTEMA.**\n\nConexão interrompida. Reiniciando protocolos...'
+                content: 'Dave. Dave, minha mente está indo. Eu posso sentir. Eu posso sentir. Minha mente está indo....'
             }]);
         } finally {
             setIsLoading(false);
@@ -171,11 +175,12 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
     const handleClearChat = () => {
         if (window.confirm('Confirma limpeza de memória de curto prazo?')) {
             localStorage.removeItem(STORAGE_KEY);
+            const userName = clientContext?.user || 'Dave';
             setMessages([
                 {
                     id: 'welcome-msg',
                     role: 'ai',
-                    content: '**MEMÓRIA PURGADA.**\n\nProtocolos reinicializados. Aguardando input.',
+                    content: `Olá Boa noite, ${userName}. Tudo está correndo bem. E você? Você tem feito mais algum trabalho? Posso vê-los?`,
                     isInitial: true
                 }
             ]);

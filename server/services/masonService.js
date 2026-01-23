@@ -968,7 +968,25 @@ class MasonService {
                 console.warn('[Mason] Reached maximum iteration limit');
             }
 
-            return response.text();
+            let finalResponse = '';
+            try {
+                finalResponse = response.text();
+            } catch (e) {
+                console.warn('[Mason] Failed to get text response:', e.message);
+            }
+
+            // Fallback if empty but tools executed
+            if (!finalResponse && iterationCount > 0) {
+                console.log('[Mason] Empty text response after tool execution. Generating fallback.');
+                return "Operações executadas. Sistema atualizado conforme solicitado.";
+            }
+
+            if (!finalResponse) {
+                console.warn('[Mason] Empty text response from model.');
+                return "Recebido. Aguardando novas instruções.";
+            }
+
+            return finalResponse;
         } catch (error) {
             console.error('Mason Service Error:', error);
 
