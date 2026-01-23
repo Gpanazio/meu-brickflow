@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { writeLimiter, apiLimiter } from '../middleware/rateLimit.js';
 import { userService } from '../services/userService.js';
 import { SaveProjectSchema, VerifyProjectPasswordSchema } from '../utils/schemas.js';
+import { cache } from '../cache.js';
 
 import { normalizeStateData } from '../utils/helpers.js';
 import bcrypt from 'bcrypt';
@@ -14,10 +15,38 @@ const router = express.Router();
 let stateCache = null;
 let stateCacheTime = 0;
 const CACHE_TTL = 60000;
+const PROJECTS_CACHE_KEY = 'projects:state';
+const PROJECTS_CACHE_TTL_SECONDS = 300;
+
+const isValidProjectsCache = (cachedEntry) => {
+  if (!cachedEntry || typeof cachedEntry !== 'object' || Array.isArray(cachedEntry)) {
+    return false;
+  }
+  if (!Array.isArray(cachedEntry.projects)) {
+    return false;
+  }
+  if (typeof cachedEntry.version !== 'number') {
+    return false;
+  }
+  return true;
+};
+
+export const resetProjectsStateCache = () => {
+  stateCache = null;
+  stateCacheTime = 0;
+};
 
 router.get('/', requireAuth, async (req, res) => {
   try {
     const now = Date.now();
+    const cachedResponse = await cache.get(PROJECTS_CACHE_KEY);
+    if (cachedResponse) {
+      if (!isValidProjectsCache(cachedResponse)) {
+        await cache.del(PROJECTS_CACHE_KEY);
+      } else {
+        return res.json(cachedResponse);
+      }
+    }
 
     // Invalidate cache if older than TTL
     // NOTE: We might want to be more aggressive with cache invalidation for users, 
@@ -65,6 +94,7 @@ router.get('/', requireAuth, async (req, res) => {
         // Fallback to existing state users if DB fetch fails (graceful degradation)
       }
 
+      await cache.set(PROJECTS_CACHE_KEY, stateResult, PROJECTS_CACHE_TTL_SECONDS);
       res.json(stateResult);
     } else {
       res.json(null);
