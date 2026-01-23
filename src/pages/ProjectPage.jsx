@@ -67,12 +67,13 @@ export default function ProjectPage() {
             });
             if (!res.ok) {
                 const error = await res.json();
-                throw new Error(error.error || 'Failed to create subproject');
+                throw new Error(error.error || 'Falha ao criar área');
             }
             // Refetch project to get updated subprojects
             fetchProject();
         } catch (err) {
             console.error('Failed to create subproject:', err);
+            alert(`Erro ao criar área: ${err.message}`);
         }
     };
 
@@ -89,12 +90,13 @@ export default function ProjectPage() {
             });
             if (!res.ok) {
                 const error = await res.json();
-                throw new Error(error.error || 'Failed to update subproject');
+                throw new Error(error.error || 'Falha ao atualizar área');
             }
             // Refetch project to get updated subprojects
             fetchProject();
         } catch (err) {
             console.error('Failed to update subproject:', err);
+            alert(`Erro ao atualizar área: ${err.message}`);
         }
     };
 
@@ -108,12 +110,13 @@ export default function ProjectPage() {
             });
             if (!res.ok) {
                 const error = await res.json();
-                throw new Error(error.error || 'Failed to delete subproject');
+                throw new Error(error.error || 'Falha ao excluir área');
             }
             // Refetch project to get updated subprojects
             fetchProject();
         } catch (err) {
             console.error('Failed to delete subproject:', err);
+            alert(`Erro ao excluir área: ${err.message}`);
         }
     };
 
@@ -133,7 +136,8 @@ export default function ProjectPage() {
         let enabledTabs = ['kanban', 'files'];
         if (sub.board_config) {
             const config = typeof sub.board_config === 'string' ? JSON.parse(sub.board_config) : sub.board_config;
-            enabledTabs = config.enabledTabs || enabledTabs;
+            // Use ?? to correctly handle empty arrays as valid values
+            enabledTabs = config.enabledTabs ?? enabledTabs;
         }
         return {
             ...sub,

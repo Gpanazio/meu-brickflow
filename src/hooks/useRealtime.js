@@ -80,7 +80,10 @@ export function useRealtime(channel, onMessage) {
     const disconnect = useCallback(() => {
         shouldReconnectRef.current = false; // Prevent reconnection after unmount
         if (wsRef.current) {
-            wsRef.current.close();
+            // Only close if the connection is open or connecting
+            if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
+                wsRef.current.close();
+            }
             wsRef.current = null;
         }
         if (reconnectTimerRef.current) {
@@ -88,6 +91,7 @@ export function useRealtime(channel, onMessage) {
             reconnectTimerRef.current = null;
         }
         reconnectAttemptsRef.current = 0;
+        setIsConnected(false);
     }, []);
 
     useEffect(() => {

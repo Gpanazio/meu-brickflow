@@ -63,22 +63,32 @@ export function setupWebSocket(server) {
     const pathname = new URL(request.url, `http://${request.headers.host}`).pathname;
 
     if (pathname === '/ws') {
+      // Check if socket is still writable before processing
+      if (socket.destroyed || !socket.writable) {
+        console.warn('⚠️ WS: Socket já fechado antes do processamento');
+        return;
+      }
+
       try {
         const cookies = parseCookies(request.headers.cookie);
         const sessionId = cookies.bf_session;
 
         if (!sessionId) {
           console.warn('⛔ WS recusado: Sem cookie de sessão');
-          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-          socket.destroy();
+          if (socket.writable) {
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+            socket.destroy();
+          }
           return;
         }
 
         const session = await sessionService.get(sessionId);
         if (!session) {
-          console.warn('⛔ WS recusado: Sessão inválida ou expirada');
-          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-          socket.destroy();
+          console.warn(`⛔ WS recusado: Sessão inválida (ID: ${sessionId.substring(0, 8)}...)`);
+          if (socket.writable) {
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+            socket.destroy();
+          }
           return;
         }
 
