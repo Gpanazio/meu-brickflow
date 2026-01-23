@@ -111,7 +111,14 @@ router.delete('/projects/:id', requireAuth, async (req, res) => {
 
 // POST /api/v2/projects/:projectId/subprojects (Create Subproject)
 router.post('/projects/:projectId/subprojects', requireAuth, async (req, res) => {
-    const client = await getClient();
+    let client;
+    try {
+        client = await getClient();
+    } catch (err) {
+        console.error('Error acquiring client:', err);
+        return res.status(500).json({ error: 'Failed to acquire database client' });
+    }
+
     try {
         await client.query('BEGIN');
 
@@ -164,17 +171,24 @@ router.post('/projects/:projectId/subprojects', requireAuth, async (req, res) =>
         await client.query('COMMIT');
         res.json(subProject);
     } catch (err) {
-        await client.query('ROLLBACK');
+        if (client) await client.query('ROLLBACK').catch(() => { });
         console.error('Subproject Create Error:', err);
         res.status(500).json({ error: 'Failed to create subproject' });
     } finally {
-        client.release();
+        if (client) client.release();
     }
 });
 
 // PUT /api/v2/subprojects/:id (Update Subproject)
 router.put('/subprojects/:id', requireAuth, async (req, res) => {
-    const client = await getClient();
+    let client;
+    try {
+        client = await getClient();
+    } catch (err) {
+        console.error('Error acquiring client:', err);
+        return res.status(500).json({ error: 'Failed to acquire database client' });
+    }
+
     try {
         await client.query('BEGIN');
 
@@ -200,8 +214,10 @@ router.put('/subprojects/:id', requireAuth, async (req, res) => {
         }
 
         if (updates.length === 0) {
-            await client.query('ROLLBACK');
-            client.release();
+            if (client) {
+                await client.query('ROLLBACK').catch(() => { });
+                client.release();
+            }
             return res.status(400).json({ error: 'No fields to update' });
         }
 
@@ -212,8 +228,10 @@ router.put('/subprojects/:id', requireAuth, async (req, res) => {
         );
 
         if (rowCount === 0) {
-            await client.query('ROLLBACK');
-            client.release();
+            if (client) {
+                await client.query('ROLLBACK').catch(() => { });
+                client.release();
+            }
             return res.status(404).json({ error: 'Subproject not found' });
         }
 
@@ -262,11 +280,11 @@ router.put('/subprojects/:id', requireAuth, async (req, res) => {
         await client.query('COMMIT');
         res.json(rows[0]);
     } catch (err) {
-        await client.query('ROLLBACK');
+        if (client) await client.query('ROLLBACK').catch(() => { });
         console.error('Subproject Update Error:', err);
         res.status(500).json({ error: 'Failed to update subproject' });
     } finally {
-        client.release();
+        if (client) client.release();
     }
 });
 
