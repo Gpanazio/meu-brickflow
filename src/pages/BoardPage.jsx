@@ -5,6 +5,14 @@ import LegacyBoard from '../components/legacy/LegacyBoard';
 import { Loader2 } from 'lucide-react';
 import { useFiles } from '../hooks/useFiles'; // Assuming we still use this for files/folders
 
+// Utility functions for list filtering
+const getKanbanLists = (lists) => lists.filter(l => !l.type || l.type === 'KANBAN');
+const getTodoLists = (lists) => lists.filter(l => l.type === 'TODO');
+const transformToLegacyData = (lists) => ({
+    kanban: { lists: getKanbanLists(lists) },
+    todo: { lists: getTodoLists(lists) }
+});
+
 export default function BoardPage() {
     const { projectId, areaId } = useParams();
     const navigate = useNavigate();
@@ -22,11 +30,7 @@ export default function BoardPage() {
             const subData = await res.json();
 
             // Transform SubData Lists into Legacy Structure
-            // Note: type defaults to 'KANBAN' in DB, but treat null/undefined as KANBAN for safety
-            const legacyData = {
-                kanban: { lists: subData.lists.filter(l => !l.type || l.type === 'KANBAN') },
-                todo: { lists: subData.lists.filter(l => l.type === 'TODO') },
-            };
+            const legacyData = transformToLegacyData(subData.lists);
 
             setData({
                 ...subData,
@@ -106,11 +110,7 @@ export default function BoardPage() {
                 const subData = await res.json();
 
                 // Re-transform data
-                const legacyData = {
-                    kanban: { lists: subData.lists.filter(l => !l.type || l.type === 'KANBAN') },
-                    todo: { lists: subData.lists.filter(l => l.type === 'TODO') },
-                };
-                setData({ ...subData, boardData: legacyData });
+                setData({ ...subData, boardData: transformToLegacyData(subData.lists) });
 
             } catch (err) {
                 console.error("Failed to move task", err);
@@ -128,11 +128,7 @@ export default function BoardPage() {
                 // Refetch
                 const res = await fetch(`/api/v2/subprojects/${areaId}`);
                 const subData = await res.json();
-                const legacyData = {
-                    kanban: { lists: subData.lists.filter(l => !l.type || l.type === 'KANBAN') },
-                    todo: { lists: subData.lists.filter(l => l.type === 'TODO') },
-                };
-                setData({ ...subData, boardData: legacyData });
+                setData({ ...subData, boardData: transformToLegacyData(subData.lists) });
             } catch (err) {
                 console.error("Failed to create task", err);
             }
