@@ -9,6 +9,7 @@ const {
   query,
   getClient,
   bcryptCompare,
+  cache,
 } = vi.hoisted(() => ({
   sessionService: {
     get: vi.fn(),
@@ -22,6 +23,11 @@ const {
   query: vi.fn(),
   getClient: vi.fn(),
   bcryptCompare: vi.fn(),
+  cache: {
+    get: vi.fn(),
+    set: vi.fn(),
+    del: vi.fn(),
+  },
 }));
 
 vi.mock('../middleware/rateLimit.js', () => ({
@@ -38,6 +44,7 @@ vi.mock('../services/eventService.js', () => ({
     PROJECT_UPDATED: 'PROJECT_UPDATED',
   },
 }));
+vi.mock('../cache.js', () => ({ cache }));
 vi.mock('../db.js', () => ({
   query,
   getClient,
@@ -49,7 +56,7 @@ vi.mock('bcrypt', () => ({
   },
 }));
 
-import projectsRouter from '../routes/projects.js';
+import projectsRouter, { resetProjectsStateCache } from '../routes/projects.js';
 
 let server;
 let baseUrl;
@@ -75,9 +82,44 @@ afterAll(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetProjectsStateCache();
+  cache.get.mockResolvedValue(null);
+  cache.set.mockResolvedValue(undefined);
+  cache.del.mockResolvedValue(undefined);
 });
 
 describe('Projects integration', () => {
+  it('clears malformed cached project state and falls back to the database', async () => {
+    sessionService.get.mockResolvedValue({ userId: 'ana' });
+    userService.findByUsername.mockResolvedValue({ username: 'ana', role: 'member' });
+    cache.get.mockResolvedValueOnce([{ invalid: true }]);
+
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          data: {
+            users: [],
+            projects: [{ id: 'p1', name: 'Projeto A', password: 'secret' }],
+          },
+          version: 3,
+        },
+      ],
+    });
+
+    const response = await fetch(`${baseUrl}/api/projects`, {
+      headers: { cookie: 'bf_session=session-123' },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      users: [],
+      projects: [{ id: 'p1', name: 'Projeto A', password: '****' }],
+      version: 3,
+    });
+    expect(cache.del).toHaveBeenCalledWith('projects:state');
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
   it('returns cached project state when available', async () => {
     sessionService.get.mockResolvedValue({ userId: 'ana' });
     userService.findByUsername.mockResolvedValue({ username: 'ana', role: 'member' });
