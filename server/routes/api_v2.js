@@ -355,25 +355,39 @@ router.get('/subprojects/:id', requireAuth, async (req, res) => {
         const subProject = subProjects[0];
 
         // Fetch Lists
+        // Fetch lists with cards
         const { rows: lists } = await query('SELECT * FROM lists WHERE sub_project_id = $1 ORDER BY order_index ASC', [id]);
-
-        // Fetch Cards for these lists
         const listIds = lists.map(l => l.id);
         let cards = [];
         if (listIds.length > 0) {
-            // Postgres: ANY($1) for array
             const { rows } = await query('SELECT * FROM cards WHERE list_id = ANY($1) ORDER BY order_index ASC', [listIds]);
             cards = rows;
         }
-
-        // Construct Board Data for Frontend (Kanban/Todo compatible)
         const listsWithCards = lists.map(list => ({
             ...list,
             cards: cards.filter(c => c.list_id === list.id)
         }));
 
-        // Split into types if needed or just return unified
-        res.json({ ...subProject, lists: listsWithCards });
+        // Fetch Files & Folders for this subproject
+        const { rows: files } = await query('SELECT * FROM files WHERE sub_project_id = $1 ORDER BY upload_date DESC', [id]);
+        const { rows: folders } = await query('SELECT * FROM folders WHERE sub_project_id = $1 ORDER BY name ASC', [id]);
+
+        // Construct legacy-compatible structure
+        // The BoardPage expects data.boardData.files.files/folders
+        // We inject this structure
+        const boardData = {
+            ...(subProject.board_config || {}),
+            files: {
+                files: files,
+                folders: folders
+            }
+        };
+
+        res.json({
+            ...subProject,
+            lists: listsWithCards,
+            boardData: boardData // Override/Merge to provide files to Frontend
+        });
 
     } catch (err) {
         console.error(err);
