@@ -269,8 +269,21 @@ export default function BoardPage() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-6rem)] relative overflow-hidden bg-black text-white">
+            {/* Grid de Fundo (Abismo) */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <div
+                    className="absolute inset-0 opacity-[0.15]"
+                    style={{
+                        backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`,
+                        backgroundSize: '40px 40px',
+                        maskImage: 'radial-gradient(circle at center, black, transparent 80%)'
+                    }}
+                />
+                <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/50 to-black" />
+            </div>
+
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-zinc-900 pb-4 gap-4 px-4 pt-4">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-zinc-900 pb-4 gap-4 px-4 pt-4">
                 <div className="flex items-center gap-4">
                     <MechButton onClick={() => navigate(`/project/${projectId}`)} className="px-3" icon={ArrowLeft}>
                         Voltar

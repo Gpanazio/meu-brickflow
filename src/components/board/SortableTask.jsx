@@ -55,18 +55,18 @@ export default function SortableTask({ task, onClick }) {
             {...listeners}
             onClick={onClick}
             className={cn(
-                "group relative bg-zinc-900 border border-transparent rounded-r-md overflow-hidden transition-all duration-200",
-                "hover:border-zinc-700 hover:bg-zinc-800/80 hover:translate-x-1 cursor-grab active:cursor-grabbing",
-                "shadow-sm hover:shadow-lg"
+                "group relative bg-black/40 border border-white/5 rounded overflow-hidden transition-all duration-200",
+                "hover:border-white/20 hover:bg-white/5 cursor-grab active:cursor-grabbing active:scale-[0.98]",
+                "shadow-sm hover:shadow-lg backdrop-blur-sm"
             )}
         >
             {/* Left Color Strip */}
-            <div className={`absolute top-0 bottom-0 left-0 w-1 ${stripColor} opacity-70 group-hover:opacity-100 flex-shrink-0`} />
+            <div className={`absolute top-0 bottom-0 left-0 w-1 ${stripColor} opacity-70 group-hover:opacity-100 flex-shrink-0 transition-opacity`} />
 
             <div className="pl-4 pr-3 py-3 flex flex-col gap-2">
                 {/* Header */}
                 <div className="flex justify-between items-start gap-2">
-                    <h4 className="text-[13px] font-medium text-zinc-200 line-clamp-2 leading-snug group-hover:text-white transition-colors">
+                    <h4 className="text-[13px] font-medium text-zinc-300 line-clamp-2 leading-snug group-hover:text-white transition-colors brick-title tracking-wide uppercase">
                         {task.title}
                     </h4>
                     {task.priority && (
@@ -76,20 +76,14 @@ export default function SortableTask({ task, onClick }) {
 
                 {/* Footer / Meta */}
                 <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-zinc-600 font-mono tracking-wider group-hover:text-zinc-500">
+                    <span className="text-[9px] text-zinc-600 font-mono tracking-wider group-hover:text-zinc-500 brick-mono uppercase">
                         {task.id.slice(0, 4)}
                     </span>
 
                     <div className="flex items-center gap-3">
-                        {/* Icons for attachments/comments could go here if data existed */}
-                        {/* <div className="flex items-center gap-2 text-zinc-700 group-hover:text-zinc-500">
-                             <MessageSquare className="w-3 h-3" />
-                             <span className="text-[10px]">2</span>
-                         </div> */}
-
                         <div className="flex -space-x-1.5">
                             {(task.responsibleUsers || []).slice(0, 3).map((u, i) => (
-                                <div key={i} className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-900 flex items-center justify-center text-[9px] text-zinc-400 ring-1 ring-zinc-950 group-hover:ring-zinc-800">
+                                <div key={i} className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-900 flex items-center justify-center text-[9px] text-zinc-400 ring-1 ring-zinc-950 group-hover:ring-zinc-800 transition-all">
                                     {u.name?.[0]?.toUpperCase() || '?'}
                                 </div>
                             ))}
