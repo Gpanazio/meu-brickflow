@@ -33,7 +33,7 @@ const router = express.Router();
 // GET /api/v2/projects (List)
 router.get('/projects', requireAuth, async (req, res) => {
     try {
-        const { rows } = await query('SELECT * FROM projects WHERE is_archived = false ORDER BY created_at DESC');
+        const { rows } = await query('SELECT * FROM projects WHERE is_archived = false ORDER BY order_index ASC, created_at DESC');
         // Fetch members if needed, for now returning basic info
         res.json(rows);
     } catch (err) {
@@ -112,6 +112,40 @@ router.put('/projects/:id', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('Project Update Error:', err);
         res.status(500).json({ error: 'Failed to update project' });
+    }
+});
+
+// PUT /api/v2/projects/reorder (Reorder)
+router.put('/projects/reorder', requireAuth, async (req, res) => {
+    try {
+        const { projectIds } = req.body; // Array of IDs in new order
+
+        if (!Array.isArray(projectIds)) {
+            return res.status(400).json({ error: 'Invalid input' });
+        }
+
+        // Transaction for safety
+        const client = await getClient();
+        try {
+            await client.query('BEGIN');
+            for (let i = 0; i < projectIds.length; i++) {
+                await client.query('UPDATE projects SET order_index = $1 WHERE id = $2', [i, projectIds[i]]);
+            }
+            await client.query('COMMIT');
+            res.json({ success: true });
+
+            // Should emit an event if we want realtime reorder sync
+            // eventService.publish(CHANNELS.PROJECT_REORDERED, { projectIds });
+
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Project Reorder Error:', err);
+        res.status(500).json({ error: 'Failed to reorder projects' });
     }
 });
 
@@ -478,6 +512,46 @@ router.put('/lists/:id', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('List Update Error:', err);
         res.status(500).json({ error: 'Failed to update list' });
+    }
+});
+
+// PUT /api/v2/lists/:id/reorder (Reorder Tasks)
+router.put('/lists/:id/reorder', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params; // listId
+        const { taskIds } = req.body; // Array of task IDs in order
+
+        if (!Array.isArray(taskIds)) return res.status(400).json({ error: 'Invalid input' });
+
+        const client = await getClient();
+        try {
+            await client.query('BEGIN');
+
+            // Loop is safest for strict order
+            for (let i = 0; i < taskIds.length; i++) {
+                // Ensure we also update list_id in case it moved from another list
+                await client.query(
+                    'UPDATE cards SET order_index = $1, list_id = $2 WHERE id = $3',
+                    [i, id, taskIds[i]]
+                );
+            }
+
+            await client.query('COMMIT');
+            res.json({ success: true });
+
+            // Emit Event (Optimized: just say list updated)
+            eventService.publish(CHANNELS.LIST_UPDATED, { id, taskIds });
+
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+
+    } catch (err) {
+        console.error('List Reorder Error:', err);
+        res.status(500).json({ error: 'Failed to reorder list' });
     }
 });
 

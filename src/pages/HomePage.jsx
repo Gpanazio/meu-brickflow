@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useUsers } from '../hooks/useUsers';
 import { useNavigate } from 'react-router-dom';
 import { useRealtime } from '../hooks/useRealtime';
-import LegacyHome from '../components/legacy/LegacyHome';
+import HomeView from '../pages/HomeView';
 import CreateProjectModal from '../components/CreateProjectModal';
 import { absurdPhrases } from '@/utils/phrases';
 import { Loader2 } from 'lucide-react';
@@ -111,44 +111,63 @@ export default function HomePage() {
 
     return (
         <>
-        <LegacyHome
-            currentUser={currentUser}
-            dailyPhrase={dailyPhrase}
-            megaSenaNumbers={megaSena}
-            projects={projects}
-            setModalState={setModalState}
-            handleAccessProject={handleAccessProject}
-            handleDeleteProject={async (project) => {
-                if (!window.confirm(`Tem certeza que deseja excluir o projeto "${project.name}"? Esta ação não pode ser desfeita.`)) return;
+            <HomeView
+                currentUser={currentUser}
+                dailyPhrase={dailyPhrase}
+                megaSenaNumbers={megaSena}
+                projects={projects}
+                setModalState={setModalState}
+                handleAccessProject={handleAccessProject}
+                handleDeleteProject={async (project) => {
+                    if (!window.confirm(`Tem certeza que deseja excluir o projeto "${project.name}"? Esta ação não pode ser desfeita.`)) return;
 
-                try {
-                    const res = await fetch(`/api/v2/projects/${project.id}`, { method: 'DELETE' });
-                    if (res.ok) {
-                        setProjects(prev => prev.filter(p => p.id !== project.id));
-                        // Assuming Toaster is available globally or log it
-                        console.log('Project deleted');
-                    } else {
-                        const err = await res.json();
-                        alert(`Erro ao excluir: ${err.error || 'Erro desconhecido'}`);
+                    try {
+                        const res = await fetch(`/api/v2/projects/${project.id}`, { method: 'DELETE' });
+                        if (res.ok) {
+                            setProjects(prev => prev.filter(p => p.id !== project.id));
+                            // Assuming Toaster is available globally or log it
+                            console.log('Project deleted');
+                        } else {
+                            const err = await res.json();
+                            alert(`Erro ao excluir: ${err.error || 'Erro desconhecido'}`);
+                        }
+                    } catch (error) {
+                        console.error('Delete error:', error);
+                        alert('Erro de conexão ao tentar excluir o projeto.');
                     }
-                } catch (error) {
-                    console.error('Delete error:', error);
-                    alert('Erro de conexão ao tentar excluir o projeto.');
-                }
-            }}
-            isLoading={isLoading}
-            COLOR_VARIANTS={COLOR_VARIANTS}
-            handleDragStart={() => { }}
-            handleDragOver={() => { }}
-            handleDrop={() => { }}
-        />
-        <CreateProjectModal
-            isOpen={modalState.isOpen}
-            mode={modalState.mode}
-            initialData={modalState.data}
-            onClose={() => setModalState({ isOpen: false, mode: 'create', data: null })}
-            onCreate={modalState.mode === 'edit' ? handleUpdateProject : handleCreateProject}
-        />
+                }}
+                isLoading={isLoading}
+                onProjectReorder={async (activeId, overId) => {
+                    const oldIndex = projects.findIndex(p => p.id === activeId);
+                    const newIndex = projects.findIndex(p => p.id === overId);
+
+                    // Optimistic UI Update
+                    const newProjects = [...projects];
+                    const [movedProject] = newProjects.splice(oldIndex, 1);
+                    newProjects.splice(newIndex, 0, movedProject);
+                    setProjects(newProjects);
+
+                    // API Call (Debounced ideal, but direct for now)
+                    try {
+                        await fetch('/api/v2/projects/reorder', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ projectIds: newProjects.map(p => p.id) })
+                        });
+                    } catch (err) {
+                        console.error("Failed to reorder projects", err);
+                        // Revert on error?
+                        fetchProjects();
+                    }
+                }}
+            />
+            <CreateProjectModal
+                isOpen={modalState.isOpen}
+                mode={modalState.mode}
+                initialData={modalState.data}
+                onClose={() => setModalState({ isOpen: false, mode: 'create', data: null })}
+                onCreate={modalState.mode === 'edit' ? handleUpdateProject : handleCreateProject}
+            />
         </>
     );
 }
