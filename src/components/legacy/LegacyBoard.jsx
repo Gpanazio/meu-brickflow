@@ -57,6 +57,21 @@ function LegacyBoard({
   navigateToFolder,
 }) {
 
+  // Normalize tabs
+  const normalizedTabs = useMemo(() => {
+    if (!Array.isArray(enabledTabs)) return [];
+    if (typeof enabledTabs[0] === 'string') {
+      return enabledTabs.map(t => ({
+        id: t,
+        title: t === 'kanban' ? 'Kanban' : (t === 'todo' ? 'Lista' : (t === 'goals' ? 'Metas' : (t === 'files' ? 'Arquivos' : t))),
+        type: t // Legacy assumption: id matches type
+      }));
+    }
+    return enabledTabs;
+  }, [enabledTabs]);
+
+  const currentTab = normalizedTabs.find(t => t.id === currentBoardType) || { type: 'kanban' };
+
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] relative overflow-hidden">
       {/* Grid de Fundo (Abismo) */}
@@ -80,10 +95,24 @@ function LegacyBoard({
         </div>
         <Tabs value={currentBoardType} onValueChange={setCurrentBoardType} className="w-full md:w-auto">
           <TabsList className="bg-transparent border-b border-transparent rounded-none h-8 p-0 gap-4 w-full md:w-auto overflow-x-auto justify-start md:justify-center scrollbar-hide">
-            {enabledTabs.includes('kanban') && <TabsTrigger value="kanban" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Kanban</TabsTrigger>}
-            {enabledTabs.includes('todo') && <TabsTrigger value="todo" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Lista</TabsTrigger>}
-            {enabledTabs.includes('files') && <TabsTrigger value="files" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Arquivos</TabsTrigger>}
-            {enabledTabs.includes('goals') && <TabsTrigger value="goals" className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600">Metas</TabsTrigger>}
+            {normalizedTabs.map(tab => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="rounded-none uppercase text-xs font-bold tracking-widest h-full data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b data-[state=active]:border-red-600 text-zinc-600"
+              >
+                {tab.title}
+              </TabsTrigger>
+            ))}
+            <MechButton
+              className="h-full border-none px-2 text-zinc-600 hover:text-white"
+              icon={Plus}
+              onClick={() => {
+                // Prompt for new tab name/type
+                const name = prompt("Nome da nova aba:");
+                if (name) handleTaskAction('addTab', { title: name });
+              }}
+            />
           </TabsList>
         </Tabs>
       </div>
@@ -92,7 +121,7 @@ function LegacyBoard({
         <div className="absolute inset-0 overflow-auto pr-2">
 
           {/* FILES BOARD */}
-          {currentBoardType === 'files' && (
+          {currentTab.type === 'files' && (
             <FilesBoard
               files={files}
               filteredFiles={filteredFiles}
@@ -120,11 +149,11 @@ function LegacyBoard({
             />
           )}
 
-          {/* KANBAN / TODO BOARD */}
-          {(currentBoardType === 'kanban' || currentBoardType === 'todo') && (
+          {/* KANBAN / TODO BOARD (Generic for custom tabs too) */}
+          {(currentTab.type !== 'files' && currentTab.type !== 'goals') && (
             <KanbanBoard
               data={data}
-              currentBoardType={currentBoardType}
+              currentBoardType={currentTab.type} // Pass type so KanbanBoard knows if it's TODO style or KANBAN style
               handleDragOver={handleDragOver}
               handleDrop={handleDrop}
               handleDragStart={handleDragStart}
@@ -136,7 +165,7 @@ function LegacyBoard({
           )}
 
           {/* GOALS BOARD */}
-          {currentBoardType === 'goals' && (
+          {currentTab.type === 'goals' && (
             <GoalsBoard
               data={data}
               handleTaskAction={handleTaskAction}

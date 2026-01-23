@@ -84,6 +84,11 @@ export const CHANNELS = {
   PROJECT_CREATED: 'brickflow:project:created',
   PROJECT_DELETED: 'brickflow:project:deleted',
   SUBPROJECT_CREATED: 'brickflow:subproject:created',
-  SUBPROJECT_UPDATED: 'brickflow:subproject:updated'
+  SUBPROJECT_UPDATED: 'brickflow:subproject:updated',
+  SUBPROJECT_DELETED: 'brickflow:subproject:deleted',
+  TASK_UPDATED: 'brickflow:task:updated',
+  LIST_CREATED: 'brickflow:list:created',
+  LIST_UPDATED: 'brickflow:list:updated',
+  LIST_DELETED: 'brickflow:list:deleted'
 };
 

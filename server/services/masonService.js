@@ -384,6 +384,11 @@ const tools = [
                 projectName: { type: 'string', description: 'Name of the parent project' },
                 name: { type: 'string', description: 'Name of the new subproject/area' },
                 description: { type: 'string', description: 'Description of the area' },
+                customLists: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Optional custom list titles (max 10). If provided, overrides default Kanban lists.'
+                },
                 boardType: { type: 'string', description: 'Type of board: "KANBAN" or "TODO". Default is KANBAN.' }
             },
             required: ['projectName', 'name']
@@ -405,6 +410,11 @@ const tools = [
                         properties: {
                             areaName: { type: 'string', description: 'Name of the subproject/area' },
                             boardType: { type: 'string', description: 'Type of board: "KANBAN", "TODO" or "GOALS". Default is KANBAN.' },
+                            customLists: {
+                                type: 'array',
+                                items: { type: 'string' },
+                                description: 'Optional custom list titles (max 10). If provided, overrides default lists.'
+                            },
                             tasks: {
                                 type: 'array',
                                 items: { type: 'string' },
@@ -421,26 +431,41 @@ const tools = [
 ];
 
 // Helper: Create default subproject with Kanban lists
-const createDefaultSubProject = async (client, projectId, subProjectName, boardType = 'KANBAN') => {
+const createDefaultSubProject = async (client, projectId, subProjectName, boardType = 'KANBAN', customLists = null) => {
     const subProjectId = generateId('sub');
-    const boardConfig = { enabledTabs: [boardType === 'TODO' ? 'todo' : (boardType === 'GOALS' ? 'goals' : 'kanban'), 'files'] };
 
-    let listDefinitions;
-    if (boardType === 'TODO') listDefinitions = TODO_LISTS;
-    else if (boardType === 'GOALS') listDefinitions = GOAL_LISTS;
-    else listDefinitions = KANBAN_LISTS;
+    // Default Tabs: Listas (Kanban) + Arquivos
+    const enabledTabs = [
+        { id: 'kanban', title: 'Listas', type: 'kanban' },
+        { id: 'files', title: 'Arquivos', type: 'files' }
+    ];
+
+    const boardConfig = { enabledTabs };
 
     await client.query(
         'INSERT INTO sub_projects (id, project_id, name, board_config) VALUES ($1, $2, $3, $4)',
         [subProjectId, projectId, subProjectName, JSON.stringify(boardConfig)]
     );
 
+    // Determine Lists
+    let listTitles = [];
+    if (customLists && Array.isArray(customLists) && customLists.length > 0) {
+        listTitles = customLists;
+    } else {
+        if (boardType === 'TODO') listTitles = Object.values(TODO_LISTS);
+        else if (boardType === 'GOALS') listTitles = Object.values(GOAL_LISTS);
+        else listTitles = Object.values(KANBAN_LISTS);
+    }
+
+    // Limit to 10 lists
+    listTitles = listTitles.slice(0, 10);
+
     let idx = 0;
-    for (const listTitle of Object.values(listDefinitions)) {
+    for (const listTitle of listTitles) {
         const listId = generateId('list');
         await client.query(
-            'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-            [listId, subProjectId, listTitle, idx++, boardType]
+            'INSERT INTO lists (id, sub_project_id, title, order_index, type, tab_id) VALUES ($1, $2, $3, $4, $5, $6)',
+            [listId, subProjectId, listTitle, idx++, boardType, 'kanban']
         );
     }
 
@@ -491,30 +516,40 @@ const mutationHandlers = {
         const project = projectRes.rows[0];
 
         const newSubId = generateId('sub');
-        const boardConfig = { enabledTabs: [args.boardType === 'TODO' ? 'todo' : (args.boardType === 'GOALS' ? 'goals' : 'kanban'), 'files'] };
+
+        // Default Tabs or Custom
+        const enabledTabs = [
+            { id: 'kanban', title: 'Listas', type: 'kanban' },
+            { id: 'files', title: 'Arquivos', type: 'files' }
+        ];
+
+        // Handle additional tabs if needed (future implementation)
+
+        const boardConfig = { enabledTabs };
 
         await client.query(
             'INSERT INTO sub_projects (id, project_id, name, board_config) VALUES ($1, $2, $3, $4)',
             [newSubId, project.id, args.name, JSON.stringify(boardConfig)]
         );
 
-        // Create lists based on boardType
-        let listDefinitions = KANBAN_LISTS;
-        let listType = 'KANBAN';
-
-        if (args.boardType === 'TODO') {
-            listDefinitions = TODO_LISTS;
-            listType = 'TODO';
-        } else if (args.boardType === 'GOALS') {
-            listDefinitions = GOAL_LISTS;
-            listType = 'GOALS';
+        // Create lists based on boardType or customLists
+        let listTitles = [];
+        if (args.customLists && Array.isArray(args.customLists) && args.customLists.length > 0) {
+            listTitles = args.customLists;
+        } else {
+            if (args.boardType === 'TODO') listTitles = Object.values(TODO_LISTS);
+            else if (args.boardType === 'GOALS') listTitles = Object.values(GOAL_LISTS);
+            else listTitles = Object.values(KANBAN_LISTS);
         }
 
-        const listCreationPromises = Object.values(listDefinitions).map((listTitle, idx) => {
+        // Limit to 10
+        listTitles = listTitles.slice(0, 10);
+
+        const listCreationPromises = listTitles.map((listTitle, idx) => {
             const listId = generateId('list');
             return client.query(
-                'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-                [listId, newSubId, listTitle, idx, listType]
+                'INSERT INTO lists (id, sub_project_id, title, order_index, type, tab_id) VALUES ($1, $2, $3, $4, $5, $6)',
+                [listId, newSubId, listTitle, idx, 'KANBAN', 'kanban'] // Defaulting type to KANBAN for custom lists for now
             );
         });
         await Promise.all(listCreationPromises);
@@ -541,7 +576,12 @@ const mutationHandlers = {
         if (args.structure && Array.isArray(args.structure)) {
             for (const [areaIndex, area] of args.structure.entries()) {
                 const spId = generateId('sub');
-                const boardConfig = { enabledTabs: [area.boardType === 'TODO' ? 'todo' : (area.boardType === 'GOALS' ? 'goals' : 'kanban'), 'files'] };
+                // Default Tabs: Listas + Arquivos
+                const enabledTabs = [
+                    { id: 'kanban', title: 'Listas', type: 'kanban' },
+                    { id: 'files', title: 'Arquivos', type: 'files' }
+                ];
+                const boardConfig = { enabledTabs };
 
                 // Create Subproject
                 await client.query(
@@ -550,37 +590,44 @@ const mutationHandlers = {
                 );
                 areaCount++;
 
-                // Create Standard Lists
+                // Create Lists (Standard or Custom)
                 const listIds = {}; // Map title -> id
-                let listDefinitions = KANBAN_LISTS;
-                let listType = 'KANBAN';
+                let listTitles = [];
 
-                if (area.boardType === 'TODO') {
-                    listDefinitions = TODO_LISTS;
-                    listType = 'TODO';
-                } else if (area.boardType === 'GOALS') {
-                    listDefinitions = GOAL_LISTS;
-                    listType = 'GOALS';
+                if (area.customLists && Array.isArray(area.customLists) && area.customLists.length > 0) {
+                    listTitles = area.customLists;
+                } else {
+                    if (area.boardType === 'TODO') listTitles = Object.values(TODO_LISTS);
+                    else if (area.boardType === 'GOALS') listTitles = Object.values(GOAL_LISTS);
+                    else listTitles = Object.values(KANBAN_LISTS);
                 }
 
+                // Limit to 10
+                listTitles = listTitles.slice(0, 10);
+                let listType = 'KANBAN'; // Default
+
                 // Pre-generate IDs and build mapping, then insert in parallel
-                const listCreationPromises = Object.values(listDefinitions).map((listTitle, idx) => {
+                const listCreationPromises = listTitles.map((listTitle, idx) => {
                     const listId = generateId('list');
                     listIds[listTitle] = listId;
                     return client.query(
-                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-                        [listId, spId, listTitle, idx, listType]
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type, tab_id) VALUES ($1, $2, $3, $4, $5, $6)',
+                        [listId, spId, listTitle, idx, listType, 'kanban']
                     );
                 });
                 await Promise.all(listCreationPromises);
 
                 // 3. Create Tasks
                 if (area.tasks && Array.isArray(area.tasks)) {
-                    // Determine the "starting" list title based on board type
-                    // KANBAN -> "To Do", TODO -> "Pending", GOALS -> "Curto Prazo"
-                    let startListTitle = KANBAN_LISTS.TODO;
-                    if (area.boardType === 'TODO') startListTitle = TODO_LISTS.PENDING;
-                    else if (area.boardType === 'GOALS') startListTitle = GOAL_LISTS.SHORT_TERM;
+                    // Determine the "starting" list title based on board type or custom list
+                    // DefaultKey is usually the first list
+                    let startListTitle = listTitles[0];
+                    if (!startListTitle && area.customLists) startListTitle = area.customLists[0];
+                    // If standard
+                    if (!area.customLists) {
+                        if (listType === 'KANBAN') startListTitle = KANBAN_LISTS.TODO;
+                        // For todo/goals check if needed, but listTitles[0] works for "To Do" / "Pending" / "Curto Prazo" usually
+                    }
 
                     for (const [taskIndex, taskTitle] of area.tasks.entries()) {
                         const taskId = generateId('card');
@@ -721,6 +768,8 @@ const mutationHandlers = {
 
         if (res.rowCount === 0) return { error: `ERRO: Tarefa não localizada.` };
 
+        // Emit Event
+        await eventService.publish(CHANNELS.TASK_UPDATED, { id: taskId, title, description });
         return { message: `Parâmetros da tarefa atualizados.` };
     },
 
@@ -752,12 +801,16 @@ const mutationHandlers = {
         // 3. Move
         await client.query('UPDATE cards SET list_id = $1, updated_at = NOW() WHERE id = $2', [targetListId, args.taskId]);
 
+        // Emit Event
+        await eventService.publish(CHANNELS.TASK_UPDATED, { id: args.taskId, listId: targetListId });
         return { message: `Tarefa realocada para ${listRes.rows[0].title}.` };
     },
 
     delete_task: async (args, client) => {
         const res = await client.query('DELETE FROM cards WHERE id = $1', [args.taskId]);
         if (res.rowCount === 0) return { error: `ERRO: Tarefa não encontrada.` };
+        // Emit Event
+        await eventService.publish(CHANNELS.TASK_DELETED, { id: args.taskId });
         return { message: `Tarefa removida permanentemente.` };
     }
 };

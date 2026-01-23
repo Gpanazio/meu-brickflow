@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import { eventService, CHANNELS } from '../services/eventService.js';
 
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -70,6 +71,8 @@ router.post('/projects', requireAuth, async (req, res) => {
             [id, name, description, color]
         );
         res.json(rows[0]);
+        // Emit Event
+        eventService.publish(CHANNELS.PROJECT_CREATED, rows[0]);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to create project' });
@@ -104,6 +107,8 @@ router.put('/projects/:id', requireAuth, async (req, res) => {
         if (rowCount === 0) return res.status(404).json({ error: 'Project not found' });
 
         res.json(rows[0]);
+        // Emit Event
+        eventService.publish(CHANNELS.PROJECT_UPDATED, rows[0]);
     } catch (err) {
         console.error('Project Update Error:', err);
         res.status(500).json({ error: 'Failed to update project' });
@@ -122,6 +127,8 @@ router.delete('/projects/:id', requireAuth, async (req, res) => {
         if (rowCount === 0) return res.status(404).json({ error: 'Project not found' });
 
         res.json({ success: true, message: 'Project deleted successfully' });
+        // Emit Event
+        eventService.publish(CHANNELS.PROJECT_DELETED, { id });
     } catch (err) {
         console.error('Project Delete Error:', err);
         res.status(500).json({ error: 'Failed to delete project. Check for dependencies.' });
@@ -201,6 +208,8 @@ router.post('/projects/:projectId/subprojects', requireAuth, async (req, res) =>
 
         await client.query('COMMIT');
         res.json(subProject);
+        // Emit Event
+        eventService.publish(CHANNELS.SUBPROJECT_CREATED, { ...subProject, projectId });
     } catch (err) {
         if (client) await client.query('ROLLBACK').catch(() => { });
         console.error('Subproject Create Error:', err);
@@ -268,6 +277,11 @@ router.put('/subprojects/:id', requireAuth, async (req, res) => {
 
         // If enabledTabs changed, create missing lists for newly enabled tabs
         if (Object.prototype.hasOwnProperty.call(req.body, 'enabledTabs') && enabledTabs) {
+            // Normalize enabledTabs to extract types/ids
+            const tabIds = Array.isArray(enabledTabs)
+                ? enabledTabs.map(t => typeof t === 'string' ? t : t.id)
+                : [];
+
             // Get existing list types for this subproject
             const { rows: existingLists } = await client.query(
                 'SELECT DISTINCT type FROM lists WHERE sub_project_id = $1',
@@ -287,33 +301,33 @@ router.put('/subprojects/:id', requireAuth, async (req, res) => {
             let listIdx = orderRows[0].max_order + 1;
 
             // Create KANBAN lists if enabled but don't exist
-            if (enabledTabs.includes('kanban') && !existingTypes.has('KANBAN')) {
+            if (tabIds.includes('kanban') && !existingTypes.has('KANBAN')) {
                 for (const title of KANBAN_LISTS) {
                     const listId = generateId('list');
                     await client.query(
-                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-                        [listId, id, title, listIdx++, 'KANBAN']
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type, tab_id) VALUES ($1, $2, $3, $4, $5, $6)',
+                        [listId, id, title, listIdx++, 'KANBAN', 'kanban']
                     );
                 }
             }
 
             // Create TODO lists if enabled but don't exist
-            if (enabledTabs.includes('todo') && !existingTypes.has('TODO')) {
+            if (tabIds.includes('todo') && !existingTypes.has('TODO')) {
                 for (const title of TODO_LISTS) {
                     const listId = generateId('list');
                     await client.query(
-                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-                        [listId, id, title, listIdx++, 'TODO']
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type, tab_id) VALUES ($1, $2, $3, $4, $5, $6)',
+                        [listId, id, title, listIdx++, 'TODO', 'todo']
                     );
                 }
             }
             // Create GOALS lists if enabled but don't exist
-            if (enabledTabs.includes('goals') && !existingTypes.has('GOALS')) {
+            if (tabIds.includes('goals') && !existingTypes.has('GOALS')) {
                 for (const title of GOAL_LISTS) {
                     const listId = generateId('list');
                     await client.query(
-                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
-                        [listId, id, title, listIdx++, 'GOALS']
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type, tab_id) VALUES ($1, $2, $3, $4, $5, $6)',
+                        [listId, id, title, listIdx++, 'GOALS', 'goals']
                     );
                 }
             }
@@ -321,6 +335,8 @@ router.put('/subprojects/:id', requireAuth, async (req, res) => {
 
         await client.query('COMMIT');
         res.json(rows[0]);
+        // Emit Event
+        eventService.publish(CHANNELS.SUBPROJECT_UPDATED, { ...rows[0], projectId: rows[0].project_id });
     } catch (err) {
         if (client) await client.query('ROLLBACK').catch(() => { });
         console.error('Subproject Update Error:', err);
@@ -339,6 +355,8 @@ router.delete('/subprojects/:id', requireAuth, async (req, res) => {
         if (rowCount === 0) return res.status(404).json({ error: 'Subproject not found' });
 
         res.json({ success: true, message: 'Subproject deleted successfully' });
+        // Emit Event
+        eventService.publish(CHANNELS.SUBPROJECT_DELETED, { id });
     } catch (err) {
         console.error('Subproject Delete Error:', err);
         res.status(500).json({ error: 'Failed to delete subproject' });
@@ -406,6 +424,80 @@ router.get('/subprojects/:id', requireAuth, async (req, res) => {
     }
 });
 
+// --- LISTS ---
+
+// POST /api/v2/lists (Create)
+router.post('/lists', requireAuth, async (req, res) => {
+    try {
+        const { subProjectId, title, type, tabId } = req.body;
+
+        // 1. Check Limits (Max 10 per subproject/tab) -- treating subproject as scope for now generally, or per tab if provided
+        // Using sub_project_id as the hard limit scope for now to prevent abuse
+        const { rows: countRows } = await query('SELECT COUNT(*) as count FROM lists WHERE sub_project_id = $1', [subProjectId]);
+        const count = parseInt(countRows[0].count);
+
+        if (count >= 10) {
+            return res.status(400).json({ error: 'Limite de 10 listas por área atingido.' });
+        }
+
+        const id = generateId('list');
+        // Get max order
+        const { rows: orderRows } = await query('SELECT COALESCE(MAX(order_index), 0) as max_order FROM lists WHERE sub_project_id = $1', [subProjectId]);
+        const newOrder = orderRows[0].max_order + 1;
+
+        const { rows } = await query(
+            'INSERT INTO lists (id, sub_project_id, title, type, tab_id, order_index) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [id, subProjectId, title, type || 'KANBAN', tabId || 'kanban', newOrder]
+        );
+
+        res.json(rows[0]);
+        // Emit Event
+        eventService.publish(CHANNELS.LIST_CREATED, rows[0]);
+    } catch (err) {
+        console.error('List Create Error:', err);
+        res.status(500).json({ error: 'Failed to create list' });
+    }
+});
+
+// PUT /api/v2/lists/:id (Update)
+router.put('/lists/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title } = req.body;
+
+        const { rows, rowCount } = await query(
+            'UPDATE lists SET title = $1 WHERE id = $2 RETURNING *',
+            [title, id]
+        );
+
+        if (rowCount === 0) return res.status(404).json({ error: 'List not found' });
+
+        res.json(rows[0]);
+        // Emit Event
+        eventService.publish(CHANNELS.LIST_UPDATED, rows[0]);
+    } catch (err) {
+        console.error('List Update Error:', err);
+        res.status(500).json({ error: 'Failed to update list' });
+    }
+});
+
+// DELETE /api/v2/lists/:id (Delete)
+router.delete('/lists/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rows } = await query('DELETE FROM lists WHERE id = $1 RETURNING *', [id]);
+
+        if (rows.length === 0) return res.status(404).json({ error: 'List not found' });
+
+        res.json({ success: true, message: 'List deleted' });
+        // Emit Event
+        eventService.publish(CHANNELS.LIST_DELETED, { id, subProjectId: rows[0].sub_project_id });
+    } catch (err) {
+        console.error('List Delete Error:', err);
+        res.status(500).json({ error: 'Failed to delete list' });
+    }
+});
+
 // --- TASKS (CARDS) ---
 
 // POST /api/v2/tasks (Create)
@@ -423,6 +515,8 @@ router.post('/tasks', requireAuth, async (req, res) => {
             [id, listId, title, description, newOrder]
         );
         res.json(rows[0]);
+        // Emit Event
+        eventService.publish(CHANNELS.TASK_CREATED, rows[0]);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to create task' });
@@ -442,9 +536,63 @@ router.put('/tasks/:id/move', requireAuth, async (req, res) => {
         await query('UPDATE cards SET list_id = $1, order_index = $2, updated_at = NOW() WHERE id = $3', [toListId, newIndex, id]);
 
         res.json({ success: true });
+        // Emit Event
+        eventService.publish(CHANNELS.TASK_UPDATED, { id, listId: toListId, orderIndex: newIndex });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to move task' });
+    }
+});
+
+// PUT /api/v2/tasks/:id (Update)
+router.put('/tasks/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, responsibleUsers, endDate, labels } = req.body;
+
+        const updates = [];
+        const values = [];
+        let idx = 1;
+
+        if (title !== undefined) { updates.push(`title = $${idx++}`); values.push(title); }
+        if (description !== undefined) { updates.push(`description = $${idx++}`); values.push(description); }
+        if (responsibleUsers !== undefined) { updates.push(`assignees = $${idx++}`); values.push(JSON.stringify(responsibleUsers)); }
+        if (endDate !== undefined) { updates.push(`due_date = $${idx++}`); values.push(endDate); }
+        if (labels !== undefined) { updates.push(`labels = $${idx++}`); values.push(JSON.stringify(labels)); }
+
+        if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+        values.push(id);
+        const { rows, rowCount } = await query(
+            `UPDATE cards SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING *`,
+            values
+        );
+
+        if (rowCount === 0) return res.status(404).json({ error: 'Task not found' });
+
+        res.json(rows[0]);
+        // Emit Event
+        eventService.publish(CHANNELS.TASK_UPDATED, rows[0]);
+    } catch (err) {
+        console.error('Task Update Error:', err);
+        res.status(500).json({ error: 'Failed to update task' });
+    }
+});
+
+// DELETE /api/v2/tasks/:id (Delete)
+router.delete('/tasks/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rows } = await query('DELETE FROM cards WHERE id = $1 RETURNING *', [id]);
+
+        if (rows.length === 0) return res.status(404).json({ error: 'Task not found' });
+
+        res.json({ success: true, message: 'Task deleted' });
+        // Emit Event
+        eventService.publish(CHANNELS.TASK_DELETED, { id, listId: rows[0].list_id });
+    } catch (err) {
+        console.error('Task Delete Error:', err);
+        res.status(500).json({ error: 'Failed to delete task' });
     }
 });
 

@@ -168,24 +168,91 @@ export default function BoardPage() {
                     method: 'DELETE'
                 });
             } else if (action === 'archive') {
-                const { id, isArchived } = payload;
-                // Assuming update endpoint handles archive toggle
+                const { isArchived } = payload;
                 await fetch(`/api/v2/tasks/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ isArchived })
                 });
+            } else if (action === 'addTab') {
+                const { title, type } = payload;
+                // Fetch current config first to be safe
+                // OR use local data if careful
+                const currentConfig = data.board_config || {};
+                let currentTabs = Array.isArray(currentConfig.enabledTabs) ?
+                    (typeof currentConfig.enabledTabs[0] === 'string' ?
+                        currentConfig.enabledTabs.map(t => ({ id: t, title: t, type: t })) :
+                        currentConfig.enabledTabs)
+                    : [];
+
+                // Normalize legacy defaults if empty
+                if (currentTabs.length === 0) currentTabs = [{ id: 'kanban', title: 'Kanban', type: 'kanban' }, { id: 'files', title: 'Arquivos', type: 'files' }];
+
+                if (currentTabs.length >= 10) {
+                    alert("Limite de 10 abas atingido.");
+                    return;
+                }
+
+                const newTabId = 'tab-' + Date.now();
+                const newTab = {
+                    id: newTabId,
+                    title: title,
+                    type: type || 'kanban' // Default to Kanban
+                };
+
+                const newTabs = [...currentTabs, newTab];
+
+                // We need to persist this. Subproject update.
+                await fetch(`/api/v2/subprojects/${data.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        enabledTabs: newTabs // Sending objects now, backend needs to handle or store as JSON
+                    })
+                });
+
+                // Also create default lists for this tab?
+                // POST /lists for default columns
+                const defaultLists = ['To Do', 'Doing', 'Done'];
+                for (const listTitle of defaultLists) {
+                    await fetch('/api/v2/lists', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            subProjectId: data.id,
+                            title: listTitle,
+                            type: 'KANBAN',
+                            tabId: newTabId
+                        })
+                    });
+                }
+
             } else if (action === 'addColumn') {
-                // Implement Add Column logic if needed (POST /lists)
-                // For now just log
-                console.log('Add Column not implemented yet');
+                const { title } = payload;
+                await fetch('/api/v2/lists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        subProjectId: data.id,
+                        title,
+                        type: 'KANBAN', // Default to Kanban type lists
+                        tabId: boardType // Associate with current tab
+                    })
+                });
             } else if (action === 'deleteColumn') {
-                // Implement Delete Column logic if needed (DELETE /lists/:id)
-                console.log('Delete Column not implemented yet');
+                const { listId } = payload;
+                await fetch(`/api/v2/lists/${listId}`, {
+                    method: 'DELETE'
+                });
             } else if (action === 'updateColumn') {
-                // Implement Update Column (PUT /lists/:id)
                 const { listId, updates } = payload;
-                // await fetch(...)
+                if (updates.title) {
+                    await fetch(`/api/v2/lists/${listId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title: updates.title })
+                    });
+                }
             }
 
             // Always refetch to sync state (simplest for now)
@@ -206,7 +273,18 @@ export default function BoardPage() {
     }
 
     // Extract raw board data for the current view
-    const currentBoardData = data.boardData[boardType] || { lists: [] };
+    // Filter lists by the current boardType (which aligns with tab_id)
+    const currentLists = (data.lists || []).filter(l => {
+        // Legacy fallback: if no tab_id, map 'KANBAN' type to 'kanban' tab
+        const tabId = l.tab_id || (l.type === 'KANBAN' ? 'kanban' : (l.type === 'TODO' ? 'todo' : 'goals'));
+        return tabId === boardType;
+    });
+
+    const currentBoardData = {
+        lists: currentLists,
+        // Keep other properties if needed
+        ...data.boardData[boardType]
+    };
 
     return (
         <>
