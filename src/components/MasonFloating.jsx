@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Minimize2, Maximize2, X, Trash2 } from 'lucide-react';
+import { Send, Minimize2, Maximize2, X, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
@@ -274,7 +274,7 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
                                         aria-label="Limpar chat"
                                         title="Purgar memória (Limpar chat)"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <RefreshCw className="w-4 h-4" />
                                     </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
