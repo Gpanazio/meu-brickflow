@@ -146,7 +146,8 @@ function AppShell() {
 
       <main className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 overflow-y-auto p-0 md:p-8 pt-4 md:pt-6 pb-20 md:pb-8 custom-scrollbar safe-area-pb">
-          <Routes>
+          {/* Key on Routes forces remount when refreshKey changes */}
+          <Routes key={location.pathname + (location.state?.refreshKey || '')}>
             <Route path="/" element={<HomePage />} />
             <Route path="/project/:projectId" element={<ProjectPage />} />
             <Route path="/project/:projectId/area/:areaId" element={<BoardPage />} />
@@ -160,19 +161,14 @@ function AppShell() {
         onOpenChange={setIsMasonOpen}
         onMasonAction={(action) => {
           console.log('[App] Mason action detected:', action);
-          // Force navigation to refresh the current page
-          // This triggers React Router to re-mount components and refetch data
-          const currentPath = location.pathname;
-          if (currentPath === '/') {
-            // For home, just trigger a state update or navigate away and back
-            navigate('/refresh-temp', { replace: true });
-            setTimeout(() => navigate('/', { replace: true }), 10);
-          } else {
-            // For project/area pages
-            navigate(currentPath, { replace: true });
-            // Alternative: force hard refresh of data using window.dispatchEvent
-            window.dispatchEvent(new CustomEvent('mason-action-executed'));
-          }
+
+          // Force UI refresh by updating location state with a new key
+          // This triggers the Routes key change above
+          const refreshKey = Date.now();
+          navigate(location.pathname, { replace: true, state: { refreshKey } });
+
+          // Also dispatch event for components listening directly
+          window.dispatchEvent(new CustomEvent('mason-action-executed'));
         }}
       />
       <Toaster />

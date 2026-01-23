@@ -65,6 +65,16 @@ export default function BoardPage() {
         }
     }, [areaId, fetchBoardData]));
 
+    // Listen for global Mason refresh events (redundancy)
+    useEffect(() => {
+        const handleRefresh = () => {
+            console.log('[BoardPage] 🔄 Refresh solicitado por Mason');
+            fetchBoardData();
+        };
+        window.addEventListener('mason-action-executed', handleRefresh);
+        return () => window.removeEventListener('mason-action-executed', handleRefresh);
+    }, [fetchBoardData]);
+
     useEffect(() => {
         Promise.all([
             fetch(`/api/v2/projects/${projectId}`).then(res => res.json()),
