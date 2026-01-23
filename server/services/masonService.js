@@ -499,10 +499,10 @@ const mutationHandlers = {
         if (args.subProjects && Array.isArray(args.subProjects)) {
             for (const spName of args.subProjects) {
                 const spId = generateId('sub');
-                // Assume order based on array index
+                const defaultBoardConfig = { enabledTabs: ['kanban', 'files'] };
                 await client.query(
-                    'INSERT INTO sub_projects (id, project_id, name) VALUES ($1, $2, $3)',
-                    [spId, newProjectId, spName]
+                    'INSERT INTO sub_projects (id, project_id, name, board_config) VALUES ($1, $2, $3, $4)',
+                    [spId, newProjectId, spName, JSON.stringify(defaultBoardConfig)]
                 );
 
                 // Create default lists for this subproject
@@ -510,8 +510,8 @@ const mutationHandlers = {
                     const listId = generateId('list');
                     const orderIndex = listTitle === KANBAN_LISTS.TODO ? 0 : listTitle === KANBAN_LISTS.IN_PROGRESS ? 1 : 2;
                     await client.query(
-                        'INSERT INTO lists (id, sub_project_id, title, order_index) VALUES ($1, $2, $3, $4)',
-                        [listId, spId, listTitle, orderIndex]
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+                        [listId, spId, listTitle, orderIndex, 'KANBAN']
                     );
                 }
                 areaCount++;
@@ -661,12 +661,19 @@ const mutationHandlers = {
             } else {
                 // Auto-create 'Geral'
                 subProjectId = generateId('sub');
-                await client.query('INSERT INTO sub_projects (id, project_id, name) VALUES ($1, $2, $3)', [subProjectId, project.id, 'Geral']);
+                const defaultBoardConfig = { enabledTabs: ['kanban', 'files'] };
+                await client.query(
+                    'INSERT INTO sub_projects (id, project_id, name, board_config) VALUES ($1, $2, $3, $4)',
+                    [subProjectId, project.id, 'Geral', JSON.stringify(defaultBoardConfig)]
+                );
                 // Create lists
                 for (const listTitle of Object.values(KANBAN_LISTS)) {
                     const lId = generateId('list');
                     const idx = listTitle === KANBAN_LISTS.TODO ? 0 : listTitle === KANBAN_LISTS.IN_PROGRESS ? 1 : 2;
-                    await client.query('INSERT INTO lists (id, sub_project_id, title, order_index) VALUES ($1, $2, $3, $4)', [lId, subProjectId, listTitle, idx]);
+                    await client.query(
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+                        [lId, subProjectId, listTitle, idx, 'KANBAN']
+                    );
                 }
             }
         }

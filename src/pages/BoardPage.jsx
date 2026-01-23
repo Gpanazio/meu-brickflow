@@ -21,8 +21,9 @@ export default function BoardPage() {
             const subData = await res.json();
 
             // Transform SubData Lists into Legacy Structure
+            // Note: type defaults to 'KANBAN' in DB, but treat null/undefined as KANBAN for safety
             const legacyData = {
-                kanban: { lists: subData.lists.filter(l => l.type === 'KANBAN') },
+                kanban: { lists: subData.lists.filter(l => !l.type || l.type === 'KANBAN') },
                 todo: { lists: subData.lists.filter(l => l.type === 'TODO') },
             };
 
@@ -105,7 +106,7 @@ export default function BoardPage() {
 
                 // Re-transform data
                 const legacyData = {
-                    kanban: { lists: subData.lists.filter(l => l.type === 'KANBAN') },
+                    kanban: { lists: subData.lists.filter(l => !l.type || l.type === 'KANBAN') },
                     todo: { lists: subData.lists.filter(l => l.type === 'TODO') },
                 };
                 setData({ ...subData, boardData: legacyData });
@@ -127,7 +128,7 @@ export default function BoardPage() {
                 const res = await fetch(`/api/v2/subprojects/${areaId}`);
                 const subData = await res.json();
                 const legacyData = {
-                    kanban: { lists: subData.lists.filter(l => l.type === 'KANBAN') },
+                    kanban: { lists: subData.lists.filter(l => !l.type || l.type === 'KANBAN') },
                     todo: { lists: subData.lists.filter(l => l.type === 'TODO') },
                 };
                 setData({ ...subData, boardData: legacyData });

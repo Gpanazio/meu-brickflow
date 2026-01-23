@@ -55,6 +55,39 @@ router.post('/projects', requireAuth, async (req, res) => {
     }
 });
 
+// PUT /api/v2/projects/:id (Update)
+router.put('/projects/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, color } = req.body;
+
+        const updates = [];
+        const values = [];
+        let idx = 1;
+
+        if (name) { updates.push(`name = $${idx++}`); values.push(name); }
+        if (description !== undefined) { updates.push(`description = $${idx++}`); values.push(description); }
+        if (color) { updates.push(`color = $${idx++}`); values.push(color); }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'No fields to update' });
+        }
+
+        values.push(id);
+        const { rows, rowCount } = await query(
+            `UPDATE projects SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING *`,
+            values
+        );
+
+        if (rowCount === 0) return res.status(404).json({ error: 'Project not found' });
+
+        res.json(rows[0]);
+    } catch (err) {
+        console.error('Project Update Error:', err);
+        res.status(500).json({ error: 'Failed to update project' });
+    }
+});
+
 // DELETE /api/v2/projects/:id (Delete)
 router.delete('/projects/:id', requireAuth, async (req, res) => {
     try {
