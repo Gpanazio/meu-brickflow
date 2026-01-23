@@ -69,9 +69,6 @@ router.get('/', requireAuth, async (req, res) => {
         }
         stateResult = { ...data, version: rows[0].version };
 
-        // Update Internal Cache
-        stateCache = stateResult;
-        stateCacheTime = now;
       }
     }
 
@@ -93,6 +90,10 @@ router.get('/', requireAuth, async (req, res) => {
         console.error('Failed to inject DB users into state:', userErr);
         // Fallback to existing state users if DB fetch fails (graceful degradation)
       }
+
+      // Update Internal Cache with final response shape (includes users)
+      stateCache = stateResult;
+      stateCacheTime = now;
 
       await cache.set(PROJECTS_CACHE_KEY, stateResult, PROJECTS_CACHE_TTL_SECONDS);
       res.json(stateResult);
@@ -148,7 +149,8 @@ router.post('/', requireAuth, writeLimiter, async (req, res) => {
 
     await client.query('COMMIT');
 
-    stateCache = null;
+    resetProjectsStateCache();
+    await cache.del(PROJECTS_CACHE_KEY);
 
     // Publish update for real-time sync
     await eventService.publish(CHANNELS.PROJECT_UPDATED, {
