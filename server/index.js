@@ -31,7 +31,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "https://api.dicebear.com", "https://*.githubusercontent.com", "https://grainy-gradients.vercel.app"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      connectSrc: ["'self'", "https://flow.brick.mov", "https://*.railway.app"],
+      connectSrc: ["'self'", "https://flow.brick.mov", "wss://flow.brick.mov", "https://*.railway.app", "wss://*.railway.app"],
       frameSrc: ["'none'"],
       objectSrc: ["'self'", "data:"],
       mediaSrc: ["'self'", "data:"],

@@ -3,6 +3,7 @@ import { useUsers } from '../hooks/useUsers';
 import { useNavigate } from 'react-router-dom';
 import { useRealtime } from '../hooks/useRealtime';
 import LegacyHome from '../components/legacy/LegacyHome';
+import CreateProjectModal from '../components/CreateProjectModal';
 import { absurdPhrases } from '@/utils/phrases';
 import { Loader2 } from 'lucide-react';
 import { COLOR_VARIANTS } from '@/constants/theme';
@@ -14,6 +15,7 @@ export default function HomePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [dailyPhrase, setDailyPhrase] = useState('');
     const [megaSena, setMegaSena] = useState([]);
+    const [modalState, setModalState] = useState({ isOpen: false, mode: 'create', data: null });
 
     // Function to fetch projects
     const fetchProjects = useCallback(async () => {
@@ -60,6 +62,45 @@ export default function HomePage() {
         navigate(`/project/${project.id}`);
     };
 
+    const handleCreateProject = async (projectData) => {
+        try {
+            const res = await fetch('/api/v2/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectData)
+            });
+            if (res.ok) {
+                const newProject = await res.json();
+                setProjects(prev => [newProject, ...prev]);
+            } else {
+                const err = await res.json();
+                alert(`Erro ao criar projeto: ${err.error || 'Erro desconhecido'}`);
+            }
+        } catch (error) {
+            console.error('Create project error:', error);
+            alert('Erro de conexão ao tentar criar o projeto.');
+        }
+    };
+
+    const handleUpdateProject = async (projectData) => {
+        try {
+            const res = await fetch(`/api/v2/projects/${modalState.data.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectData)
+            });
+            if (res.ok) {
+                fetchProjects(); // Refresh the list
+            } else {
+                const err = await res.json();
+                alert(`Erro ao atualizar projeto: ${err.error || 'Erro desconhecido'}`);
+            }
+        } catch (error) {
+            console.error('Update project error:', error);
+            alert('Erro de conexão ao tentar atualizar o projeto.');
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex-1 flex items-center justify-center p-20">
@@ -69,12 +110,13 @@ export default function HomePage() {
     }
 
     return (
+        <>
         <LegacyHome
             currentUser={currentUser}
             dailyPhrase={dailyPhrase}
             megaSenaNumbers={megaSena}
             projects={projects}
-            setModalState={() => { }} // TODO: Implement Modals Context
+            setModalState={setModalState}
             handleAccessProject={handleAccessProject}
             handleDeleteProject={async (project) => {
                 if (!window.confirm(`Tem certeza que deseja excluir o projeto "${project.name}"? Esta ação não pode ser desfeita.`)) return;
@@ -100,6 +142,14 @@ export default function HomePage() {
             handleDragOver={() => { }}
             handleDrop={() => { }}
         />
+        <CreateProjectModal
+            isOpen={modalState.isOpen}
+            mode={modalState.mode}
+            initialData={modalState.data}
+            onClose={() => setModalState({ isOpen: false, mode: 'create', data: null })}
+            onCreate={modalState.mode === 'edit' ? handleUpdateProject : handleCreateProject}
+        />
+        </>
     );
 }
 
