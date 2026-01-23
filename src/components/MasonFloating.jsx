@@ -77,7 +77,7 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef(null);
-    const constraintsRef = useRef(null); // Ref for drag constraints (usually the screen)
+    // Note: drag constraints are handled by Framer Motion automatically
 
     const isDraggingRef = useRef(false);
 
@@ -310,7 +310,7 @@ export default function MasonFloating({ clientContext, isOpen: controlledIsOpen,
                                                     <ReactMarkdown
                                                         rehypePlugins={[rehypeSanitize]}
                                                         components={{
-                                                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />
+                                                            p: ({ ...props }) => <p className="mb-2 last:mb-0" {...props} />
                                                         }}
                                                     >
                                                         {msg.content}

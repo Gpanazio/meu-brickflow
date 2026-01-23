@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useRealtime } from '../hooks/useRealtime';
 import LegacyBoard from '../components/legacy/LegacyBoard';
 import { Loader2 } from 'lucide-react';
-import { useFiles } from '../hooks/useFiles'; // Assuming we still use this for files/folders
 
 // Utility functions for list filtering
 const getKanbanLists = (lists) => lists.filter(l => !l.type || l.type === 'KANBAN');

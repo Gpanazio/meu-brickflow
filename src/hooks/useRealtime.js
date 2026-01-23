@@ -2,106 +2,193 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 
 const MAX_RECONNECT_ATTEMPTS = 5;
 
-export function useRealtime(channel, onMessage) {
-    const wsRef = useRef(null);
-    const reconnectTimerRef = useRef(null);
-    const reconnectAttemptsRef = useRef(0);
-    const shouldReconnectRef = useRef(true); // Flag to control reconnection
-    const [isConnected, setIsConnected] = useState(false);
+// =====================================================
+// SINGLETON WEBSOCKET MANAGER
+// All hooks share a single WebSocket connection
+// =====================================================
 
-    const connectRef = useRef();
+class WebSocketManager {
+    constructor() {
+        this.ws = null;
+        this.listeners = new Map(); // channel -> Set of callbacks
+        this.reconnectAttempts = 0;
+        this.reconnectTimer = null;
+        this.isConnecting = false;
+        this.shouldReconnect = true;
+    }
 
-    const scheduleReconnect = useCallback(() => {
-        if (!shouldReconnectRef.current) return; // Don't reconnect if flag is false
-        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+    connect() {
+        if (this.ws?.readyState === WebSocket.OPEN || this.isConnecting) {
+            return;
+        }
 
-        const attempt = reconnectAttemptsRef.current;
-        if (attempt >= MAX_RECONNECT_ATTEMPTS) {
-            console.warn(`⚠️ WebSocket: máximo de tentativas atingido para ${channel}. Reconexão desabilitada.`);
+        this.isConnecting = true;
+        this.shouldReconnect = true;
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.hostname;
+        const port = window.location.port ? `:${window.location.port}` : '';
+        const wsUrl = `${protocol}//${host}${port}/ws`;
+
+        console.log(`🔌 WebSocket: Conectando a ${wsUrl}...`);
+
+        try {
+            this.ws = new WebSocket(wsUrl);
+
+            this.ws.onopen = () => {
+                console.log('✅ WebSocket: Conexão estabelecida');
+                this.isConnecting = false;
+                this.reconnectAttempts = 0;
+
+                // Resubscribe all active channels
+                this.listeners.forEach((_, channel) => {
+                    this.ws.send(JSON.stringify({ type: 'subscribe', channel }));
+                    console.log(`📡 WebSocket: Resubscrito em ${channel}`);
+                });
+            };
+
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    const callbacks = this.listeners.get(data.channel);
+                    if (callbacks) {
+                        callbacks.forEach(cb => cb(data.payload));
+                    }
+                } catch (err) {
+                    console.error('❌ WebSocket: Erro ao parsear mensagem:', err);
+                }
+            };
+
+            this.ws.onclose = () => {
+                console.log('❌ WebSocket: Conexão fechada');
+                this.ws = null;
+                this.isConnecting = false;
+
+                if (this.shouldReconnect && this.listeners.size > 0) {
+                    this.scheduleReconnect();
+                }
+            };
+
+            this.ws.onerror = (err) => {
+                console.error('❌ WebSocket: Erro:', err);
+                this.isConnecting = false;
+                // onclose will handle reconnection
+            };
+        } catch (err) {
+            console.error('❌ WebSocket: Falha ao criar conexão:', err);
+            this.isConnecting = false;
+            this.scheduleReconnect();
+        }
+    }
+
+    scheduleReconnect() {
+        if (!this.shouldReconnect) return;
+        if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+
+        if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            console.warn('⚠️ WebSocket: Máximo de tentativas atingido. Reconexão desabilitada.');
             return;
         }
 
         // Exponential backoff: 3s, 6s, 12s, 24s, max 30s
-        const delay = Math.min(3000 * Math.pow(2, attempt), 30000);
+        const delay = Math.min(3000 * Math.pow(2, this.reconnectAttempts), 30000);
+        console.log(`🔄 WebSocket: Reconectando em ${delay / 1000}s (tentativa ${this.reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`);
 
-        reconnectTimerRef.current = setTimeout(() => {
-            reconnectAttemptsRef.current += 1;
-            if (connectRef.current) connectRef.current();
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectAttempts++;
+            this.connect();
         }, delay);
-    }, [channel]);
+    }
 
-    const connect = useCallback(() => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    subscribe(channel, callback) {
+        if (!this.listeners.has(channel)) {
+            this.listeners.set(channel, new Set());
+        }
+        this.listeners.get(channel).add(callback);
 
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        // Use location.hostname to avoid including the port in development
-        const host = window.location.hostname;
-        const port = window.location.port ? `:${window.location.port}` : '';
-        const wsUrl = `${protocol}//${host}${port}/ws`;
-        const ws = new WebSocket(wsUrl);
+        // Connect if not already connected
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            this.connect();
+        } else {
+            // Already connected, just subscribe to new channel
+            this.ws.send(JSON.stringify({ type: 'subscribe', channel }));
+            console.log(`📡 WebSocket: Inscrito em ${channel}`);
+        }
 
-        ws.onopen = () => {
-            console.log(`✅ WebSocket conectado: ${channel}`);
-            ws.send(JSON.stringify({ type: 'subscribe', channel }));
-            setIsConnected(true);
-            reconnectAttemptsRef.current = 0; // Reset backoff on successful connection
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.channel === channel) {
-                    onMessage(data.payload);
+        // Return unsubscribe function
+        return () => {
+            const callbacks = this.listeners.get(channel);
+            if (callbacks) {
+                callbacks.delete(callback);
+                if (callbacks.size === 0) {
+                    this.listeners.delete(channel);
                 }
-            } catch (err) {
-                console.error('Erro ao parse mensagem WebSocket:', err);
+            }
+
+            // Close connection if no more listeners
+            if (this.listeners.size === 0 && this.ws) {
+                console.log('🔌 WebSocket: Sem listeners ativos, fechando conexão');
+                this.shouldReconnect = false;
+                this.ws.close();
+                this.ws = null;
+                if (this.reconnectTimer) {
+                    clearTimeout(this.reconnectTimer);
+                    this.reconnectTimer = null;
+                }
             }
         };
+    }
 
-        ws.onclose = () => {
-            console.log(`❌ WebSocket desconectado: ${channel}`);
-            wsRef.current = null;
-            setIsConnected(false);
-            scheduleReconnect(); // Only onclose schedules reconnect
+    getState() {
+        return {
+            isConnected: this.ws?.readyState === WebSocket.OPEN,
+            activeChannels: Array.from(this.listeners.keys()),
+            reconnectAttempts: this.reconnectAttempts
         };
+    }
+}
 
-        ws.onerror = (err) => {
-            console.error('❌ Erro WebSocket:', err);
-            // Don't schedule reconnect here - onclose will handle it
-        };
+// Global singleton instance
+const wsManager = new WebSocketManager();
 
-        wsRef.current = ws;
-    }, [channel, onMessage, scheduleReconnect]);
+// =====================================================
+// REACT HOOK
+// =====================================================
+
+export function useRealtime(channel, onMessage) {
+    const [isConnected, setIsConnected] = useState(wsManager.ws?.readyState === WebSocket.OPEN);
+    const callbackRef = useRef(onMessage);
+
+    // Keep callback ref updated
+    useEffect(() => {
+        callbackRef.current = onMessage;
+    }, [onMessage]);
 
     useEffect(() => {
-        connectRef.current = connect;
-    }, [connect]);
+        // Wrapper to use latest callback
+        const wrappedCallback = (payload) => {
+            callbackRef.current(payload);
+        };
 
-    const disconnect = useCallback(() => {
-        shouldReconnectRef.current = false; // Prevent reconnection after unmount
-        if (wsRef.current) {
-            // Only close if the connection is open or connecting
-            if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
-                wsRef.current.close();
-            }
-            wsRef.current = null;
-        }
-        if (reconnectTimerRef.current) {
-            clearTimeout(reconnectTimerRef.current);
-            reconnectTimerRef.current = null;
-        }
-        reconnectAttemptsRef.current = 0;
-        setIsConnected(false);
-    }, []);
+        const unsubscribe = wsManager.subscribe(channel, wrappedCallback);
 
-    useEffect(() => {
-        shouldReconnectRef.current = true; // Enable reconnection on mount
-        connect();
+        // Update connected state periodically
+        const checkConnection = setInterval(() => {
+            const newState = wsManager.ws?.readyState === WebSocket.OPEN;
+            setIsConnected(prev => prev !== newState ? newState : prev);
+        }, 1000);
 
         return () => {
-            disconnect();
+            unsubscribe();
+            clearInterval(checkConnection);
         };
-    }, [channel, connect, disconnect]);
+    }, [channel]);
 
-    return { isConnected, disconnect, reconnect: connect };
+    const reconnect = useCallback(() => {
+        wsManager.reconnectAttempts = 0;
+        wsManager.shouldReconnect = true;
+        wsManager.connect();
+    }, []);
+
+    return { isConnected, reconnect };
 }

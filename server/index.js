@@ -109,7 +109,7 @@ app.get('*', (req, res) => {
 });
 
 // Global Error Handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   if (err.message === 'Not allowed by CORS') {
     res.status(403).json({ error: 'CORS Policy: Origin not allowed' });
   } else {

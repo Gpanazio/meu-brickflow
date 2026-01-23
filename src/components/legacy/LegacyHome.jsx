@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Plus, MoreVertical, Lock, CheckSquare, ArrowRight } from 'lucide-react';
 import { getUserTasks } from '@/utils/userTasks';
-import { hasPermission, PERMISSIONS, canEditProject, canDeleteProject } from '@/utils/accessControl';
+import { hasPermission, PERMISSIONS } from '@/utils/accessControl';
 import { COLOR_VARIANTS } from '@/constants/theme';
 import PrismaticPanel from '@/components/ui/PrismaticPanel';
 import { Skeleton } from '@/components/ui/skeleton';
