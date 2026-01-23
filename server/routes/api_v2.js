@@ -346,6 +346,7 @@ router.delete('/subprojects/:id', requireAuth, async (req, res) => {
 });
 
 // GET /api/v2/subprojects/:id (Board Data)
+// GET /api/v2/subprojects/:id (Board Data)
 router.get('/subprojects/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -375,8 +376,18 @@ router.get('/subprojects/:id', requireAuth, async (req, res) => {
         // Construct legacy-compatible structure
         // The BoardPage expects data.boardData.files.files/folders
         // We inject this structure
+        let boardConfig = subProject.board_config || {};
+        if (typeof boardConfig === 'string') {
+            try {
+                boardConfig = JSON.parse(boardConfig);
+            } catch (e) {
+                console.warn(`[API] Failed to parse board_config for ${id}:`, e);
+                boardConfig = {};
+            }
+        }
+
         const boardData = {
-            ...(subProject.board_config || {}),
+            ...boardConfig,
             files: {
                 files: files,
                 folders: folders
