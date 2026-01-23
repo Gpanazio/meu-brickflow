@@ -7,9 +7,12 @@ import { Loader2 } from 'lucide-react';
 // Utility functions for list filtering
 const getKanbanLists = (lists) => lists.filter(l => !l.type || l.type === 'KANBAN');
 const getTodoLists = (lists) => lists.filter(l => l.type === 'TODO');
+const getGoalLists = (lists) => lists.filter(l => l.type === 'GOALS');
+
 const transformToLegacyData = (lists) => ({
     kanban: { lists: getKanbanLists(lists) },
-    todo: { lists: getTodoLists(lists) }
+    todo: { lists: getTodoLists(lists) },
+    goals: { lists: getGoalLists(lists) }
 });
 
 import { Dialog } from '@/components/ui/dialog';
