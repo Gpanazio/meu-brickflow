@@ -250,7 +250,7 @@ export default function BoardPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-zinc-900 pb-4 gap-4 px-4 pt-4">
                 <div className="flex items-center gap-4">
-                    <MechButton onClick={() => navigate(`/project/${projectId}`)} className="h-8 px-3" icon={ArrowLeft}>
+                    <MechButton onClick={() => navigate(`/project/${projectId}`)} className="px-3" icon={ArrowLeft}>
                         Voltar
                     </MechButton>
                     <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight truncate max-w-[200px] md:max-w-none">{data.name}</h2>

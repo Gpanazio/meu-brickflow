@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 import { Plus, CheckSquare, ArrowRight } from 'lucide-react';
-import { getUserTasks } from '@/utils/userTasks';
+// import { getUserTasks } from '@/utils/userTasks'; // Unused now
 import { hasPermission, PERMISSIONS } from '@/utils/accessControl';
 import { COLOR_VARIANTS } from '@/constants/theme';
 import PrismaticPanel from '@/components/ui/PrismaticPanel';
@@ -38,10 +38,18 @@ export default function HomeView({
         return safeProjects.filter(p => !p.isArchived && !p.deleted_at);
     }, [safeProjects]);
 
-    const userTasks = useMemo(() => {
-        if (!currentUser?.username) return [];
-        return getUserTasks(safeProjects, currentUser.username);
-    }, [safeProjects, currentUser?.username]);
+    const [userTasks, setUserTasks] = useState([]);
+
+    // Fetch User Tasks
+    useEffect(() => {
+        if (!currentUser?.username) return;
+
+        fetch('/api/v2/my-tasks')
+            .then(res => res.ok ? res.json() : [])
+            .then(data => setUserTasks(data))
+            .catch(err => console.error("Failed to load user tasks", err));
+
+    }, [currentUser?.username, projects]); // Re-fetch if projects change (e.g. mason update)
 
     // DnD Sensors
     const sensors = useSensors(
@@ -168,7 +176,20 @@ export default function HomeView({
                                                 </p>
                                             </div>
                                             <div className="flex justify-between items-end mt-2">
-                                                <span className="brick-mono text-[9px] text-zinc-700 font-medium">{task.subProjectName}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex -space-x-1.5">
+                                                        {(task.responsibleUsers || []).slice(0, 3).map((u, i) => {
+                                                            // Handle both string and object user formats (legacy vs new)
+                                                            const name = typeof u === 'string' ? u : (u.name || u.username || '?');
+                                                            const initial = name[0]?.toUpperCase() || '?';
+                                                            return (
+                                                                <div key={i} className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-900 flex items-center justify-center text-[9px] text-zinc-400 ring-1 ring-zinc-950 group-hover:ring-zinc-800">
+                                                                    {initial}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
                                                 <ArrowRight className="w-3 h-3 text-zinc-800 group-hover:text-white transition-colors" />
                                             </div>
                                         </div>
@@ -262,17 +283,15 @@ export default function HomeView({
 
                                 {/* Card de Adicionar Projeto */}
                                 {hasPermission(currentUser, PERMISSIONS.CREATE_PROJECT) && (
-                                    <PrismaticPanel
-                                        hoverEffect
+                                    <button
                                         onClick={() => setModalState({ type: 'project', mode: 'create', isOpen: true })}
-                                        className="h-64 border-dashed border-zinc-800 hover:border-zinc-600 cursor-pointer"
-                                        contentClassName="flex flex-col items-center justify-center gap-4"
+                                        className="h-40 min-h-[10rem] border border-white/10 border-dashed hover:border-white/30 hover:bg-white/5 transition-all outline-none group flex flex-col items-center justify-center gap-4 cursor-pointer"
                                     >
                                         <div className="w-12 h-12 border border-zinc-800 bg-black/50 flex items-center justify-center group-hover:border-white transition-colors duration-300">
                                             <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
                                         </div>
                                         <span className="brick-mono text-xs font-bold uppercase tracking-widest text-zinc-600 group-hover:text-zinc-400">NOVO PROJETO</span>
-                                    </PrismaticPanel>
+                                    </button>
                                 )}
                             </div>
                         </SortableContext>

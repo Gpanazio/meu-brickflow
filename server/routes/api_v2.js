@@ -28,6 +28,18 @@ const upload = multer({ storage: storage });
 
 const router = express.Router();
 
+// Helper for safe JSON parsing
+const safeParseJSON = (input, fallback = []) => {
+    if (typeof input === 'string') {
+        try {
+            return JSON.parse(input);
+        } catch (e) {
+            return fallback;
+        }
+    }
+    return input || fallback;
+};
+
 // --- PROJECTS ---
 
 // GET /api/v2/projects (List)
@@ -598,6 +610,59 @@ router.delete('/lists/:id', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('List Delete Error:', err);
         res.status(500).json({ error: 'Failed to delete list' });
+    }
+});
+
+// --- MY TASKS ---
+
+// GET /api/v2/my-tasks (Get tasks assigned to current user)
+router.get('/my-tasks', requireAuth, async (req, res) => {
+    try {
+        const username = req.user.username; // Provided by requireAuth middleware
+        if (!username) return res.json([]);
+
+        // Postgres JSONB query to find tasks where assignees array contains the username
+        const queryText = `
+            SELECT 
+                c.*, 
+                l.title as "listTitle", l.type as "boardType",
+                s.id as "subProjectId", s.name as "subProjectName",
+                p.id as "projectId", p.name as "projectName", p.color as "projectColor"
+            FROM cards c
+            JOIN lists l ON c.list_id = l.id
+            JOIN sub_projects s ON l.sub_project_id = s.id
+            JOIN projects p ON s.project_id = p.id
+            WHERE c.assignees::jsonb @> $1::jsonb
+            AND p.is_archived = false
+            ORDER BY c.updated_at DESC
+        `;
+
+        const { rows } = await query(queryText, [JSON.stringify([username])]);
+
+        // Map to frontend structure with safe parsing
+        const tasks = rows.map(row => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            responsibleUsers: safeParseJSON(row.assignees, []),
+            projectId: row.projectId,
+            projectName: row.projectName,
+            projectColor: row.projectColor,
+            subProjectId: row.subProjectId,
+            subProjectName: row.subProjectName,
+            boardType: row.boardType === 'TODO' ? 'todo' : (row.boardType === 'GOALS' ? 'goals' : 'kanban'),
+            listId: row.list_id,
+            listTitle: row.listTitle,
+            checklists: [],
+            labels: safeParseJSON(row.labels, []),
+            endDate: row.due_date
+        }));
+
+        res.json(tasks);
+    } catch (err) {
+        console.error('My Tasks Error:', err);
+        // Return empty array instead of error to prevent UI crash
+        res.json([]);
     }
 });
 

@@ -86,7 +86,7 @@ export default function ProjectView({
                         <MechButton
                             onClick={() => setCurrentView('home')}
                             icon={ArrowLeft}
-                            className="h-9 px-4 text-xs"
+                            className="px-6 text-xs"
                         >
                             Voltar
                         </MechButton>
