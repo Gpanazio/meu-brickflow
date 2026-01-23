@@ -108,6 +108,119 @@ router.delete('/projects/:id', requireAuth, async (req, res) => {
 
 // --- SUBPROJECTS ---
 
+// POST /api/v2/projects/:projectId/subprojects (Create Subproject)
+router.post('/projects/:projectId/subprojects', requireAuth, async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const { name, description, enabledTabs } = req.body;
+        const id = generateId('sub');
+
+        // Get max order index for this project
+        const { rows: orderRows } = await query(
+            'SELECT COALESCE(MAX(order_index), -1) as max_order FROM sub_projects WHERE project_id = $1',
+            [projectId]
+        );
+        const newOrder = orderRows[0].max_order + 1;
+
+        // Build board_config from enabledTabs
+        const boardConfig = { enabledTabs: enabledTabs || ['kanban', 'files'] };
+
+        const { rows } = await query(
+            'INSERT INTO sub_projects (id, project_id, name, description, board_config, order_index) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [id, projectId, name, description, JSON.stringify(boardConfig), newOrder]
+        );
+
+        const subProject = rows[0];
+
+        // Create default lists based on enabled tabs
+        const KANBAN_LISTS = ['BACKLOG', 'EM PROGRESSO', 'CONCLUÍDO'];
+        const TODO_LISTS = ['A FAZER', 'FAZENDO', 'CONCLUÍDO'];
+
+        let listIdx = 0;
+        if (enabledTabs?.includes('kanban')) {
+            for (const title of KANBAN_LISTS) {
+                const listId = generateId('list');
+                await query(
+                    'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+                    [listId, id, title, listIdx++, 'KANBAN']
+                );
+            }
+        }
+        if (enabledTabs?.includes('todo')) {
+            for (const title of TODO_LISTS) {
+                const listId = generateId('list');
+                await query(
+                    'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+                    [listId, id, title, listIdx++, 'TODO']
+                );
+            }
+        }
+
+        res.json(subProject);
+    } catch (err) {
+        console.error('Subproject Create Error:', err);
+        res.status(500).json({ error: 'Failed to create subproject' });
+    }
+});
+
+// PUT /api/v2/subprojects/:id (Update Subproject)
+router.put('/subprojects/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, enabledTabs } = req.body;
+
+        const updates = [];
+        const values = [];
+        let idx = 1;
+
+        if (Object.prototype.hasOwnProperty.call(req.body, 'name')) {
+            updates.push(`name = $${idx++}`);
+            values.push(name);
+        }
+        if (Object.prototype.hasOwnProperty.call(req.body, 'description')) {
+            updates.push(`description = $${idx++}`);
+            values.push(description);
+        }
+        if (Object.prototype.hasOwnProperty.call(req.body, 'enabledTabs')) {
+            const boardConfig = { enabledTabs: enabledTabs || [] };
+            updates.push(`board_config = $${idx++}`);
+            values.push(JSON.stringify(boardConfig));
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'No fields to update' });
+        }
+
+        values.push(id);
+        const { rows, rowCount } = await query(
+            `UPDATE sub_projects SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING *`,
+            values
+        );
+
+        if (rowCount === 0) return res.status(404).json({ error: 'Subproject not found' });
+
+        res.json(rows[0]);
+    } catch (err) {
+        console.error('Subproject Update Error:', err);
+        res.status(500).json({ error: 'Failed to update subproject' });
+    }
+});
+
+// DELETE /api/v2/subprojects/:id (Delete Subproject)
+router.delete('/subprojects/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rowCount } = await query('DELETE FROM sub_projects WHERE id = $1', [id]);
+
+        if (rowCount === 0) return res.status(404).json({ error: 'Subproject not found' });
+
+        res.json({ success: true, message: 'Subproject deleted successfully' });
+    } catch (err) {
+        console.error('Subproject Delete Error:', err);
+        res.status(500).json({ error: 'Failed to delete subproject' });
+    }
+});
+
 // GET /api/v2/subprojects/:id (Board Data)
 router.get('/subprojects/:id', requireAuth, async (req, res) => {
     try {
