@@ -4,11 +4,11 @@ FROM node:18-alpine
 # Define a pasta de trabalho
 WORKDIR /app
 
-# Copia os arquivos de configuração
-COPY package.json ./
+# Copia arquivos de dependência primeiro (para cache)
+COPY package.json package-lock.json ./
 
-# Instala TODAS as dependências (Front e Back)
-RUN npm install
+# Instala dependências de forma limpa e rápida (usando cache se package*.json não mudar)
+RUN npm ci
 
 # Copia todo o resto do projeto
 COPY . .
