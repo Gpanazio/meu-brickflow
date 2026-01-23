@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useRealtime } from '../hooks/useRealtime';
 import LegacyBoard from '../components/legacy/LegacyBoard';
 import { Loader2 } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useFiles } from '../hooks/useFiles'; // Assuming we still use this for 
 
 export default function BoardPage() {
     const { projectId, areaId } = useParams();
+    const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [boardType, setBoardType] = useState('kanban'); // Default
     const [isLoading, setIsLoading] = useState(true);
@@ -158,7 +159,13 @@ export default function BoardPage() {
             setCurrentBoardType={setBoardType}
             currentSubProject={data}
             currentProject={projectContext}
-            setCurrentView={() => { }}
+            setCurrentView={(view) => {
+                if (view === 'project') {
+                    navigate(`/project/${projectId}`);
+                } else if (view === 'home') {
+                    navigate('/');
+                }
+            }}
             setModalState={() => { }}
             handleTaskAction={handleTaskAction}
             handleDragStart={() => { }}
