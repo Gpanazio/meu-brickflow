@@ -15,6 +15,7 @@ class WebSocketManager {
         this.reconnectTimer = null;
         this.isConnecting = false;
         this.shouldReconnect = true;
+        this.disconnectTimer = null;
     }
 
     connect() {
@@ -24,6 +25,12 @@ class WebSocketManager {
 
         this.isConnecting = true;
         this.shouldReconnect = true;
+
+        // If we are connecting, make sure we don't have a pending disconnect
+        if (this.disconnectTimer) {
+            clearTimeout(this.disconnectTimer);
+            this.disconnectTimer = null;
+        }
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.hostname;
@@ -37,13 +44,23 @@ class WebSocketManager {
 
             this.ws.onopen = () => {
                 console.log('✅ WebSocket: Conexão estabelecida');
+
+                // Guard clause: If ws was closed/cleared before open fired (race condition)
+                if (!this.ws) {
+                    console.warn('⚠️ WebSocket: Conexão aberta, mas instância foi limpa. Abortando inicialização.');
+                    return;
+                }
+
                 this.isConnecting = false;
                 this.reconnectAttempts = 0;
 
                 // Resubscribe all active channels
                 this.listeners.forEach((_, channel) => {
-                    this.ws.send(JSON.stringify({ type: 'subscribe', channel }));
-                    console.log(`📡 WebSocket: Resubscrito em ${channel}`);
+                    // Double check ws existence just in case, though the top check should catch it
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({ type: 'subscribe', channel }));
+                        console.log(`📡 WebSocket: Resubscrito em ${channel}`);
+                    }
                 });
             };
 
@@ -125,19 +142,34 @@ class WebSocketManager {
                 }
             }
 
-            // Close connection if no more listeners
+            // Close connection if no more listeners (with debounce)
             if (this.listeners.size === 0 && this.ws) {
-                console.log('🔌 WebSocket: Sem listeners ativos, fechando conexão');
+                console.log('🔌 WebSocket: Sem listeners ativos, agendando fechamento...');
                 this.shouldReconnect = false;
-                this.ws.close();
-                this.ws = null;
-                if (this.reconnectTimer) {
-                    clearTimeout(this.reconnectTimer);
-                    this.reconnectTimer = null;
-                }
+
+                // Clear any existing disconnect timer
+                if (this.disconnectTimer) clearTimeout(this.disconnectTimer);
+
+                // Wait 5 seconds before actually closing
+                this.disconnectTimer = setTimeout(() => {
+                    if (this.listeners.size === 0 && this.ws) {
+                        console.log('🔌 WebSocket: Fechando conexão (após debounce)');
+                        this.ws.close();
+                        this.ws = null;
+                        if (this.reconnectTimer) {
+                            clearTimeout(this.reconnectTimer);
+                            this.reconnectTimer = null;
+                        }
+                    } else {
+                        console.log('🔌 WebSocket: Novo listener detectado, cancelando fechamento');
+                    }
+                }, 5000);
             }
         };
     }
+
+    // Add disconnectTimer to class properties if not present (it's dynamic so fine here but good to be explicit)
+    // In constructor: this.disconnectTimer = null;
 
     getState() {
         return {
