@@ -1,5 +1,5 @@
 import express from 'express';
-import { query } from '../db.js';
+import { query, getClient } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -110,22 +110,25 @@ router.delete('/projects/:id', requireAuth, async (req, res) => {
 
 // POST /api/v2/projects/:projectId/subprojects (Create Subproject)
 router.post('/projects/:projectId/subprojects', requireAuth, async (req, res) => {
+    const client = await getClient();
     try {
+        await client.query('BEGIN');
+
         const { projectId } = req.params;
         const { name, description, enabledTabs } = req.body;
         const id = generateId('sub');
 
         // Get max order index for this project
-        const { rows: orderRows } = await query(
+        const { rows: orderRows } = await client.query(
             'SELECT COALESCE(MAX(order_index), -1) as max_order FROM sub_projects WHERE project_id = $1',
             [projectId]
         );
         const newOrder = orderRows[0].max_order + 1;
 
         // Build board_config from enabledTabs
-        const boardConfig = { enabledTabs: enabledTabs || ['kanban', 'files'] };
+        const boardConfig = { enabledTabs: enabledTabs ?? ['kanban', 'files'] };
 
-        const { rows } = await query(
+        const { rows } = await client.query(
             'INSERT INTO sub_projects (id, project_id, name, description, board_config, order_index) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
             [id, projectId, name, description, JSON.stringify(boardConfig), newOrder]
         );
@@ -135,37 +138,45 @@ router.post('/projects/:projectId/subprojects', requireAuth, async (req, res) =>
         // Create default lists based on enabled tabs
         const KANBAN_LISTS = ['BACKLOG', 'EM PROGRESSO', 'CONCLUÍDO'];
         const TODO_LISTS = ['A FAZER', 'FAZENDO', 'CONCLUÍDO'];
+        const tabs = enabledTabs ?? ['kanban', 'files'];
 
         let listIdx = 0;
-        if (enabledTabs?.includes('kanban')) {
+        if (tabs.includes('kanban')) {
             for (const title of KANBAN_LISTS) {
                 const listId = generateId('list');
-                await query(
+                await client.query(
                     'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
                     [listId, id, title, listIdx++, 'KANBAN']
                 );
             }
         }
-        if (enabledTabs?.includes('todo')) {
+        if (tabs.includes('todo')) {
             for (const title of TODO_LISTS) {
                 const listId = generateId('list');
-                await query(
+                await client.query(
                     'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
                     [listId, id, title, listIdx++, 'TODO']
                 );
             }
         }
 
+        await client.query('COMMIT');
         res.json(subProject);
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('Subproject Create Error:', err);
         res.status(500).json({ error: 'Failed to create subproject' });
+    } finally {
+        client.release();
     }
 });
 
 // PUT /api/v2/subprojects/:id (Update Subproject)
 router.put('/subprojects/:id', requireAuth, async (req, res) => {
+    const client = await getClient();
     try {
+        await client.query('BEGIN');
+
         const { id } = req.params;
         const { name, description, enabledTabs } = req.body;
 
@@ -182,27 +193,79 @@ router.put('/subprojects/:id', requireAuth, async (req, res) => {
             values.push(description);
         }
         if (Object.prototype.hasOwnProperty.call(req.body, 'enabledTabs')) {
-            const boardConfig = { enabledTabs: enabledTabs || [] };
+            const boardConfig = { enabledTabs: enabledTabs ?? [] };
             updates.push(`board_config = $${idx++}`);
             values.push(JSON.stringify(boardConfig));
         }
 
         if (updates.length === 0) {
+            await client.query('ROLLBACK');
+            client.release();
             return res.status(400).json({ error: 'No fields to update' });
         }
 
         values.push(id);
-        const { rows, rowCount } = await query(
+        const { rows, rowCount } = await client.query(
             `UPDATE sub_projects SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${idx} RETURNING *`,
             values
         );
 
-        if (rowCount === 0) return res.status(404).json({ error: 'Subproject not found' });
+        if (rowCount === 0) {
+            await client.query('ROLLBACK');
+            client.release();
+            return res.status(404).json({ error: 'Subproject not found' });
+        }
 
+        // If enabledTabs changed, create missing lists for newly enabled tabs
+        if (Object.prototype.hasOwnProperty.call(req.body, 'enabledTabs') && enabledTabs) {
+            // Get existing list types for this subproject
+            const { rows: existingLists } = await client.query(
+                'SELECT DISTINCT type FROM lists WHERE sub_project_id = $1',
+                [id]
+            );
+            const existingTypes = new Set(existingLists.map(l => l.type));
+
+            const KANBAN_LISTS = ['BACKLOG', 'EM PROGRESSO', 'CONCLUÍDO'];
+            const TODO_LISTS = ['A FAZER', 'FAZENDO', 'CONCLUÍDO'];
+
+            // Get max order_index
+            const { rows: orderRows } = await client.query(
+                'SELECT COALESCE(MAX(order_index), -1) as max_order FROM lists WHERE sub_project_id = $1',
+                [id]
+            );
+            let listIdx = orderRows[0].max_order + 1;
+
+            // Create KANBAN lists if enabled but don't exist
+            if (enabledTabs.includes('kanban') && !existingTypes.has('KANBAN')) {
+                for (const title of KANBAN_LISTS) {
+                    const listId = generateId('list');
+                    await client.query(
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+                        [listId, id, title, listIdx++, 'KANBAN']
+                    );
+                }
+            }
+
+            // Create TODO lists if enabled but don't exist
+            if (enabledTabs.includes('todo') && !existingTypes.has('TODO')) {
+                for (const title of TODO_LISTS) {
+                    const listId = generateId('list');
+                    await client.query(
+                        'INSERT INTO lists (id, sub_project_id, title, order_index, type) VALUES ($1, $2, $3, $4, $5)',
+                        [listId, id, title, listIdx++, 'TODO']
+                    );
+                }
+            }
+        }
+
+        await client.query('COMMIT');
         res.json(rows[0]);
     } catch (err) {
+        await client.query('ROLLBACK');
         console.error('Subproject Update Error:', err);
         res.status(500).json({ error: 'Failed to update subproject' });
+    } finally {
+        client.release();
     }
 });
 
