@@ -13,17 +13,21 @@ export function useRealtime(channel, onMessage) {
         if (!shouldReconnectRef.current) return; // Don't reconnect if flag is false
         if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
 
-        // Exponential backoff: 3s, 6s, 12s, 24s, max 30s
+        // Max 5 attempts, then stop trying (avoid infinite error spam)
         const attempt = reconnectAttemptsRef.current;
-        const delay = Math.min(3000 * Math.pow(2, attempt), 30000);
+        if (attempt >= 5) {
+            console.warn(`⚠️ WebSocket: máximo de tentativas atingido para ${channel}. Reconexão desabilitada.`);
+            return;
+        }
 
-        console.log(`⏳ Reconectando em ${delay}ms (tentativa ${attempt + 1})...`);
+        // Exponential backoff: 3s, 6s, 12s, 24s, max 30s
+        const delay = Math.min(3000 * Math.pow(2, attempt), 30000);
 
         reconnectTimerRef.current = setTimeout(() => {
             reconnectAttemptsRef.current += 1;
             if (connectRef.current) connectRef.current();
         }, delay);
-    }, []);
+    }, [channel]);
 
     const connect = useCallback(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) return;
