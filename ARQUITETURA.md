@@ -156,3 +156,18 @@ A cada mensagem, o frontend envia `clientContext`:
 - **Frases:** "Posso confirmar...", "Receio que...", "Entendido..."
 - **Idioma:** Português (PT-BR) como padrão
 - **Proibições:** Não repete slogans, não usa emojis
+
+### 6. Adaptação Frontend V2 (Legacy Compatibility)
+
+Para manter compatibilidade com componentes legados (`LegacyBoard.jsx`) enquanto migramos para a API V2:
+
+- **Problema:** API V2 retorna `cards` mas componentes legados esperam `tasks`.
+- **Solução:** `BoardPage.jsx` implementa um padrão de Adapter, normalizando a resposta da API antes de renderizar.
+- **Normalização:** `list.cards` é mapeado para `list.tasks`.
+
+---
+
+## IA & Modelos
+
+- **Mason:** Utiliza `gemini-3-flash-preview` para maior autonomia e reasoning.
+- **Tools:** Habilitadas via Function Calling (nativas do modelo).

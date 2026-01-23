@@ -97,3 +97,5 @@ Este documento centraliza todas as tarefas, melhorias e funcionalidades planejad
 
 ### Features Entregues
 - [x] **Filtros Avançados (Arquivos):** Busca por nome, filtro por tipo (IMG, PDF, DOC, VIDEO) e ordenação.
+- [x] **Mason AI:** Upgrade para **Gemini 3 Flash** (maior autonomia na criação de projetos).
+- [x] **Arquitetura:** Adapter no Frontend para compatibilidade V1/V2 (Cards vs Tasks).
