@@ -1,5 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 
+const MAX_RECONNECT_ATTEMPTS = 5;
+
 export function useRealtime(channel, onMessage) {
     const wsRef = useRef(null);
     const reconnectTimerRef = useRef(null);
@@ -13,9 +15,8 @@ export function useRealtime(channel, onMessage) {
         if (!shouldReconnectRef.current) return; // Don't reconnect if flag is false
         if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
 
-        // Max 5 attempts, then stop trying (avoid infinite error spam)
         const attempt = reconnectAttemptsRef.current;
-        if (attempt >= 5) {
+        if (attempt >= MAX_RECONNECT_ATTEMPTS) {
             console.warn(`⚠️ WebSocket: máximo de tentativas atingido para ${channel}. Reconexão desabilitada.`);
             return;
         }
