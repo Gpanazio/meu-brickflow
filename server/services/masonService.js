@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { query, getClient } from '../db.js';
+import { getClient } from '../db.js';
 import { eventService, CHANNELS } from './eventService.js';
-import { normalizeStateData } from '../utils/helpers.js';
+
 
 // Initialize Gemini
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
@@ -260,38 +260,6 @@ REMEMBER: You are Mason. You don't serve. You optimize. You don't wait. You exec
 // Helper to generate IDs (simple version matching frontend pattern approx)
 const generateId = (prefix = 'id') => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-// Legacy Helper - kept for reference (V1 state-blob architecture)
-const _findProject = (projects, projectName) => {
-    // Try exact match first (case-insensitive)
-    const exactMatch = projects.find(p => p.name.toLowerCase() === projectName.toLowerCase());
-    if (exactMatch) return exactMatch;
-
-    // Try fuzzy match
-    const fuzzyMatches = projects.filter(p => p.name.toLowerCase().includes(projectName.toLowerCase()));
-
-    if (fuzzyMatches.length === 0) {
-        // Last resort: Check if the input is actually an ID
-        const idMatch = projects.find(p => p.id === projectName);
-        if (idMatch) return idMatch;
-
-        return null;
-    }
-
-    if (fuzzyMatches.length > 1) {
-        // Prefer exact fuzzy match if present
-        const exactFuzzy = fuzzyMatches.find(p => p.name.toLowerCase() === projectName.toLowerCase());
-        if (exactFuzzy) return exactFuzzy;
-
-        // Multiple matches - return error object
-        return {
-            ambiguous: true,
-            matches: fuzzyMatches.map(p => p.name)
-        };
-    }
-
-    return fuzzyMatches[0];
-};
-
 // Helper to validate input sizes (DoS protection)
 const validateInputSize = (value, fieldName, maxLength) => {
     if (!value) return null; // Empty is ok
@@ -303,41 +271,6 @@ const validateInputSize = (value, fieldName, maxLength) => {
     }
     return null;
 };
-
-// Legacy Helper - kept for reference (V1 state-blob architecture)
-const _createDefaultKanbanLists = () => [
-    { id: generateId('list'), title: KANBAN_LISTS.TODO, cards: [] },
-    { id: generateId('list'), title: KANBAN_LISTS.IN_PROGRESS, cards: [] },
-    { id: generateId('list'), title: KANBAN_LISTS.DONE, cards: [] }
-];
-
-// Legacy Helper - kept for reference (V1 state-blob architecture)
-const _detectTaskStatus = (listTitle) => {
-    const normalized = listTitle.toLowerCase();
-
-    if (KANBAN_STATUS_PATTERNS.todo.some(pattern => normalized.includes(pattern))) {
-        return 'todo';
-    }
-    if (KANBAN_STATUS_PATTERNS.inProgress.some(pattern => normalized.includes(pattern))) {
-        return 'inProgress';
-    }
-    if (KANBAN_STATUS_PATTERNS.done.some(pattern => normalized.includes(pattern))) {
-        return 'done';
-    }
-
-    return null;
-};
-
-// Legacy Helper - kept for reference (V1 state-blob architecture)
-async function _getProjectState(client = null) {
-    const q = 'SELECT data, version FROM brickflow_state WHERE id = $1';
-    const res = client ? await client.query(q, [STATE_DB_ID]) : await query(q, [STATE_DB_ID]);
-    if (res.rows.length === 0) return null;
-    return {
-        data: normalizeStateData(res.rows[0].data),
-        version: res.rows[0].version
-    };
-}
 
 // Tool Definitions
 const tools = [
@@ -787,20 +720,6 @@ const mutationHandlers = {
         if (res.rowCount === 0) return { error: `ERRO: Tarefa não encontrada.` };
         return { message: `Tarefa removida permanentemente.` };
     }
-};
-
-// Legacy Helper - kept for reference (V1 state-blob architecture)
-const _findTaskInData = (data, taskId) => {
-    for (const p of data.projects) {
-        for (const sp of p.subProjects || []) {
-            const lists = sp.boardData?.kanban?.lists || [];
-            for (const l of lists) {
-                const idx = l.cards?.findIndex(c => c.id === taskId);
-                if (idx !== -1) return { project: p, subProject: sp, list: l, card: l.cards[idx], index: idx };
-            }
-        }
-    }
-    return null;
 };
 
 // Service Class
