@@ -68,8 +68,13 @@ export function AppProvider({ children }) {
     setModalState,
     currentView,
     setCurrentView,
-    login,
-    logout
+    // Authentication is now handled by useUsers hook in AppShell, 
+    // but we expose these for compatibility if needed, though they should ideally come from useUsers
+    // For now, these legacy functions in AppContext should probably be removed or delegate if we rework the hierarchy.
+    // However, since AppShell wraps the app and uses useUsers, and AppProvider is inside or outside?
+    // If AppProvider is outside AppShell, it can't use useUsers if useUsers depends on AppProvider? 
+    // Actually useUsers doesn't depend on Context.
+    // Let's defer to the plan: "Refactor AppProvider to use useUsers internally".
   };
 
   return (

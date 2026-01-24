@@ -11,11 +11,17 @@ class WebSocketManager {
     constructor() {
         this.ws = null;
         this.listeners = new Map(); // channel -> Set of callbacks
+        this.connectionListeners = new Set(); // Callbacks for connection state
         this.reconnectAttempts = 0;
         this.reconnectTimer = null;
         this.isConnecting = false;
         this.shouldReconnect = true;
         this.disconnectTimer = null;
+    }
+
+    notifyConnectionListeners() {
+        const isConnected = this.ws?.readyState === WebSocket.OPEN;
+        this.connectionListeners.forEach(cb => cb(isConnected));
     }
 
     connect() {
@@ -40,23 +46,24 @@ class WebSocketManager {
         console.log(`🔌 WebSocket: Conectando a ${wsUrl}...`);
 
         try {
-            this.ws = new WebSocket(wsUrl);
+            const socket = new WebSocket(wsUrl);
+            this.ws = socket;
 
-            this.ws.onopen = () => {
-                console.log('✅ WebSocket: Conexão estabelecida');
-
-                // Guard clause: If ws was closed/cleared before open fired (race condition)
-                if (!this.ws) {
-                    console.warn('⚠️ WebSocket: Conexão aberta, mas instância foi limpa. Abortando inicialização.');
+            socket.onopen = () => {
+                // Race condition check: Ensure this socket is still the active one
+                if (this.ws !== socket) {
+                    console.warn('⚠️ WebSocket: Conexão obsoleta aberta, ignorando.');
+                    socket.close();
                     return;
                 }
 
+                console.log('✅ WebSocket: Conexão estabelecida');
                 this.isConnecting = false;
                 this.reconnectAttempts = 0;
+                this.notifyConnectionListeners();
 
                 // Resubscribe all active channels
                 this.listeners.forEach((_, channel) => {
-                    // Double check ws existence just in case, though the top check should catch it
                     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
                         this.ws.send(JSON.stringify({ type: 'subscribe', channel }));
                         console.log(`📡 WebSocket: Resubscrito em ${channel}`);
@@ -64,7 +71,7 @@ class WebSocketManager {
                 });
             };
 
-            this.ws.onmessage = (event) => {
+            socket.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
                     const callbacks = this.listeners.get(data.channel);
@@ -76,20 +83,26 @@ class WebSocketManager {
                 }
             };
 
-            this.ws.onclose = () => {
-                console.log('❌ WebSocket: Conexão fechada');
-                this.ws = null;
-                this.isConnecting = false;
+            socket.onclose = () => {
+                if (this.ws === socket) {
+                    console.log('❌ WebSocket: Conexão fechada');
+                    this.ws = null;
+                    this.isConnecting = false;
+                    this.notifyConnectionListeners();
 
-                if (this.shouldReconnect && this.listeners.size > 0) {
-                    this.scheduleReconnect();
+                    if (this.shouldReconnect && this.listeners.size > 0) {
+                        this.scheduleReconnect();
+                    }
                 }
             };
 
-            this.ws.onerror = (err) => {
-                console.error('❌ WebSocket: Erro:', err);
-                this.isConnecting = false;
-                // onclose will handle reconnection
+            socket.onerror = (err) => {
+                // Check if this error belongs to the current socket
+                if (this.ws === socket) {
+                    console.error('❌ WebSocket: Erro:', err);
+                    this.isConnecting = false;
+                    // onclose will handle reconnection
+                }
             };
         } catch (err) {
             console.error('❌ WebSocket: Falha ao criar conexão:', err);
@@ -155,11 +168,7 @@ class WebSocketManager {
                     if (this.listeners.size === 0 && this.ws) {
                         console.log('🔌 WebSocket: Fechando conexão (após debounce)');
                         this.ws.close();
-                        this.ws = null;
-                        if (this.reconnectTimer) {
-                            clearTimeout(this.reconnectTimer);
-                            this.reconnectTimer = null;
-                        }
+                        // ws.close() will trigger onclose, which cleans up
                     } else {
                         console.log('🔌 WebSocket: Novo listener detectado, cancelando fechamento');
                     }
@@ -168,8 +177,12 @@ class WebSocketManager {
         };
     }
 
-    // Add disconnectTimer to class properties if not present (it's dynamic so fine here but good to be explicit)
-    // In constructor: this.disconnectTimer = null;
+    addConnectionListener(callback) {
+        this.connectionListeners.add(callback);
+        // Immediate callback with current state
+        callback(this.ws?.readyState === WebSocket.OPEN);
+        return () => this.connectionListeners.delete(callback);
+    }
 
     getState() {
         return {
@@ -199,20 +212,19 @@ export function useRealtime(channel, onMessage) {
     useEffect(() => {
         // Wrapper to use latest callback
         const wrappedCallback = (payload) => {
-            callbackRef.current(payload);
+            if (callbackRef.current) {
+                callbackRef.current(payload);
+            }
         };
 
         const unsubscribe = wsManager.subscribe(channel, wrappedCallback);
 
-        // Update connected state periodically
-        const checkConnection = setInterval(() => {
-            const newState = wsManager.ws?.readyState === WebSocket.OPEN;
-            setIsConnected(prev => prev !== newState ? newState : prev);
-        }, 1000);
+        // Listen for connection changes
+        const unsubscribeConnection = wsManager.addConnectionListener(setIsConnected);
 
         return () => {
             unsubscribe();
-            clearInterval(checkConnection);
+            unsubscribeConnection();
         };
     }, [channel]);
 

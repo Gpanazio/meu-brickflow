@@ -44,11 +44,9 @@ export const sessionService = {
   async refresh(sessionId) {
     try {
       const key = SESSION_PREFIX + sessionId;
-      const ttl = await cache.getTtl(key);
-      if (ttl > 0) {
-        await cache.set(key, await cache.get(key), SESSION_TTL);
-        console.log('🔄 Sessão renovada');
-      }
+      // Fix #11: Atomic refresh using expire
+      await cache.expire(key, SESSION_TTL);
+      console.log('🔄 Sessão renovada');
     } catch (err) {
       console.error('❌ Erro ao renovar sessão:', err);
     }

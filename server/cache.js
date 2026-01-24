@@ -102,7 +102,9 @@ export const cache = {
     }
     // Memory Fallback
     memoryStore.delete(key);
-    console.log(`🗑️ Cache DEL [${key}] (Memória/Redis)`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🗑️ Cache DEL [${key}] (Memória/Redis)`);
+    }
   },
 
   async getTtl(key) {
@@ -121,6 +123,24 @@ export const cache = {
     return remaining > 0 ? remaining : -2;
   },
 
+  async expire(key, ttl) {
+    if (isRedisReady) {
+      try {
+        await redis.expire(key, ttl);
+        return;
+      } catch (err) {
+        console.error(`❌ Redis EXPIRE erro [${key}]:`, err.message);
+      }
+    }
+    // Memory Fallback
+    const item = memoryStore.get(key);
+    if (item) {
+      item.expiry = Date.now() + (ttl * 1000);
+      // Value is reference, but map set ensures consistency if implemented differently later
+      memoryStore.set(key, item);
+    }
+  },
+
   async invalidate(pattern) {
     if (isRedisReady) {
       try {
@@ -135,9 +155,20 @@ export const cache = {
       }
     }
 
-    // Memory Fallback - pattern matching simples (converte glob * para regex)
-    // Suporta apenas sufixos/prefixos simples como 'users:*' ou '*'
-    let regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+    // Memory Fallback - Secure Glob Matching (Fix #10)
+    // Escape special regex chars except * which we want to treat as wildcard
+    const escapeRegex = (str) => str.replace(/([.+?^${}()|\[\]\/\\])/g, '\\$1');
+    // Convert glob * to .* (and ensure it was not escaped if it was literal... but we treat all input * as wildcard here)
+    const safePattern = escapeRegex(pattern).replace(/\*/g, '.*');
+
+    let regex;
+    try {
+      regex = new RegExp('^' + safePattern + '$');
+    } catch (e) {
+      console.error('Invalid cache pattern:', pattern);
+      return;
+    }
+
     let count = 0;
     for (const k of memoryStore.keys()) {
       if (regex.test(k)) {

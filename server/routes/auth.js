@@ -37,8 +37,12 @@ router.post('/logout', async (req, res) => {
   try {
     const cookies = parseCookies(req.headers.cookie);
     const sessionId = cookies.bf_session;
+    let username = 'unknown';
 
     if (sessionId) {
+      // Fix #5: Retrieve user info before deleting session
+      const session = await sessionService.get(sessionId);
+      if (session) username = session.userId;
       await sessionService.delete(sessionId);
     }
 
@@ -46,7 +50,7 @@ router.post('/logout', async (req, res) => {
     res.json({ success: true });
 
     await eventService.publish(CHANNELS.USER_LOGGED_OUT, {
-      username: req.user?.username || 'unknown',
+      username: username,
       timestamp: Date.now()
     });
   } catch (err) {
@@ -101,7 +105,10 @@ router.get('/me', async (req, res) => {
     }
 
     const { password_hash: _, ...safeUser } = user;
-    console.log('📝 GET /me returning user with avatar:', safeUser.avatar ? 'YES' : 'NO', '- username:', safeUser.username);
+    // Fix #15: Reduce logs in production
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📝 GET /me returning user with avatar:', safeUser.avatar ? 'YES' : 'NO', '- username:', safeUser.username);
+    }
     res.json({ user: safeUser });
   } catch (err) {
     console.error('Error in /me:', err);
@@ -115,7 +122,7 @@ function setSessionCookie(res, sessionId) {
     httpOnly: true,
     secure: isSecure,
     sameSite: 'lax',
-    maxAge: 2592000, // 30 dias
+    maxAge: 2592000 * 1000, // 30 dias (Fix #4: express uses ms)
     path: '/'
   });
 }

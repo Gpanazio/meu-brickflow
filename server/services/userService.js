@@ -31,13 +31,9 @@ export const userService = {
     try {
       const { username, name, email, password, pin, color, role = 'user' } = userData;
 
-      const existing = await this.findByUsername(username);
-      if (existing) {
-        throw new Error('Usuário já existe');
-      }
-
       const passwordToUse = password || pin;
       const password_hash = await bcrypt.hash(passwordToUse, 10);
+
       const { rows } = await query(
         'INSERT INTO master_users (username, name, email, password_hash, color, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
         [username, name, email, password_hash, color, role]
@@ -47,6 +43,9 @@ export const userService = {
       console.log('✅ Usuário criado:', username);
       return rows[0];
     } catch (err) {
+      if (err.code === '23505') { // Fix #17: Handle unique constraint violation
+        throw new Error('Usuário já existe');
+      }
       console.error('❌ Erro ao criar usuário:', err);
       throw err;
     }

@@ -709,7 +709,7 @@ const mutationHandlers = {
                 if (config.enabledTabs && config.enabledTabs.includes('todo')) {
                     defaultList = TODO_LISTS.PENDING;
                 }
-            } catch (_e) { /* ignore parse error */ }
+            } catch { /* ignore parse error */ }
         }
 
         const targetListTitle = args.listName || defaultList;
@@ -1023,47 +1023,39 @@ class MasonService {
     async executeTool(client, name, args, userContext) {
         if (name === 'get_workspace_insights') {
             // Re-implement using SQL
-            // Get all projects
-            const projRes = await client.query('SELECT * FROM projects WHERE is_archived = false');
-            const projects = projRes.rows;
+            // Optimized Query (Fix #9)
+            const queryText = `
+                SELECT 
+                    p.id, 
+                    p.name,
+                    COUNT(DISTINCT sp.id)::int as "subProjectsCount",
+                    COUNT(DISTINCT c.id)::int as "totalTasks",
+                    COUNT(DISTINCT CASE 
+                        WHEN l.title ILIKE '%Done%' OR l.title ILIKE '%Completed%' OR l.title ILIKE '%Concluído%' OR l.title ILIKE '%Finished%' 
+                        THEN c.id 
+                    END)::int as "doneTasks"
+                FROM projects p
+                LEFT JOIN sub_projects sp ON sp.project_id = p.id
+                LEFT JOIN lists l ON l.sub_project_id = sp.id
+                LEFT JOIN cards c ON c.list_id = l.id
+                WHERE p.is_archived = false
+                GROUP BY p.id, p.name
+                ORDER BY p.created_at DESC
+            `;
 
-            const insightsData = await Promise.all(projects.map(async p => {
-                // Get subprojects
-                const spRes = await client.query('SELECT * FROM sub_projects WHERE project_id = $1', [p.id]);
-                const subProjects = spRes.rows;
+            const { rows } = await client.query(queryText);
 
-                // Get Stats
-                const totalTasksRes = await client.query(`
-                    SELECT COUNT(*) as count 
-                    FROM cards c 
-                    JOIN lists l ON c.list_id = l.id 
-                    JOIN sub_projects sp ON l.sub_project_id = sp.id 
-                    WHERE sp.project_id = $1
-                 `, [p.id]);
-
-                const doneTasksRes = await client.query(`
-                    SELECT COUNT(*) as count 
-                    FROM cards c 
-                    JOIN lists l ON c.list_id = l.id 
-                    JOIN sub_projects sp ON l.sub_project_id = sp.id 
-                    WHERE sp.project_id = $1 AND (l.title ILIKE '%Done%' OR l.title ILIKE '%Completed%')
-                 `, [p.id]); // Simplified done detection by list title
-
-                const totalTasks = parseInt(totalTasksRes.rows[0].count);
-                const doneTasks = parseInt(doneTasksRes.rows[0].count);
-
-                return {
-                    id: p.id,
-                    name: p.name,
-                    subProjectsCount: subProjects.length,
-                    totalTasks: totalTasks,
-                    progress: totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0,
-                    isEmpty: totalTasks === 0
-                };
+            const insightsData = rows.map(row => ({
+                id: row.id,
+                name: row.name,
+                subProjectsCount: row.subProjectsCount,
+                totalTasks: row.totalTasks,
+                progress: row.totalTasks > 0 ? Math.round((row.doneTasks / row.totalTasks) * 100) : 0,
+                isEmpty: row.totalTasks === 0
             }));
 
             const insights = {
-                totalProjects: projects.length,
+                totalProjects: rows.length,
                 projects: insightsData,
                 currentContext: userContext
             };

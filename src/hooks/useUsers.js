@@ -40,7 +40,7 @@ export function useUsers() {
     const waitForServer = async () => {
       let backoffMs = 500
       const startedAt = Date.now()
-      const maxWaitMs = 120000 // 2 minutes max wait
+      const maxWaitMs = 45000 // 45 seconds max wait (Fix #18)
 
       while (alive) {
         try {

@@ -19,12 +19,20 @@ const storage = multer.diskStorage({
         cb(null, UPLOAD_DIR);
     },
     filename: function (req, file, cb) {
+        // SECURITY (Fix #6): Sanitize filename to prevent path traversal
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+        const name = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const ext = path.extname(name) || '';
+        const safeName = path.basename(name, ext);
+        cb(null, file.fieldname + '-' + uniqueSuffix + '-' + safeName + ext);
     }
 });
 
-const upload = multer({ storage: storage });
+// SECURITY (Fix #7): Limit file size to 50MB
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 50 * 1024 * 1024 }
+});
 
 const router = express.Router();
 
@@ -58,7 +66,8 @@ router.get('/projects', requireAuth, async (req, res) => {
 router.get('/projects/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { rows: projects } = await query('SELECT * FROM projects WHERE id = $1', [id]);
+        // Fix #19: Filter archived projects
+        const { rows: projects } = await query('SELECT * FROM projects WHERE id = $1 AND is_archived = false', [id]);
         if (projects.length === 0) return res.status(404).json({ error: 'Project not found' });
 
         // Fetch subprojects
@@ -439,7 +448,6 @@ router.put('/subprojects/reorder', requireAuth, async (req, res) => {
 });
 
 // GET /api/v2/subprojects/:id (Board Data)
-// GET /api/v2/subprojects/:id (Board Data)
 router.get('/subprojects/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -764,7 +772,7 @@ router.delete('/tasks/:id', requireAuth, async (req, res) => {
     }
 });
 
-export default router;
+
 
 // --- FILES ---
 
@@ -925,9 +933,13 @@ router.delete('/folders/:id', requireAuth, async (req, res) => {
 
         await query('DELETE FROM folders WHERE id = $1', [id]); // Cascade deletes subfolders/files in DB
 
-        // Cleanup disk
+        // Cleanup disk (Fix #8: error handling)
         filesToDelete.forEach(f => {
-            if (f.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
+            try {
+                if (f.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
+            } catch (fsErr) {
+                console.error(`Failed to delete file ${f.path}:`, fsErr);
+            }
         });
 
         res.json({ success: true });
@@ -936,3 +948,5 @@ router.delete('/folders/:id', requireAuth, async (req, res) => {
         res.status(500).json({ error: 'Failed to delete folder' });
     }
 });
+
+export default router;
